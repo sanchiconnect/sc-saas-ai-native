@@ -1,6 +1,6 @@
 # SanchiSaaS — Workspace Constitution
 
-SanchiSaaS is one product built from **four independently-versioned, independently-deployed Git repos** living side by side (a poly-repo, **not** a monorepo). Each has its own `.git`, dependencies, and deploy pipeline. Together they form a multi-tenant SaaS for startup incubators/accelerators.
+SanchiSaaS is one product built from **seven independently-versioned, independently-deployed Git repos** living side by side (a poly-repo, **not** a monorepo). Each has its own `.git`, dependencies, and deploy pipeline. Together they form a multi-tenant SaaS for startup incubators/accelerators.
 
 | Repo | Role | Stack |
 |---|---|---|
@@ -10,6 +10,7 @@ SanchiSaaS is one product built from **four independently-versioned, independent
 | `sc-saas-admin` | **Admin panel.** Consumes the backend API; reads tenant DB directly. | PHP, Medoo, sparkAdminTpl |
 | `ai-startups-analyzer` | **AI scoring service.** LLM-based startup application evaluation; called by sc-saas-admin; supports OpenAI/Anthropic/Gemini via DEFAULT_PROVIDER. | Python 3.10+, FastAPI, SQLAlchemy (async), MySQL |
 | `sc-saas-3rdparty-webservices` | **Integration gateway.** Centralises all third-party API calls (SMS, email, video, chat, URL shortening, document conversion). Called only by sc-saas-backend. Stateless — no DB. | NestJS 9, TypeScript |
+| `sanchiconnect-saas-tenants-admin` | **Tenants control-plane admin UI.** PHP admin panel for platform operators to manage the tenants DB directly (tenant provisioning, settings, roles). Leaf node — no downstream calls. | PHP, Medoo, sparkAdminTpl (QUCod) |
 
 ## Blast-radius graph
 
@@ -21,6 +22,7 @@ graph TD
     A["admin (PHP)"]
     AI["ai-startups-analyzer<br/>LLM scoring service"]
     W["sc-saas-3rdparty-webservices<br/>Integration gateway (stateless)"]
+    TA["tenants-admin (PHP)<br/>Platform operator UI — reads tenants DB"]
     T -->|verify_tenant / tenant-settings| F
     T -->|bootstrap config + ecosystem| B
     F -->|business calls via dynamic apiUrl| B
@@ -30,9 +32,10 @@ graph TD
     AI -.->|never calls back — results polled by admin| A
     B -->|SMS / email / video / chat / URL / docs| W
     W -.->|never calls back — leaf node| B
+    TA -.->|reads + writes tenants DB directly| T
 ```
 
-Blast radius: **tenants → backend → {frontend, admin}**. A change in `tenants` can reach all three; a change in `backend` can reach frontend + admin. `ai-startups-analyzer` is called only by admin and never pushes results — it is a leaf node with no downstream blast radius. `sc-saas-3rdparty-webservices` is called only by the backend and is also a leaf node — it proxies to external providers and never calls any other SanchiSaaS repo.
+Blast radius: **tenants → backend → {frontend, admin}**. A change in `tenants` can reach all three; a change in `backend` can reach frontend + admin. `ai-startups-analyzer` is called only by admin and never pushes results — it is a leaf node with no downstream blast radius. `sc-saas-3rdparty-webservices` is called only by the backend and is also a leaf node — it proxies to external providers and never calls any other SanchiSaaS repo. `sanchiconnect-saas-tenants-admin` shares the tenants MySQL DB directly with `sanchiconnect-saas-tenants` — a DB schema change in tenants can break both the NestJS app and the PHP admin simultaneously.
 
 ## Cross-repo invariants (HARD RULES — never silently break)
 
@@ -58,6 +61,10 @@ Blast radius: **tenants → backend → {frontend, admin}**. A change in `tenant
 - **Short URLs / action links** → `sc-saas-3rdparty-webservices/src/modules/shortIo/` (called by `sc-saas-backend/src/core/services/url.service.ts`)
 - **Document conversion (PPT→PNG)** → `sc-saas-3rdparty-webservices/src/modules/convertKit/` (called by `sc-saas-backend/src/core/services/convertapi.service.ts`)
 - **Base URL for the gateway** → `sc-saas-backend/src/core/constants/enum.ts` (`SaaSSettingKey.THIRD_PARTY_SERVICE_BASE_URL` in `saasSettings`)
+- **Tenant provisioning / cockpit DB management UI** → `sanchiconnect-saas-tenants-admin/modules/` (PHP admin panel over the tenants DB)
+- **Platform operator roles & permissions** → `sanchiconnect-saas-tenants-admin/config/config.php` (role IDs from ENV) + `modules/auth/admins.php`
+- **Tenants-admin global settings (encrypted)** → `sanchiconnect-saas-tenants-admin/modules/developer/settings_management.php` + `spa_settings` table in tenants DB
+- **Tenants-admin email / API configuration** → `sanchiconnect-saas-tenants-admin/modules/developer/` (email_management, api_management)
 
 ## Specs (structured work orders)
 
