@@ -33,9 +33,11 @@ graph TD
     B -->|SMS / email / video / chat / URL / docs| W
     W -.->|never calls back — leaf node| B
     TA -.->|reads + writes tenants DB directly| T
+    B -->|x-hostname + Bearer JWT| PP["power-pitch-api<br/>(SanchiPowerpitch — external)"]
+    PP -.->|never calls back| B
 ```
 
-Blast radius: **tenants → backend → {frontend, admin}**. A change in `tenants` can reach all three; a change in `backend` can reach frontend + admin. `ai-startups-analyzer` is called only by admin and never pushes results — it is a leaf node with no downstream blast radius. `sc-saas-3rdparty-webservices` is called only by the backend and is also a leaf node — it proxies to external providers and never calls any other SanchiSaaS repo. `sanchiconnect-saas-tenants-admin` shares the tenants MySQL DB directly with `sanchiconnect-saas-tenants` — a DB schema change in tenants can break both the NestJS app and the PHP admin simultaneously.
+Blast radius: **tenants → backend → {frontend, admin}**. A change in `tenants` can reach all three; a change in `backend` can reach frontend + admin. `ai-startups-analyzer` is called only by admin and never pushes results — it is a leaf node with no downstream blast radius. `sc-saas-3rdparty-webservices` is called only by the backend and is also a leaf node — it proxies to external providers and never calls any other SanchiSaaS repo. `sanchiconnect-saas-tenants-admin` shares the tenants MySQL DB directly with `sanchiconnect-saas-tenants` — a DB schema change in tenants can break both the NestJS app and the PHP admin simultaneously. `power-pitch-sanchiconnect-api` (SanchiPowerpitch workspace, external) is called by the backend via `PowerPitchExternalService` — a change to its `/v1/externals/*` contract breaks the backend's power-pitch module silently.
 
 ## Cross-repo invariants (HARD RULES — never silently break)
 
@@ -44,6 +46,7 @@ Blast radius: **tenants → backend → {frontend, admin}**. A change in `tenant
 3. **The tenant-verification contract is owned by `tenants`** (`verify_tenant` / `tenant-settings` shape, incl. `apiUrl`). Backend bootstrap and frontend `brand.model.ts` both depend on it.
 4. **Auth is JWT** (cookie `accessToken` or Bearer; `single_session_login_enabled` toggles server session tracking). Every consumer attaches the token; auth changes ripple to all clients.
 5. **Tenant scoping rule per repo:** `tenants` → every query filters by `domain`; `admin` → selects the per-tenant DB by `admin_domain`; `backend` → one-deployment-per-tenant (config loaded at bootstrap from the tenants API), so **never hardcode or cross-reference another tenant's config/host**. Use `/check-isolation`.
+6. **Cross-workspace PowerPitch contract** — `sc-saas-backend` calls `power-pitch-sanchiconnect-api`'s `/v1/externals/*` endpoints via `PowerPitchExternalService`. Tenant identity is conveyed by `x-hostname` header; session token obtained via `POST /v1/externals/create-session` is cached and refreshed 10 min before JWT expiry. Any endpoint rename, DTO change, or auth model change in the external module **must** be checked against `sc-saas-backend/src/core/services/power-pitch-external.service.ts`.
 
 ## Where do I look for X?
 
@@ -65,6 +68,8 @@ Blast radius: **tenants → backend → {frontend, admin}**. A change in `tenant
 - **Platform operator roles & permissions** → `sanchiconnect-saas-tenants-admin/config/config.php` (role IDs from ENV) + `modules/auth/admins.php`
 - **Tenants-admin global settings (encrypted)** → `sanchiconnect-saas-tenants-admin/modules/developer/settings_management.php` + `spa_settings` table in tenants DB
 - **Tenants-admin email / API configuration** → `sanchiconnect-saas-tenants-admin/modules/developer/` (email_management, api_management)
+- **How the backend calls PowerPitch (create-session, video, transcript)** → `sc-saas-backend/src/core/services/power-pitch-external.service.ts`
+- **PowerPitch external module (the receiving end in SanchiPowerpitch)** → `power-pitch-sanchiconnect-api/src/modules/external/` (SanchiPowerpitch workspace)
 
 ## Specs (structured work orders)
 
