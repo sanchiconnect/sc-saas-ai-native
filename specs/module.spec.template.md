@@ -1,6 +1,6 @@
 ---
 module: <module name>
-repo: <tenants | backend | frontend | admin>
+repo: <tenants | backend | frontend | admin | ai-startups-analyzer | sc-saas-3rdparty-webservices | sanchiconnect-saas-tenants-admin>
 type: module
 status: draft                   # draft → approved → in-progress → in-review → done
 owns:

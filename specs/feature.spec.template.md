@@ -5,7 +5,7 @@ type: feature
 status: draft                   # draft → approved → in-progress → in-review → done
 linear: <https://linear.app/...>
 owner: <name@sanchiconnect.com>
-repos: []                       # subset of [tenants, backend, frontend, admin] — DEPENDENCY ORDER
+repos: []                       # subset of [tenants, backend, frontend, admin, ai-startups-analyzer, sc-saas-3rdparty-webservices, sanchiconnect-saas-tenants-admin] — DEPENDENCY ORDER
 contracts:
   api: []                       # backend routes added/changed, e.g. "POST api/v1/foo/bar"
   flags: []                     # snake_case flag names touched
@@ -42,8 +42,8 @@ Omit repos not touched. Cite real files/modules.>
 - ...
 
 ## Contracts & invariants
-<Spell out each item in `contracts`. Then state which of the 5 workspace invariants this touches
-(flag names / API contract / verification shape / auth / tenant scoping) and how it stays safe.>
+<Spell out each item in `contracts`. Then state which of the 6 workspace invariants this touches
+(flag names / API contract / verification shape / auth / tenant scoping / cross-workspace PowerPitch contract) and how it stays safe.>
 - **Flags:** ...
 - **API:** ...
 - **Events:** ...

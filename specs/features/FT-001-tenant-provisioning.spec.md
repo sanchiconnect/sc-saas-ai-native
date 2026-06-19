@@ -22,7 +22,7 @@ tenants_modules:
   - sanchiconnect-saas-tenants/src/modules/tenants/module.spec.md
   - sanchiconnect-saas-tenants/src/modules/global/module.spec.md
 backend_modules:
-  - sc-saas-backend/src/core/services/module.spec.md
+  - sc-saas-backend/src/modules/global/module.spec.md
 frontend_specs:
   - sc-saas-frontend/src/app/core/domain/module.spec.md
 admin_modules:

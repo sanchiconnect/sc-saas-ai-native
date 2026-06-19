@@ -5,8 +5,8 @@ This workspace is configured for AI-native development with Claude Code. SanchiS
 ## What was created
 
 ### Layered memory (CLAUDE.md)
-- **`CLAUDE.md`** (workspace root) — the constitution: platform overview, blast-radius graph, the 5 cross-repo invariants, a "where do I look for X" index, and global guardrails.
-- **`<repo>/CLAUDE.md`** — one per repo (tenants, backend, frontend, admin): purpose, exact run/test/build/lint commands, module map, conventions, and "contracts I own / consume".
+- **`CLAUDE.md`** (workspace root) — the constitution: platform overview, blast-radius graph, the 6 cross-repo invariants, a "where do I look for X" index, and global guardrails.
+- **`<repo>/CLAUDE.md`** — one per repo (all 7 repos: tenants, backend, frontend, admin, ai-startups-analyzer, sc-saas-3rdparty-webservices, sanchiconnect-saas-tenants-admin): purpose, exact run/test/build/lint commands, module map, conventions, and "contracts I own / consume".
 
 ### Workspace `.claude/` orchestration (root)
 - **`settings.json`** — the four repos as `permissions.additionalDirectories`; allow read/test/lint freely; `ask` on `git push`/commit/deploy/publish; `deny` reads of secrets (`.env`, `*.pem`, `*.key`, `db_settings.php`) and writes to `.env`; the PreToolUse hook.
@@ -18,9 +18,9 @@ This workspace is configured for AI-native development with Claude Code. SanchiS
 ### Commands (`.claude/commands/*.md`)
 | Command | Purpose |
 |---|---|
-| `/onboard` | Summarize the platform for a new contributor (reads all 5 CLAUDE.md). |
+| `/onboard` | Summarize the platform for a new contributor (reads all 7 CLAUDE.md). |
 | `/catchup` | Summarize in-flight work across all 4 repos' branches (git status/log/diff). |
-| `/cross-repo-review [scope]` | Review the pending diff against the 5 invariants before PRs (→ `cross-repo-reviewer`). |
+| `/cross-repo-review [scope]` | Review the pending diff against the 6 invariants before PRs (→ `cross-repo-reviewer`). |
 | `/plan-feature <desc>` | Per-repo change plan (repos, modules, contract/flag impact, migrations, sequencing, tests) — no code. |
 | `/trace-flag <flag>` | Trace a flag tenants→backend→frontend→admin, with orphans (→ `feature-flag-mapper`). |
 | `/audit-contract [scope]` | Backend-vs-consumers API drift (→ `api-contract-auditor`). |
@@ -42,6 +42,7 @@ Read-only cross-repo primitives: `cross-repo-reviewer`, `feature-flag-mapper`, `
   - All 26 `sc-saas-frontend` modules have specs. Master index: `specs/frontend-module-specs-index.md`.
   - All 22 `sc-saas-admin` modules have specs (PHP/Medoo/sparkAdminTpl) as of 2026-06-18. Master index: `specs/admin-module-specs-index.md`.
   - **`ai-startups-analyzer`**: 5 module specs (Python/FastAPI, scoring engine, AI provider facade, enrichment), master index at `specs/ai-analyzer-module-specs-index.md`, as of 2026-06-18.
+  - **`sc-saas-3rdparty-webservices`**: 7 module specs (sms, sendGrid, ses, cometChat, videoSDK, shortIo, convertKit), master index at `specs/3rdparty-webservices-module-specs-index.md`, as of 2026-06-19.
 - **Admin feature specs:** 12 feature specs exist for admin-facing work (FA-001 through FA-008) at `specs/features/FA-00X-*.spec.md`.
 - **Tenants feature specs:** 4 feature specs exist for control-plane work (FT-001 through FT-004) at `specs/features/FT-00X-*.spec.md`.
 - **AI analyzer feature specs:** 2 AI analyzer feature specs (FAI-001 Application Scoring, FAI-002 Enrichment & Thesis) at `specs/features/FAI-00X-*.spec.md`.

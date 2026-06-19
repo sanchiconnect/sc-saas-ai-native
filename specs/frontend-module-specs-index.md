@@ -104,6 +104,15 @@ All 26 `sc-saas-frontend` modules have a `module.spec.md`. This index maps each 
 
 ---
 
+## Pitch Deck
+
+| Module | Spec | Angular Modules Covered | Key Flags | Backend Modules Called |
+|---|---|---|---|---|
+| `pitch-deck-management` | [spec](../sc-saas-frontend/src/app/modules/pitch-deck-management/module.spec.md) | `PitchDeckManagementComponent`, `ConnectPowerPitchModalComponent`, `PowerPitchEditPageWrapperComponent` | `video_pitch_mandatory`, `video_types` | `power-pitch-module` (pp-api via PowerPitchExternalService) |
+| `pitch-deck-recorder` | [spec](../sc-saas-frontend/src/app/modules/pitch-deck-recorder/module.spec.md) | `PitchDeckRecorderModule`, `DeckWebcamRecorderComponent` | `video_pitch_mandatory` | *(legacy — current flow routes through ConnectPowerPitchModal)* |
+
+---
+
 ## Security findings summary (surfaced by spec authoring)
 
 These findings were captured in module `Watch out for` sections. They are **not fixed here** — they are documented for awareness and prioritisation.
