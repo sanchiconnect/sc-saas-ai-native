@@ -1,0 +1,12 @@
+# Workspace-root orchestration is local-only (poly-repo: each repo has its own .git).
+# Promote this root to its own repo later if you want to share the orchestration.
+.DS_Store
+
+# Machine-specific Claude Code overrides
+.claude/settings.local.json
+
+# The four product repos are independently cloned and versioned — never nest them here.
+/sanchiconnect-saas-tenants/
+/sc-saas-backend/
+/sc-saas-frontend/
+/sc-saas-admin/

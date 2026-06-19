@@ -1,0 +1,129 @@
+---
+id: FE-010
+title: Learning Management (LMS)
+type: feature
+status: draft
+repos:
+  - frontend
+  - backend
+contracts:
+  api:
+    - GET api/v1/learning-management/categories
+    - GET api/v1/learning-management/courses
+    - GET api/v1/learning-management/courses/:slug
+    - GET api/v1/learning-management/courses/:courseUuid/reviews
+    - GET api/v1/learning-management/videos/:videoAssetId/hls-url
+    - POST api/v1/learning-management/courses/:courseUuid/enroll
+    - GET api/v1/learning-management/my-courses
+    - GET api/v1/learning-management/my-courses/:courseUuid
+    - POST api/v1/learning-management/lessons/:lessonUuid/progress
+    - GET api/v1/learning-management/courses/:courseUuid/progress
+    - GET api/v1/learning-management/quizzes/:quizUuid
+    - POST api/v1/learning-management/quizzes/:quizUuid/attempts
+    - POST api/v1/learning-management/attempts/:attemptUuid/answers
+    - POST api/v1/learning-management/attempts/:attemptUuid/submit
+    - GET api/v1/learning-management/attempts/:attemptUuid/results
+    - POST api/v1/learning-management/courses/:courseUuid/reviews
+    - PATCH api/v1/learning-management/reviews/:reviewUuid
+    - GET api/v1/payments/verify/:moduleType/:courseId/:userId
+  flags:
+    - learning_management
+    - certificates
+  events: []
+tenant_scoped: true
+depends_on:
+  - FE-008
+updated: 2026-06-17
+---
+
+# FE-010 — Learning Management (LMS)
+
+## Summary
+
+Tenant LMS: course catalogue browsing (public reads, flag-gated), enrollment lifecycle (STARTUP role only), lesson progress tracking, HLS video delivery via CloudFront signed URLs, quiz attempts with server-side grading (max 3 per enrollment), and automatic certificate generation on 100% course completion. Video transcoding to HLS is triggered by an admin-side pipeline via AWS MediaConvert. The `certificates` module provides the certificate read surface.
+
+## Frontend entry points
+
+Module spec:
+- `sc-saas-frontend/src/app/modules/learning-management/module.spec.md`
+
+Routes (lazy-loaded, all nested under `ProtectedLayoutWrapperComponent`, registered under `/learning`):
+
+| Path | Component | Auth / Role |
+|---|---|---|
+| `/learning/courses` | `CourseCatalogComponent` | Any authenticated (backend public) |
+| `/learning/courses/:slug` | `CourseDetailComponent` | Any authenticated |
+| `/learning/my-courses` | `MyCoursesComponent` | STARTUP role |
+| `/learning/my-courses/:courseUuid/learn` | `CoursePlayerComponent` | STARTUP role |
+| `/learning/:courseUuid/quiz/:quizId` | `QuizPlayerComponent` | STARTUP role |
+| `/learning/:courseUuid/quiz/:quizId/results/:attemptId` | `QuizResultsComponent` | STARTUP role |
+
+The frontend must gate `/my-courses`, `/learn`, and `/quiz` routes with an Angular role guard before navigation — the backend returns 403 for non-STARTUP roles, but the UX must prevent blind attempts. All service calls go through `LearningManagementService` (`modules/learning-management/services/learning-management.service.ts`).
+
+Flag check: `features.learning_management` from `core/state/global/` (NgRx `getBrandDetails()`). No dedicated NgRx slice for LMS — all state is component-local.
+
+Libraries: `video.js` for HLS playback. `CheckoutModule` (from `payment/checkout`) is imported into `LearningManagementModule` for paid course enrollment in `CourseDetailComponent`.
+
+## Backend modules
+
+Module specs:
+- `sc-saas-backend/src/modules/learning-management/module.spec.md`
+- `sc-saas-backend/src/modules/certificates/module.spec.md`
+
+`LearningManagementController` (path `learning-management`, v1, class `@UseGuards(FeatureGuard)`):
+
+| Auth level | Routes |
+|---|---|
+| No JWT (public) | `GET categories`, `GET courses`, `GET courses/:slug`, `GET courses/:courseUuid/reviews` |
+| **Fully open (no FeatureGuard, no JWT)** | `GET videos/:videoAssetId/hls-url` |
+| JWT + Role.STARTUP | All enrollment, progress, quiz, and review routes |
+| adminMd5 only (no JWT, guards commented out) | `POST videos/process-hls/:adminMd5`, `GET videos/process-hls-status/:adminMd5/:videoAssetId` |
+
+`CertificatesController` (path `certificates`, v1): all routes gated by `@Features(Feature.CERTIFICATES)`. `GET /` and `GET course/:enrollmentId` require `JwtAuthGuard`. `GET verify/:certificateNumber` is unauthenticated (still flag-gated).
+
+## Data flow
+
+1. **Catalogue** — `GET courses` (paginated; query: `page`, `limit`, `search`, `categoryId`, `level`, `language`) feeds `CourseCatalogComponent`. `GET courses/:slug` feeds `CourseDetailComponent` with preview-lesson info.
+2. **Enrollment** — `POST courses/:courseUuid/enroll` (STARTUP only). Body: `{ priceCode, paymentProvider, orderNumber?, providerRef? }`. Paid courses require prior payment verification; `LearningManagementService.getCourseVerifyPayment()` calls `GET payments/verify/:moduleType/:courseId/:userId` before allowing enrollment CTA.
+3. **Video delivery** — `VideoPlayerComponent` calls `GET videos/:videoAssetId/hls-url` before initialising `video.js`. Returns a CloudFront signed URL (generated by `CloudfrontSignerService` using `cloudfront-private-key.pem`). `video.js` must receive `type: 'application/x-mpegURL'` for HLS streams.
+4. **Lesson progress** — `POST lessons/:lessonUuid/progress` (body: `{ lastPositionSec?, completed? }`). Called on video time-update events — must be debounced aggressively (e.g. every 30 s or on pause/seek) to avoid flooding the backend.
+5. **Course progress & certificate** — `GET courses/:courseUuid/progress` (STARTUP). Called after every lesson-progress update. Backend auto-generates a certificate via `CertificatesRepository.courseGenerateNewCertificate` when all lessons, quizzes, and sections reach 100% completion. Generation is idempotent.
+6. **Quiz flow** — `POST quizzes/:quizUuid/attempts` (max 3 per enrollment), `POST attempts/:attemptUuid/answers` (one answer per call), `POST attempts/:attemptUuid/submit` (trigger server-side grading), `GET attempts/:attemptUuid/results`. Answer options with `isCorrect` are stripped before returning questions — never rely on the questions list for answer checking.
+7. **Admin video pipeline** — `POST videos/process-hls/:adminMd5` triggers AWS MediaConvert job. `GET videos/process-hls-status/:adminMd5/:videoAssetId` polls job status. Both routes have `JwtAuthGuard` commented out; auth is solely via `adminMd5`.
+8. **Certificate read** — `GET certificates` (`?type=course`) returns the user's course certificates. `GET certificates/course/:enrollmentId` returns the certificate for a specific enrollment. `GET certificates/verify/:certificateNumber` is a public verification endpoint (still flag-gated on `certificates`).
+
+## Feature flags
+
+- `learning_management` — gates all LMS routes except `GET videos/:videoAssetId/hls-url` (which has NO gate and NO JWT). The Angular module must render an empty / 403 state if `features.learning_management` is falsy — do not rely solely on the backend 403.
+- `certificates` — gates all certificate routes. `GET verify/:certificateNumber` is still flag-gated even though it is unauthenticated — disabling `certificates` also disables public certificate verification.
+
+Both flags must exist in the cockpit. Run `/trace-flag learning_management` and `/trace-flag certificates` before any rename.
+
+## API contract
+
+- `enrollInCourse` body includes `paymentProvider` — the exact string must match `CheckoutModule`'s gateway identifiers. Mismatches cause backend validation errors.
+- `getCourseProgress()` is a side-effectful read: it triggers certificate generation. Call it after every lesson-progress update, not just on explicit user action.
+- Quiz `quizUuid` param note: the backend backend route is `GET quizzes/:courseUUID` (course UUID, not quiz UUID) for the quiz list, but `POST quizzes/:quizUuid/attempts` uses the quiz UUID. The frontend spec lists both as `quizUuid`; confirm the first route's actual param semantics.
+- REVOKED and REFUNDED enrollment statuses permanently block re-purchase. The frontend should surface this state to the user rather than presenting the checkout CTA.
+
+## Auth & security
+
+Cross-repo security gap (critical):
+
+**`GET api/v1/learning-management/videos/:videoAssetId/hls-url` is entirely unprotected.** Both `@Features(Feature.LEARNING_MANAGEMENT)` and `@UseGuards(JwtAuthGuard)` decorators are commented out on this handler. The endpoint returns a CloudFront signed HLS URL for any `videoAssetId` UUID without any authentication or feature gate. The frontend's navigation guard — only enrolled STARTUP users reach `CoursePlayerComponent` — is the sole access control layer. This means:
+- Anyone who discovers a `videoAssetId` (e.g. through enumeration or log leakage) can stream HLS video without enrolling or authenticating.
+- Disabling the `learning_management` flag does NOT gate HLS URL delivery.
+- There is no server-side check that the caller is enrolled in the course containing this video.
+
+Additional security notes:
+- `POST/GET videos/process-hls*` have `JwtAuthGuard` commented out — auth is solely the `:adminMd5` token. Exposure of the admin `authToken` allows unauthenticated MediaConvert jobs against any `videoAssetId`.
+- `GET certificates/verify/:certificateNumber` is intentionally public but still flag-gated. `certificateNumber` may contain `/` characters (matched via `[^?]+` pattern) — do not change the param to a plain `:param` or certificate numbers like `CERT-ISBA/202606050001` will 404.
+
+## Known issues / Watch out for
+
+- **`CertificatesRepository` is injected directly as a provider inside `LearningManagementModule`** (not via module import). Tight coupling outside the module boundary — if `CertificatesModule` changes its repository signature, `LearningManagementModule` breaks silently.
+- **`getMediaConvertJobStatus` updates `videoAsset.thumbnailUrl`** from the job output but the HLS m3u8 extraction is commented out. `hlsUrl` is set manually during `processVideoForHls`. If the MediaConvert output path changes, the thumbnail will break silently and the HLS URL will not update automatically.
+- **Only `Role.STARTUP` can enroll and track progress** — other authenticated roles (INVESTOR, MENTOR, etc.) are blocked even if they have the feature flag. Confirm whether this restriction is intentional before expanding LMS access to other account types.
+- **Course catalogue routes (`GET courses`, `GET courses/:slug`) are public on the backend.** They may return commercially sensitive preview or pricing information. Verify the `isPublished` filter is properly applied in `LearningManagementRepository.findPublishedCourses`.
+- **`video.js` must be destroyed** (`player.dispose()`) in `ngOnDestroy` to prevent memory leaks and dangling media elements when navigating away from `CoursePlayerComponent`.
+- **`membership` certificate type**: `CertificateTypes.MEMBERSHIP` exists in the entity and a separate `certificates_membership` flag exists in the cockpit, but `CertificatesController` gates only on `certificates`. Confirm whether membership certificates should additionally gate on `certificates_membership`.
