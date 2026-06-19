@@ -19,22 +19,23 @@ Multi-tenant SaaS platform for startup incubators and accelerators. Built as a *
 │  End-user PWA          │◄──│  Business API (REST)               │
 │  Angular 13 · NgRx     │   │  NestJS 8 · TypeORM · MySQL        │
 │  PWA · TypeScript      │   │  One deployment per tenant         │
-└────────────────────────┘   └──────────────┬─────────────────────┘
-                                            │ API calls
-                             ┌──────────────▼─────────────────────┐
-                             │  sc-saas-admin                     │
-                             │  Admin panel (operations)          │
-                             │  PHP · Medoo · sparkAdminTpl        │
-                             └──────────────┬─────────────────────┘
-                                            │ scoring requests
-                             ┌──────────────▼─────────────────────┐
-                             │  ai-startups-analyzer              │
-                             │  LLM-based application scoring     │
-                             │  Python 3.10+ · FastAPI · MySQL     │
-                             └────────────────────────────────────┘
+└────────────────────────┘   └────┬──────────────────┬────────────┘
+                                  │ API calls         │ SMS/email/video
+                                  │                   │ chat/URL/docs
+                    ┌─────────────▼──────┐  ┌─────────▼──────────────┐
+                    │  sc-saas-admin     │  │  sc-saas-3rdparty-     │
+                    │  Admin panel (ops) │  │  webservices           │
+                    │  PHP · Medoo       │  │  Integration gateway   │
+                    └──────────┬─────────┘  │  NestJS 9 · TypeScript │
+                               │ scoring    └────────────────────────┘
+                    ┌──────────▼─────────┐
+                    │  ai-startups-      │
+                    │  analyzer          │
+                    │  Python · FastAPI  │
+                    └────────────────────┘
 ```
 
-**Blast radius:** `tenants → backend → {frontend, admin}`. The AI analyzer is a leaf — it never calls back.
+**Blast radius:** `tenants → backend → {frontend, admin}`. The AI analyzer and the 3rdparty webservices gateway are both leaf nodes — neither calls back into any other SanchiSaaS repo.
 
 ---
 
@@ -154,6 +155,36 @@ A standalone LLM-based scoring service that evaluates startup applications again
 
 ---
 
+### 6. `sc-saas-3rdparty-webservices` — Integration Gateway
+
+**Stack:** NestJS 9 · TypeScript · axios · nodemailer · short.io SDK · convertapi SDK
+
+A stateless microservice that centralises every third-party API integration in one place. Instead of spreading API keys and SDK dependencies across other repos, the backend's `core/services/` layer calls this gateway over HTTP for all external communications. The gateway talks to the actual provider and returns a normalised response.
+
+**No database, no auth on its own endpoints.** It is an internal service — relies on network/firewall isolation. Never expose it publicly without adding auth middleware.
+
+**Seven integration categories:**
+
+| Module | Provider | What it does |
+|---|---|---|
+| `sms` | Auth.key.io | Send OTP SMS |
+| `sendGrid` | SendGrid | Email delivery (primary) |
+| `ses` | SMTP / AWS SES | Email delivery (fallback, supports per-call custom SMTP) |
+| `cometChat` | CometChat | Real-time chat — user/group/message management |
+| `videoSDK` | VideoSDK | Video meeting creation + session management (v1 + v2) |
+| `shortIo` | Short.io | URL shortening + encrypted authenticated action links |
+| `convertKit` | ConvertAPI | Document conversion (PPT → PNG) |
+
+**Authenticated action links** — the `shortIo` module uses AES-256-CBC encryption (`ENCRYPTION_KEY`) to embed user tokens and UUIDs into short links sent via email, so recipients can take authenticated actions (accept connection, join meeting, view profile) without a separate login step.
+
+**Connects to:**
+- `sc-saas-backend` — the only caller. Backend holds the gateway's base URL in `saasSettings[SaaSSettingKey.THIRD_PARTY_SERVICE_BASE_URL]` (loaded from the cockpit at bootstrap). All six of the backend's integration service files (`sms.service.ts`, `ses-email.service.ts`, `video-sdk.service.ts`, `comet-chat.service.ts`, `url.service.ts`, `convertapi.service.ts`) call this gateway exclusively — no other repo calls it.
+- External providers (Auth.key.io, SendGrid, CometChat, VideoSDK, Short.io, ConvertAPI, Amazon S3) — one-way outbound only.
+
+> `ENCRYPTION_KEY` must never be rotated without a plan — all Short.io action links already delivered to users will break immediately.
+
+---
+
 ## Repository Access
 
 All five repositories are private and hosted under the [sanchiconnect](https://github.com/sanchiconnect) GitHub organization. You need collaborator access to each repo you intend to work on.
@@ -170,6 +201,7 @@ All five repositories are private and hosted under the [sanchiconnect](https://g
    | `sc-saas-frontend` | github.com/sanchiconnect/sc-saas-frontend |
    | `sc-saas-admin` | github.com/sanchiconnect/sc-saas-admin |
    | `ai-startups-analyzer` | github.com/sanchiconnect/ai-startups-analyzer |
+   | `sc-saas-3rdparty-webservices` | github.com/sanchiconnect/sc-saas-3rdparty-webservices |
 
 3. Share your GitHub username with an existing organization owner and ask them to send you a collaborator invite from **Settings → Collaborators and teams** on each repo you need.
 4. Accept the invite from your GitHub notifications or the email GitHub sends you.
@@ -185,6 +217,7 @@ git clone https://github.com/sanchiconnect/sc-saas-backend
 git clone https://github.com/sanchiconnect/sc-saas-frontend
 git clone https://github.com/sanchiconnect/sc-saas-admin
 git clone https://github.com/sanchiconnect/ai-startups-analyzer
+git clone https://github.com/sanchiconnect/sc-saas-3rdparty-webservices
 ```
 
 > You do not need access to all five repos to contribute. Request only the repos relevant to your work. The blast-radius order (tenants → backend → frontend / admin) is a good guide — start with the repos furthest downstream from your change.
@@ -264,6 +297,65 @@ npm start              # ng serve --configuration local → http://localhost:420
 ### sc-saas-admin (Admin Panel)
 
 PHP application — serve via your local PHP server (Apache/Nginx + PHP). Configure `config/config.php` with the tenant DB credentials and `api_server_url` pointing to the backend.
+
+### sc-saas-3rdparty-webservices (Integration Gateway)
+
+This service has no database — no `CREATE DATABASE` step needed. Copy `.env` and fill in third-party API keys:
+
+```bash
+cd sc-saas-3rdparty-webservices
+npm install
+cp .env.example .env   # no .env.example exists yet — create .env manually
+```
+
+Minimum required `.env` to start (fill in keys for the integrations you need locally):
+
+```env
+NODE_ENV=development
+PORT=3002
+FRONTEND_URL=http://localhost:4200
+ENCRYPTION_KEY=<32-char-base64-string>
+
+# Add keys only for providers you need locally:
+SENDGRID_KEY=
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASSWORD=
+CCHAT_REGION=us
+CCHAT_APPID=
+CCHAT_AUTHKEY=
+CCHAT_RESTAPIKEY=
+VIDEOSDK_REGION=us
+VIDEOSDK_API_KEY=
+VIDEOSDK_API_SECRET=
+VIDEOSDK_API_ENDPOINT=https://api.videosdk.live
+SHORT_IO_KEY=
+SHORT_IO_DOMAIN=
+SHORT_IO_DOMAIN_ID=
+CONVERTAPI_APIKEY=
+CONVERTAPI_APISECRET=
+AUTHKEYIO_APIKEY=
+AUTHKEYIO_SENDERID=
+AUTHKEYIO_OTPTEMPLATEID=
+MESSAGE_API_URL=
+AMAZON_S3_ENDPOINT=
+AMAZON_REGION=
+AMAZON_ACCESS_KEY_ID=
+AMAZON_SECRET_ACCESS_KEY=
+AMAZON_S3_BUCKET=
+```
+
+```bash
+npm run start:dev      # NestJS watch mode → http://localhost:3002
+# Swagger docs available at /api/docs (non-production only)
+```
+
+Then point the backend at it by adding to the backend's `.env`:
+
+```env
+THIRD_PARTY_SERVICE_BASE_URL=http://localhost:3002/api
+```
 
 ### ai-startups-analyzer (AI Scoring)
 

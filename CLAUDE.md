@@ -9,6 +9,7 @@ SanchiSaaS is one product built from **four independently-versioned, independent
 | `sc-saas-frontend` | **End-user PWA.** Consumes tenants (verify) then backend (business). | Angular 13, NgRx, PWA |
 | `sc-saas-admin` | **Admin panel.** Consumes the backend API; reads tenant DB directly. | PHP, Medoo, sparkAdminTpl |
 | `ai-startups-analyzer` | **AI scoring service.** LLM-based startup application evaluation; called by sc-saas-admin; supports OpenAI/Anthropic/Gemini via DEFAULT_PROVIDER. | Python 3.10+, FastAPI, SQLAlchemy (async), MySQL |
+| `sc-saas-3rdparty-webservices` | **Integration gateway.** Centralises all third-party API calls (SMS, email, video, chat, URL shortening, document conversion). Called only by sc-saas-backend. Stateless — no DB. | NestJS 9, TypeScript |
 
 ## Blast-radius graph
 
@@ -19,6 +20,7 @@ graph TD
     F["frontend (PWA)"]
     A["admin (PHP)"]
     AI["ai-startups-analyzer<br/>LLM scoring service"]
+    W["sc-saas-3rdparty-webservices<br/>Integration gateway (stateless)"]
     T -->|verify_tenant / tenant-settings| F
     T -->|bootstrap config + ecosystem| B
     F -->|business calls via dynamic apiUrl| B
@@ -26,9 +28,11 @@ graph TD
     A -.->|reads tenant_users + per-tenant DB| T
     A -->|score runs via HTTP| AI
     AI -.->|never calls back — results polled by admin| A
+    B -->|SMS / email / video / chat / URL / docs| W
+    W -.->|never calls back — leaf node| B
 ```
 
-Blast radius: **tenants → backend → {frontend, admin}**. A change in `tenants` can reach all three; a change in `backend` can reach frontend + admin. `ai-startups-analyzer` is called only by admin and never pushes results — it is a leaf node with no downstream blast radius.
+Blast radius: **tenants → backend → {frontend, admin}**. A change in `tenants` can reach all three; a change in `backend` can reach frontend + admin. `ai-startups-analyzer` is called only by admin and never pushes results — it is a leaf node with no downstream blast radius. `sc-saas-3rdparty-webservices` is called only by the backend and is also a leaf node — it proxies to external providers and never calls any other SanchiSaaS repo.
 
 ## Cross-repo invariants (HARD RULES — never silently break)
 
@@ -47,6 +51,13 @@ Blast radius: **tenants → backend → {frontend, admin}**. A change in `tenant
 - **The tenant-verification API** → `sanchiconnect-saas-tenants/src/modules/global/global.controller.ts`
 - **Tenant DB selection (admin)** → `sc-saas-admin/config/config.php`
 - **How the frontend calls the backend** → `sc-saas-frontend/src/app/core/service/api-endpoint.service.ts` + `core/service/*`
+- **SMS / OTP sending** → `sc-saas-3rdparty-webservices/src/modules/sms/` (called by `sc-saas-backend/src/core/services/sms.service.ts`)
+- **Email delivery (SendGrid or SMTP)** → `sc-saas-3rdparty-webservices/src/modules/sendGrid/` and `ses/` (called by `sc-saas-backend/src/core/services/ses-email.service.ts`)
+- **Video meetings (VideoSDK)** → `sc-saas-3rdparty-webservices/src/modules/videoSDK/` (called by `sc-saas-backend/src/core/services/video-sdk.service.ts`)
+- **Real-time chat (CometChat)** → `sc-saas-3rdparty-webservices/src/modules/cometChat/` (called by `sc-saas-backend/src/core/services/comet-chat.service.ts`)
+- **Short URLs / action links** → `sc-saas-3rdparty-webservices/src/modules/shortIo/` (called by `sc-saas-backend/src/core/services/url.service.ts`)
+- **Document conversion (PPT→PNG)** → `sc-saas-3rdparty-webservices/src/modules/convertKit/` (called by `sc-saas-backend/src/core/services/convertapi.service.ts`)
+- **Base URL for the gateway** → `sc-saas-backend/src/core/constants/enum.ts` (`SaaSSettingKey.THIRD_PARTY_SERVICE_BASE_URL` in `saasSettings`)
 
 ## Specs (structured work orders)
 
