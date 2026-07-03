@@ -1,0 +1,873 @@
+{
+  "telemetry_window_days": 30,
+  "window_start": "2026-05-04T00:00:00Z",
+  "window_end": "2026-06-03T23:59:59Z",
+  "total_sessions_in_window": 18420,
+  "note": "calls_per_session is computed as calls_30d / total_sessions_in_window for scoring",
+  "tools": [
+    {
+      "server": "crm_server",
+      "name": "lookup_customer",
+      "calls_30d": 847,
+      "calls_7d": 201,
+      "last_called": "2026-06-03T07:54:11Z",
+      "error_rate": 0.02,
+      "avg_latency_ms": 142
+    },
+    {
+      "server": "crm_server",
+      "name": "create_case",
+      "calls_30d": 312,
+      "calls_7d": 78,
+      "last_called": "2026-06-03T07:41:33Z",
+      "error_rate": 0.03,
+      "avg_latency_ms": 198
+    },
+    {
+      "server": "crm_server",
+      "name": "add_note",
+      "calls_30d": 289,
+      "calls_7d": 71,
+      "last_called": "2026-06-03T07:38:02Z",
+      "error_rate": 0.01,
+      "avg_latency_ms": 110
+    },
+    {
+      "server": "crm_server",
+      "name": "get_cases",
+      "calls_30d": 276,
+      "calls_7d": 69,
+      "last_called": "2026-06-03T07:35:47Z",
+      "error_rate": 0.02,
+      "avg_latency_ms": 134
+    },
+    {
+      "server": "crm_server",
+      "name": "close_case",
+      "calls_30d": 198,
+      "calls_7d": 51,
+      "last_called": "2026-06-03T07:22:18Z",
+      "error_rate": 0.01,
+      "avg_latency_ms": 155
+    },
+    {
+      "server": "crm_server",
+      "name": "update_account",
+      "calls_30d": 143,
+      "calls_7d": 37,
+      "last_called": "2026-06-03T06:58:40Z",
+      "error_rate": 0.04,
+      "avg_latency_ms": 178
+    },
+    {
+      "server": "crm_server",
+      "name": "transfer_case",
+      "calls_30d": 87,
+      "calls_7d": 19,
+      "last_called": "2026-06-03T05:14:22Z",
+      "error_rate": 0.02,
+      "avg_latency_ms": 163
+    },
+    {
+      "server": "crm_server",
+      "name": "merge_accounts",
+      "calls_30d": 14,
+      "calls_7d": 3,
+      "last_called": "2026-06-01T14:30:05Z",
+      "error_rate": 0.07,
+      "avg_latency_ms": 412
+    },
+    {
+      "server": "database_server",
+      "name": "get_customer_history",
+      "calls_30d": 534,
+      "calls_7d": 128,
+      "last_called": "2026-06-03T07:52:09Z",
+      "error_rate": 0.01,
+      "avg_latency_ms": 88
+    },
+    {
+      "server": "database_server",
+      "name": "search_tickets",
+      "calls_30d": 421,
+      "calls_7d": 104,
+      "last_called": "2026-06-03T07:49:33Z",
+      "error_rate": 0.02,
+      "avg_latency_ms": 97
+    },
+    {
+      "server": "database_server",
+      "name": "query_conversations",
+      "calls_30d": 318,
+      "calls_7d": 80,
+      "last_called": "2026-06-03T07:43:17Z",
+      "error_rate": 0.01,
+      "avg_latency_ms": 104
+    },
+    {
+      "server": "database_server",
+      "name": "update_ticket",
+      "calls_30d": 267,
+      "calls_7d": 64,
+      "last_called": "2026-06-03T07:30:44Z",
+      "error_rate": 0.03,
+      "avg_latency_ms": 122
+    },
+    {
+      "server": "database_server",
+      "name": "get_metrics",
+      "calls_30d": 42,
+      "calls_7d": 9,
+      "last_called": "2026-06-02T16:04:22Z",
+      "error_rate": 0.00,
+      "avg_latency_ms": 74
+    },
+    {
+      "server": "database_server",
+      "name": "archive_conversation",
+      "calls_30d": 8,
+      "calls_7d": 1,
+      "last_called": "2026-05-31T22:11:47Z",
+      "error_rate": 0.00,
+      "avg_latency_ms": 215
+    },
+    {
+      "server": "email_server",
+      "name": "send_notification",
+      "calls_30d": 392,
+      "calls_7d": 96,
+      "last_called": "2026-06-03T07:47:55Z",
+      "error_rate": 0.04,
+      "avg_latency_ms": 328
+    },
+    {
+      "server": "email_server",
+      "name": "send_template",
+      "calls_30d": 176,
+      "calls_7d": 44,
+      "last_called": "2026-06-03T06:12:38Z",
+      "error_rate": 0.03,
+      "avg_latency_ms": 354
+    },
+    {
+      "server": "email_server",
+      "name": "check_delivery_status",
+      "calls_30d": 88,
+      "calls_7d": 21,
+      "last_called": "2026-06-03T04:50:12Z",
+      "error_rate": 0.01,
+      "avg_latency_ms": 142
+    },
+    {
+      "server": "email_server",
+      "name": "schedule_email",
+      "calls_30d": 31,
+      "calls_7d": 7,
+      "last_called": "2026-06-02T18:33:20Z",
+      "error_rate": 0.06,
+      "avg_latency_ms": 267
+    },
+    {
+      "server": "knowledge_base_server",
+      "name": "search_articles",
+      "calls_30d": 611,
+      "calls_7d": 152,
+      "last_called": "2026-06-03T07:55:02Z",
+      "error_rate": 0.01,
+      "avg_latency_ms": 218
+    },
+    {
+      "server": "knowledge_base_server",
+      "name": "get_article",
+      "calls_30d": 489,
+      "calls_7d": 121,
+      "last_called": "2026-06-03T07:53:44Z",
+      "error_rate": 0.01,
+      "avg_latency_ms": 94
+    },
+    {
+      "server": "knowledge_base_server",
+      "name": "suggest_article",
+      "calls_30d": 234,
+      "calls_7d": 57,
+      "last_called": "2026-06-03T07:28:11Z",
+      "error_rate": 0.02,
+      "avg_latency_ms": 312
+    },
+    {
+      "server": "knowledge_base_server",
+      "name": "get_related",
+      "calls_30d": 118,
+      "calls_7d": 29,
+      "last_called": "2026-06-03T05:41:03Z",
+      "error_rate": 0.01,
+      "avg_latency_ms": 244
+    },
+    {
+      "server": "knowledge_base_server",
+      "name": "rate_article",
+      "calls_30d": 22,
+      "calls_7d": 5,
+      "last_called": "2026-06-01T11:08:56Z",
+      "error_rate": 0.00,
+      "avg_latency_ms": 88
+    },
+    {
+      "server": "billing_server",
+      "name": "get_invoice",
+      "calls_30d": 203,
+      "calls_7d": 50,
+      "last_called": "2026-06-03T07:19:28Z",
+      "error_rate": 0.02,
+      "avg_latency_ms": 167
+    },
+    {
+      "server": "billing_server",
+      "name": "check_payment_status",
+      "calls_30d": 178,
+      "calls_7d": 43,
+      "last_called": "2026-06-03T06:44:52Z",
+      "error_rate": 0.01,
+      "avg_latency_ms": 143
+    },
+    {
+      "server": "billing_server",
+      "name": "get_subscription",
+      "calls_30d": 156,
+      "calls_7d": 39,
+      "last_called": "2026-06-03T06:08:17Z",
+      "error_rate": 0.02,
+      "avg_latency_ms": 138
+    },
+    {
+      "server": "billing_server",
+      "name": "process_refund",
+      "calls_30d": 67,
+      "calls_7d": 14,
+      "last_called": "2026-06-02T22:15:33Z",
+      "error_rate": 0.05,
+      "avg_latency_ms": 542
+    },
+    {
+      "server": "billing_server",
+      "name": "update_billing",
+      "calls_30d": 54,
+      "calls_7d": 12,
+      "last_called": "2026-06-02T19:47:09Z",
+      "error_rate": 0.04,
+      "avg_latency_ms": 234
+    },
+    {
+      "server": "billing_server",
+      "name": "cancel_subscription",
+      "calls_30d": 18,
+      "calls_7d": 4,
+      "last_called": "2026-06-01T16:22:41Z",
+      "error_rate": 0.00,
+      "avg_latency_ms": 389
+    },
+    {
+      "server": "billing_server",
+      "name": "void_charge",
+      "calls_30d": 9,
+      "calls_7d": 2,
+      "last_called": "2026-05-30T10:55:18Z",
+      "error_rate": 0.00,
+      "avg_latency_ms": 311
+    },
+    {
+      "server": "escalation_server",
+      "name": "escalate_to_human",
+      "calls_30d": 264,
+      "calls_7d": 66,
+      "last_called": "2026-06-03T07:33:50Z",
+      "error_rate": 0.01,
+      "avg_latency_ms": 88
+    },
+    {
+      "server": "escalation_server",
+      "name": "log_escalation",
+      "calls_30d": 261,
+      "calls_7d": 65,
+      "last_called": "2026-06-03T07:33:52Z",
+      "error_rate": 0.01,
+      "avg_latency_ms": 72
+    },
+    {
+      "server": "escalation_server",
+      "name": "assign_supervisor",
+      "calls_30d": 48,
+      "calls_7d": 11,
+      "last_called": "2026-06-02T14:07:22Z",
+      "error_rate": 0.02,
+      "avg_latency_ms": 112
+    },
+    {
+      "server": "analytics_server",
+      "name": "get_csat_score",
+      "calls_30d": 38,
+      "calls_7d": 8,
+      "last_called": "2026-06-02T08:00:14Z",
+      "error_rate": 0.00,
+      "avg_latency_ms": 204
+    },
+    {
+      "server": "analytics_server",
+      "name": "get_resolution_rate",
+      "calls_30d": 12,
+      "calls_7d": 3,
+      "last_called": "2026-05-31T09:15:42Z",
+      "error_rate": 0.00,
+      "avg_latency_ms": 188
+    },
+    {
+      "server": "analytics_server",
+      "name": "generate_weekly_report",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "analytics_server",
+      "name": "generate_monthly_report",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "analytics_server",
+      "name": "export_to_data_warehouse",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "analytics_server",
+      "name": "get_agent_scorecard",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "analytics_server",
+      "name": "get_topic_distribution",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "analytics_server",
+      "name": "get_channel_mix",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "analytics_server",
+      "name": "get_handle_time_histogram",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "analytics_server",
+      "name": "run_cohort_analysis",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "analytics_server",
+      "name": "get_sentiment_trend",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "analytics_server",
+      "name": "trigger_ad_hoc_query",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "developer_tools_server",
+      "name": "dump_context_window",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "developer_tools_server",
+      "name": "replay_conversation",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "developer_tools_server",
+      "name": "inspect_tool_calls",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "developer_tools_server",
+      "name": "set_debug_flag",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "developer_tools_server",
+      "name": "force_model_switch",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "developer_tools_server",
+      "name": "export_session_trace",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "developer_tools_server",
+      "name": "mock_tool_response",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "developer_tools_server",
+      "name": "get_latency_breakdown",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "developer_tools_server",
+      "name": "simulate_error",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "developer_tools_server",
+      "name": "compare_responses",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "developer_tools_server",
+      "name": "get_token_counts",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "developer_tools_server",
+      "name": "clear_cache",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "developer_tools_server",
+      "name": "list_experiments",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "developer_tools_server",
+      "name": "reset_session_state",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "developer_tools_server",
+      "name": "health_check",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "legacy_crm_server",
+      "name": "legacy_lookup_customer",
+      "calls_30d": 2,
+      "calls_7d": 0,
+      "last_called": "2026-05-18T11:42:07Z",
+      "error_rate": 0.50,
+      "avg_latency_ms": 2840
+    },
+    {
+      "server": "legacy_crm_server",
+      "name": "legacy_sync_to_salesforce",
+      "calls_30d": 1,
+      "calls_7d": 0,
+      "last_called": "2026-05-09T08:17:33Z",
+      "error_rate": 1.00,
+      "avg_latency_ms": 9200
+    },
+    {
+      "server": "legacy_crm_server",
+      "name": "legacy_update_record",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "legacy_crm_server",
+      "name": "legacy_create_ticket",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "legacy_crm_server",
+      "name": "legacy_get_history",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "legacy_crm_server",
+      "name": "legacy_export_record",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "legacy_crm_server",
+      "name": "legacy_delete_duplicate",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "legacy_crm_server",
+      "name": "legacy_audit_log",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "notification_server",
+      "name": "send_push_notification",
+      "calls_30d": 74,
+      "calls_7d": 17,
+      "last_called": "2026-06-03T03:28:44Z",
+      "error_rate": 0.08,
+      "avg_latency_ms": 412
+    },
+    {
+      "server": "notification_server",
+      "name": "send_sms",
+      "calls_30d": 52,
+      "calls_7d": 13,
+      "last_called": "2026-06-02T21:14:09Z",
+      "error_rate": 0.06,
+      "avg_latency_ms": 388
+    },
+    {
+      "server": "notification_server",
+      "name": "get_notification_preferences",
+      "calls_30d": 41,
+      "calls_7d": 9,
+      "last_called": "2026-06-02T17:55:38Z",
+      "error_rate": 0.02,
+      "avg_latency_ms": 98
+    },
+    {
+      "server": "notification_server",
+      "name": "send_in_app_message",
+      "calls_30d": 19,
+      "calls_7d": 4,
+      "last_called": "2026-06-01T20:04:17Z",
+      "error_rate": 0.10,
+      "avg_latency_ms": 276
+    },
+    {
+      "server": "notification_server",
+      "name": "update_notification_preferences",
+      "calls_30d": 11,
+      "calls_7d": 2,
+      "last_called": "2026-05-30T15:22:51Z",
+      "error_rate": 0.09,
+      "avg_latency_ms": 184
+    },
+    {
+      "server": "notification_server",
+      "name": "broadcast_announcement",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "translation_server",
+      "name": "translate_text",
+      "calls_30d": 23,
+      "calls_7d": 5,
+      "last_called": "2026-06-01T09:34:22Z",
+      "error_rate": 0.04,
+      "avg_latency_ms": 334
+    },
+    {
+      "server": "translation_server",
+      "name": "detect_language",
+      "calls_30d": 18,
+      "calls_7d": 4,
+      "last_called": "2026-06-01T08:11:07Z",
+      "error_rate": 0.00,
+      "avg_latency_ms": 112
+    },
+    {
+      "server": "translation_server",
+      "name": "translate_template",
+      "calls_30d": 4,
+      "calls_7d": 0,
+      "last_called": "2026-05-24T14:45:33Z",
+      "error_rate": 0.25,
+      "avg_latency_ms": 518
+    },
+    {
+      "server": "translation_server",
+      "name": "get_supported_languages",
+      "calls_30d": 1,
+      "calls_7d": 0,
+      "last_called": "2026-05-07T10:02:18Z",
+      "error_rate": 0.00,
+      "avg_latency_ms": 44
+    },
+    {
+      "server": "document_server",
+      "name": "generate_invoice_pdf",
+      "calls_30d": 17,
+      "calls_7d": 3,
+      "last_called": "2026-06-01T13:08:44Z",
+      "error_rate": 0.06,
+      "avg_latency_ms": 1240
+    },
+    {
+      "server": "document_server",
+      "name": "generate_compliance_report",
+      "calls_30d": 3,
+      "calls_7d": 0,
+      "last_called": "2026-05-20T09:41:12Z",
+      "error_rate": 0.00,
+      "avg_latency_ms": 3420
+    },
+    {
+      "server": "document_server",
+      "name": "generate_statement",
+      "calls_30d": 2,
+      "calls_7d": 0,
+      "last_called": "2026-05-14T11:27:55Z",
+      "error_rate": 0.00,
+      "avg_latency_ms": 2100
+    },
+    {
+      "server": "document_server",
+      "name": "get_document_status",
+      "calls_30d": 2,
+      "calls_7d": 0,
+      "last_called": "2026-05-14T11:29:18Z",
+      "error_rate": 0.00,
+      "avg_latency_ms": 88
+    },
+    {
+      "server": "document_server",
+      "name": "sign_document",
+      "calls_30d": 1,
+      "calls_7d": 0,
+      "last_called": "2026-05-08T15:53:02Z",
+      "error_rate": 0.00,
+      "avg_latency_ms": 4100
+    },
+    {
+      "server": "document_server",
+      "name": "merge_pdfs",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "document_server",
+      "name": "watermark_document",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "document_server",
+      "name": "delete_document",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "social_media_server",
+      "name": "post_tweet",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "social_media_server",
+      "name": "post_linkedin_update",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "social_media_server",
+      "name": "monitor_mentions",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "social_media_server",
+      "name": "schedule_social_post",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "social_media_server",
+      "name": "get_social_analytics",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "testing_server",
+      "name": "run_smoke_tests",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "testing_server",
+      "name": "seed_test_data",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "testing_server",
+      "name": "wipe_test_database",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "testing_server",
+      "name": "assert_tool_response",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    },
+    {
+      "server": "testing_server",
+      "name": "get_test_coverage_report",
+      "calls_30d": 0,
+      "calls_7d": 0,
+      "last_called": null,
+      "error_rate": 0.00,
+      "avg_latency_ms": null
+    }
+  ]
+}

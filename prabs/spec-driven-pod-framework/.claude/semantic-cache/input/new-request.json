@@ -1,0 +1,72 @@
+{
+  "_meta": {
+    "description": "Three inbound requests to test SemanticCache lookup behavior",
+    "test_date": "2026-06-03T10:00:00Z",
+    "expected_outcomes": {
+      "req_001": "exact_hit — identical normalized form matches cke_001",
+      "req_002": "semantic_hit — paraphrase of double-charge refund policy, cosine similarity 0.94",
+      "req_003": "miss — chargeback-dispute account-impact query has no adequate match in cache"
+    }
+  },
+  "requests": [
+    {
+      "request_id": "req_001",
+      "query": "What is your refund policy for double charges?",
+      "normalized_query": "what is your refund policy for double charges",
+      "content_hash": "a3f8c2d17e4b9056a1234567890abcdef12345678901234567890abcdef123456",
+      "context": {
+        "session_id": "sess_abc123",
+        "channel": "web_chat",
+        "customer_tier": "standard",
+        "timestamp": "2026-06-03T10:00:01Z",
+        "prior_messages": 0,
+        "language": "en-US",
+        "note": "Customer opened a new chat with this exact phrasing. Hash matches cke_001 in the cache store exactly — should return an immediate exact hit with zero model invocation."
+      }
+    },
+    {
+      "request_id": "req_002",
+      "query": "If a customer is billed twice, can they get their money back?",
+      "normalized_query": "if a customer is billed twice can they get their money back",
+      "content_hash": "f1e2d3c4b5a6978001122334455667788991a2b3c4d5e6f7081929304050607080",
+      "context": {
+        "session_id": "sess_def456",
+        "channel": "web_chat",
+        "customer_tier": "premium",
+        "timestamp": "2026-06-03T10:02:15Z",
+        "prior_messages": 2,
+        "language": "en-US",
+        "semantic_analysis": {
+          "intent": "refund_policy_double_charge",
+          "nearest_cache_key": "cke_001",
+          "cosine_similarity": 0.94,
+          "similarity_threshold": 0.92,
+          "exceeds_threshold": true
+        },
+        "note": "Customer is asking the same question as req_001 but with different wording — third-person phrasing, colloquial language ('billed twice' vs 'double charges', 'get their money back' vs 'refund policy'). The semantic embedding captures that both queries are about duplicate charge refund eligibility. Similarity of 0.94 exceeds the 0.92 threshold, so this is a semantic hit. The result should be served with a warning flag for caller verification."
+      }
+    },
+    {
+      "request_id": "req_003",
+      "query": "What happens to my account if I dispute a charge with my credit card company?",
+      "normalized_query": "what happens to my account if i dispute a charge with my credit card company",
+      "content_hash": "8899aabbccddeeff0011223344556677889900aabbccddeeff00112233445566778",
+      "context": {
+        "session_id": "sess_ghi789",
+        "channel": "phone_transcription",
+        "customer_tier": "standard",
+        "timestamp": "2026-06-03T10:05:42Z",
+        "prior_messages": 0,
+        "language": "en-US",
+        "semantic_analysis": {
+          "intent": "chargeback_account_impact",
+          "nearest_cache_key": "cke_023",
+          "cosine_similarity": 0.81,
+          "similarity_threshold": 0.92,
+          "exceeds_threshold": false
+        },
+        "note": "This query is specifically about what happens to the customer's own account during a bank dispute — a personalized consequence question. The closest cache entry (cke_023) covers the general chargeback policy from the company's perspective but does not directly answer the customer-perspective 'what happens to MY account' question. The 0.81 similarity is below the 0.92 threshold. This is a cache miss; the query must be passed through to the model for a fresh response. The resulting answer will be seeded into the cache after generation."
+      }
+    }
+  ]
+}

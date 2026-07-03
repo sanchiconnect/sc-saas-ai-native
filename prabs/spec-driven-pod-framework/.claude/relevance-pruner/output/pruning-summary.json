@@ -1,0 +1,54 @@
+{
+  "run_metadata": {
+    "timestamp": "2026-06-03T10:14:52Z",
+    "skill_version": "1.0",
+    "embedding_model": "text-embedding-3-small",
+    "task_query_file": "input/task-query.md"
+  },
+  "task_query_summary": "Customer Sarah Chen (ACC-88234, Premium) disputes a double charge of $149.99 at 02:31 and 02:33 UTC on 2026-06-01. Primary intent: billing_dispute. Secondary intent: refund_eligibility with Premium SLA.",
+  "scoring_config": {
+    "threshold_used": 0.35,
+    "max_tokens_budget": 8000,
+    "weights": {
+      "semantic": 0.6,
+      "recency": 0.2,
+      "authority": 0.2
+    }
+  },
+  "volume": {
+    "chunks_evaluated": 20,
+    "chunks_kept": 8,
+    "chunks_dropped": 12
+  },
+  "drop_breakdown": {
+    "below_threshold": 10,
+    "over_budget_after_threshold": 2,
+    "protected_chunks_kept": 1
+  },
+  "token_accounting": {
+    "total_candidate_tokens": 18500,
+    "total_kept_tokens": 1197,
+    "tokens_reclaimed": 17303,
+    "reduction_percentage": 93.5,
+    "budget_utilization_percentage": 15.0,
+    "budget_headroom_tokens": 6803
+  },
+  "budget_exceeded_by_protection": false,
+  "score_distribution": {
+    "max_score": 0.94,
+    "min_score_kept": 0.58,
+    "min_score_dropped_above_threshold": 0.40,
+    "mean_score_kept": 0.70,
+    "mean_score_dropped": 0.18
+  },
+  "top_kept_chunk": {
+    "id": "chunk_020",
+    "title": "Prior Case Note: Sarah Chen — Account Tier Upgrade Confirmation",
+    "relevance_score": 0.94,
+    "kept_reason": "protected_pattern"
+  },
+  "signal_quality": {
+    "semantic_gap_threshold_to_top": 0.59,
+    "note": "Clear separation between kept and dropped chunks. The score gap between the lowest kept chunk (0.58) and the highest dropped-below-threshold chunk (0.33) is 0.25, indicating a well-defined relevance boundary for this query."
+  }
+}

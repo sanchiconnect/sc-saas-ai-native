@@ -1,0 +1,352 @@
+[
+  {
+    "name": "lookup_customer",
+    "description": "Look up a customer account by email address, customer ID, or phone number. Returns full account profile including plan details, billing configuration, account status, Salesforce CRM account ID, account health indicators, and associated metadata. This tool must be called before any account-specific operation to verify customer identity and load current account context. It is not permissible to perform billing operations, create support tickets, or update account data without first verifying the customer via this tool. The response includes the Salesforce account ID required for downstream CRM operations.\n\nUse cases:\n- Start of any customer session involving account-specific information\n- Verifying identity before performing sensitive operations\n- Loading customer plan information before billing queries\n- Resolving a customer ID from an email address\n\nThe tool queries both the internal user database and Salesforce CRM in parallel and returns a merged record. If the customer exists in one system but not the other, the available data is returned with a `partial_match: true` flag. In this case, do not proceed with billing operations until the discrepancy is investigated.\n\nRate limit: 60 requests per minute. Cached for 5 minutes per customer ID within a session.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The email address associated with the customer account. Provide this OR customer_id OR phone — at least one is required. Email is the preferred lookup method as it is the primary account identifier."
+        },
+        "customer_id": {
+          "type": "string",
+          "pattern": "^CUS-[0-9]{8}$",
+          "description": "Internal customer ID in format CUS-XXXXXXXX (8-digit numeric suffix). Use this when you already have the customer ID from a prior tool call or from the customer directly. Takes precedence over email if both are provided."
+        },
+        "phone": {
+          "type": "string",
+          "description": "Customer phone number in E.164 format (e.g. +15550001234). Use as fallback when email is not available. May return multiple results if the phone number is shared across accounts — in that case use the customer_id to disambiguate."
+        },
+        "include_crm_details": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether to include Salesforce CRM account details in the response (account owner, health score, open opportunities, etc.). Set to false if you only need the basic account profile to reduce response payload size."
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "get_billing_history",
+    "description": "Retrieve the billing transaction history for a customer account. Returns a chronological list of charges, refunds, credits, failed payment attempts, and invoices. This tool is the authoritative source for charge verification and dispute investigation. Always use this tool when a customer reports an unexpected charge, a missing refund, or a payment failure — do not rely on customer-provided dates or amounts without verification.\n\nThe response includes both successful and failed transactions. Failed payment attempts are critical for diagnosing duplicate charge scenarios: when a payment fails and retries after the original has succeeded, this appears as two successful charges against the same invoice period. The `retry_of` field on a transaction identifies the original transaction ID it was intended to retry.\n\nInvoice IDs follow the format INV-YYYY-MM-XXXX. Retry invoices are suffixed with -R (e.g. INV-2024-10-0047-R). Any successful charge against a -R invoice that occurred when the original invoice was also successfully paid is a candidate for refund.\n\nThe tool also returns the next scheduled billing date, current payment method on file, and any active payment failures or holds on the account.\n\nRate limit: 30 requests per minute. Results are not cached — each call returns live data.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "customer_id": {
+          "type": "string",
+          "pattern": "^CUS-[0-9]{8}$",
+          "description": "Internal customer ID. Required. Must be obtained via lookup_customer before calling this tool."
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50,
+          "default": 10,
+          "description": "Number of most recent transactions to return. Default is 10. Increase to 50 for investigating patterns across multiple billing cycles. For initial dispute investigation, 10 is usually sufficient to identify the relevant charges."
+        },
+        "include_failed_attempts": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether to include failed payment attempts in the result set. Set to true when investigating duplicate charges or retry errors, as the failed attempt record is essential for establishing the timeline. Defaults to false to reduce response payload for simple billing history requests."
+        },
+        "start_date": {
+          "type": "string",
+          "format": "date",
+          "description": "Optional ISO 8601 date (YYYY-MM-DD) to filter transactions on or after this date. Use in combination with end_date to scope the query to a specific period."
+        },
+        "end_date": {
+          "type": "string",
+          "format": "date",
+          "description": "Optional ISO 8601 date (YYYY-MM-DD) to filter transactions on or before this date. Defaults to today if start_date is provided but end_date is omitted."
+        },
+        "transaction_types": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["charge", "refund", "credit", "failed_attempt", "chargeback", "adjustment"]
+          },
+          "description": "Optional filter to return only specific transaction types. If omitted, all types are returned. For billing dispute investigation, include both 'charge' and 'failed_attempt' to see the full picture."
+        }
+      },
+      "required": ["customer_id"]
+    }
+  },
+  {
+    "name": "create_support_ticket",
+    "description": "Create a new support case in Salesforce CRM or close a chat session record. This tool handles two distinct operations depending on the `action` field: ticket creation (default) and session closure.\n\nFor ticket creation: Creates a new case in Salesforce associated with the customer account. The case is automatically assigned to the appropriate queue based on `category`. After creation, the case ID is returned and should be shared with the customer as their reference number.\n\nDo not create duplicate tickets. Before calling this tool, check if an open case already exists for the same issue via get_crm_account. If one exists, use update_ticket_status instead.\n\nFor session closure (`action: close_chat_session`): Records session metadata against an existing case, marks the interaction as complete in the session log, and optionally triggers a CSAT survey. Use at the end of every chat session where a case was opened or referenced.\n\nCase categories map to queues as follows:\n- `billing`: Billing Operations Queue\n- `technical_support`: Tier 1 Technical Support\n- `account_management`: Account Management Team\n- `refund_request`: Billing Operations — Refund Specialist\n- `escalation`: Senior Support / Manager Review\n- `data_privacy`: Legal and Compliance Team\n- `general_inquiry`: General Support Queue\n\nRate limit: 20 ticket creations per minute. No limit on session closures.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "customer_id": {
+          "type": "string",
+          "pattern": "^CUS-[0-9]{8}$",
+          "description": "Internal customer ID. Required for all actions."
+        },
+        "case_id": {
+          "type": "string",
+          "description": "For session closure actions, provide the case ID to associate the session record with. Optional for ticket creation — if provided, creates the session closure record against this case rather than creating a new ticket."
+        },
+        "action": {
+          "type": "string",
+          "enum": ["create_ticket", "close_chat_session"],
+          "default": "create_ticket",
+          "description": "Whether to create a new support ticket or close the current chat session. Use 'close_chat_session' at the end of every interaction where a case was involved."
+        },
+        "subject": {
+          "type": "string",
+          "maxLength": 255,
+          "description": "Short case subject line. Required when action is 'create_ticket'. Should be specific enough that a billing specialist can understand the issue at a glance without reading the description. Include the issue type and key facts (e.g. 'Duplicate charge $149 October 2024')."
+        },
+        "description": {
+          "type": "string",
+          "description": "Full case description. Required when action is 'create_ticket'. Include: customer-reported issue, verified facts from tool calls (transaction IDs, dates, amounts), timeline of events, and your recommended resolution path. Write as if the reader has zero prior context."
+        },
+        "category": {
+          "type": "string",
+          "enum": ["billing", "technical_support", "account_management", "refund_request", "escalation", "data_privacy", "general_inquiry"],
+          "description": "Case category for queue routing. Required when action is 'create_ticket'."
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["Low", "Medium", "High", "Critical"],
+          "default": "Medium",
+          "description": "Case priority. Use 'High' for customers flagged as at-risk or high-value. Use 'Critical' only for active service outages or data loss scenarios."
+        },
+        "session_summary": {
+          "type": "string",
+          "description": "Brief summary of the chat session. Required when action is 'close_chat_session'. Include: issue type, resolution path, commitments made, and any follow-up required."
+        },
+        "csat_eligible": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether to send a CSAT survey to the customer after this session. Set to true for sessions involving complaints, escalations, or billing disputes."
+        },
+        "session_duration_minutes": {
+          "type": "integer",
+          "description": "Duration of the chat session in minutes. Used for reporting."
+        }
+      },
+      "required": ["customer_id"]
+    }
+  },
+  {
+    "name": "update_ticket_status",
+    "description": "Update the status, priority, assignment, or internal notes on an existing Salesforce support case. This is the primary tool for progressing cases through the support workflow: escalating, reassigning, adding investigation notes, changing SLA, or tagging for special handling.\n\nInternal notes appended via this tool are permanent and visible to all agents with case access. Write notes as if they will be read by someone with no prior context — include transaction IDs, amounts, dates, customer statements, and your analysis. Avoid abbreviations that are not universally understood.\n\nSLA hours set via this tool override any existing SLA on the case. When escalating, always set an explicit SLA to prevent the case from aging without accountability.\n\nTag vocabulary for the `tags` field (commonly used tags):\n- `retention_risk` — Customer has indicated potential churn\n- `churn_risk` — Strong churn signal, requires proactive outreach\n- `service_recovery` — Case requires a gesture beyond simple resolution\n- `high_value_customer` — Customer LTV > $3,000\n- `billing_retry_bug` — Affected by Q3 2024 payment retry issue\n- `data_deletion_request` — GDPR/CCPA data removal request\n- `legal_hold` — Do not delete or modify without Legal review\n- `fraud_investigation` — Under fraud review, do not close\n- `vip` — Executive or named account, requires manager handling\n\nRate limit: 60 updates per minute.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "case_id": {
+          "type": "string",
+          "pattern": "^CASE-[0-9]{7}$",
+          "description": "The Salesforce case ID to update. Required. Format: CASE-XXXXXXX (7-digit numeric suffix)."
+        },
+        "new_status": {
+          "type": "string",
+          "enum": ["Open", "In Progress", "Waiting on Customer", "Waiting on Internal Review", "Escalated", "Pending Billing Review", "Resolved", "Closed"],
+          "description": "New status for the case. Optional — if omitted, status remains unchanged. Use 'Escalated' when routing to a specialist or manager. Use 'In Progress' when actively working the case. 'Resolved' should only be set after the customer confirms the issue is fixed."
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["Low", "Medium", "High", "Critical"],
+          "description": "New priority level. Optional. Escalating priority notifies the assigned team."
+        },
+        "assigned_to": {
+          "type": "string",
+          "description": "Name or queue to reassign the case to. Optional. Common values: 'Senior Billing Specialist', 'Billing Team Queue', 'Manager Review Queue', 'Technical Support Tier 2', 'Legal and Compliance Team'."
+        },
+        "internal_note": {
+          "type": "string",
+          "description": "Note to append to the case's internal notes log. Optional. Visible to all agents — never include customer passwords, full payment card numbers, or other sensitive data. Notes are permanent and cannot be deleted."
+        },
+        "sla_hours": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 168,
+          "description": "SLA duration in hours from now. Setting this overrides the existing SLA. Use 24 for escalated cases, 4 for critical cases, 72 for standard cases without urgency."
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Tags to add to the case. These are additive — they do not replace existing tags. See tool description for vocabulary."
+        },
+        "resolution_notes": {
+          "type": "string",
+          "description": "Summary of how the issue was resolved. Required when setting status to 'Resolved' or 'Closed'. This becomes part of the permanent case record and is used for QA review."
+        }
+      },
+      "required": ["case_id"]
+    }
+  },
+  {
+    "name": "search_knowledge_base",
+    "description": "Search the internal knowledge base for articles, known issues, troubleshooting guides, product documentation, and policy references. The knowledge base is updated more frequently than the AI model's training data and is the authoritative source for current product behaviour, known bugs, pricing details, and support policies.\n\nSearch uses semantic similarity — you do not need exact keyword matches. Describe the issue in natural language and the tool will return the most relevant articles. For known bugs and system incidents, the knowledge base is often the fastest way to identify the root cause of a customer complaint without extensive investigation.\n\nSearch results include a relevance score (0.0–1.0). Articles with score > 0.85 are highly relevant. Articles between 0.6–0.84 may be partially relevant. Below 0.6, use with caution.\n\nThe knowledge base is organized into categories:\n- `billing_errors` — Payment failures, duplicate charges, refund procedures\n- `product_features` — Feature documentation and how-to guides\n- `technical_issues` — Known bugs, workarounds, and incident reports\n- `policies` — Refund policy, cancellation policy, data retention policy\n- `integrations` — Third-party integrations including Salesforce, Zapier, and API documentation\n- `compliance` — GDPR, CCPA, PCI DSS guidance for support agents\n\nRate limit: 120 requests per minute.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "Natural language search query describing the issue or topic. Be descriptive — include the error pattern, affected feature, and any relevant context. Example: 'customer charged twice same billing period payment retry' is better than 'duplicate charge'."
+        },
+        "category": {
+          "type": "string",
+          "enum": ["billing_errors", "product_features", "technical_issues", "policies", "integrations", "compliance", "all"],
+          "default": "all",
+          "description": "Category to scope the search. Use a specific category when the issue type is clear — it significantly improves result quality. Use 'all' when unsure."
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "default": 5,
+          "description": "Number of results to return. For most queries, 3–5 is sufficient. Use 10 only when doing a broad research sweep."
+        },
+        "min_relevance_score": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.5,
+          "description": "Minimum relevance score threshold. Results below this threshold are excluded. Default 0.5 is permissive. Set to 0.75 for high-confidence results only."
+        }
+      },
+      "required": ["query"]
+    }
+  },
+  {
+    "name": "escalate_to_human",
+    "description": "Escalate the current support session to a live human agent. This tool initiates a warm handoff — it creates or updates the case with a handoff summary, notifies the routing system to assign the next available qualified agent, and optionally transfers the chat session directly if the customer is still active.\n\nUse this tool when: (1) the customer explicitly requests a human, (2) the issue involves legal or compliance concerns, (3) a refund or credit exceeds $500 and requires manager approval, (4) you have attempted resolution and the customer remains unsatisfied after two full resolution exchanges, or (5) the customer expresses threats or crisis-level distress.\n\nDo not use this tool as a first resort for difficult conversations. Attempt resolution using available tools before escalating. If you are escalating, include a comprehensive handoff summary so the human agent does not have to re-ask the customer for information already gathered.\n\nEscalation queue routing by specialisation:\n- `billing_specialist` — Billing disputes, refunds, payment issues\n- `technical_support_tier2` — Advanced technical issues, API problems, data issues\n- `account_manager` — Plan changes, contract negotiations, enterprise accounts\n- `manager_review` — Customer complaints, high-value at-risk accounts, policy exceptions\n- `legal_compliance` — Data deletion, legal notices, fraud claims\n- `crisis_support` — Immediate safety concerns — highest priority, routes to senior agent\n\nAverage wait times are returned in the response to share with the customer. If wait time exceeds 15 minutes, offer callback scheduling as an alternative.\n\nRate limit: 10 escalations per minute.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "case_id": {
+          "type": "string",
+          "pattern": "^CASE-[0-9]{7}$",
+          "description": "Case ID to associate with the escalation. Required if a case exists. If no case exists yet, create one via create_support_ticket first, then escalate."
+        },
+        "customer_id": {
+          "type": "string",
+          "pattern": "^CUS-[0-9]{8}$",
+          "description": "Customer ID. Required."
+        },
+        "queue": {
+          "type": "string",
+          "enum": ["billing_specialist", "technical_support_tier2", "account_manager", "manager_review", "legal_compliance", "crisis_support"],
+          "description": "Target escalation queue. Required. Choose based on the primary issue type. When in doubt, 'billing_specialist' for money issues, 'manager_review' for complaints."
+        },
+        "reason": {
+          "type": "string",
+          "enum": ["customer_request", "refund_exceeds_limit", "legal_concern", "unresolved_after_attempts", "retention_risk", "crisis_safety", "technical_escalation"],
+          "description": "Reason code for the escalation. Required. Used for reporting and routing logic."
+        },
+        "handoff_summary": {
+          "type": "string",
+          "description": "Comprehensive summary of the current session for the receiving human agent. Required. Include: customer identity, issue description, tool call results, actions already taken, commitments made, and recommended next steps. The human agent should not need to ask the customer to repeat anything already covered."
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["Standard", "Priority", "Urgent"],
+          "default": "Standard",
+          "description": "Escalation priority. Use 'Priority' for at-risk high-value customers. Use 'Urgent' for active legal threats or crisis situations."
+        },
+        "transfer_session": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether to attempt a live session transfer to the human agent. Only works if the customer is still active in the chat. If false, escalation is asynchronous and the customer will be contacted separately."
+        }
+      },
+      "required": ["customer_id", "queue", "reason", "handoff_summary"]
+    }
+  },
+  {
+    "name": "send_email_notification",
+    "description": "Send a templated or custom email notification to a customer. Used to provide written confirmation of case escalations, refund processing, status updates, and other commitments made during a support session. Always send a confirmation email before ending a session where a specific action or timeline has been promised to the customer.\n\nEmail is sent from the platform's transactional email system (SendGrid) and is guaranteed for delivery within 5 minutes for standard priority. High-priority emails (e.g. security notifications) are delivered within 60 seconds.\n\nAvailable templates:\n- `escalation_confirmation` — Confirms case escalation with case ID, assigned team, SLA deadline\n- `refund_confirmation` — Confirms refund amount, transaction ID, and expected processing timeline\n- `ticket_created` — Standard case creation acknowledgement\n- `ticket_resolved` — Notifies customer that their case has been resolved\n- `billing_error_apology` — Service recovery email for billing errors, includes variable for credit/gesture\n- `account_update` — Notifies customer of account status change\n- `csat_survey` — CSAT survey invitation (managed automatically via create_support_ticket; do not send manually)\n- `custom` — Use when no template fits; provide full email body in `custom_body` field\n\nTemplate variables are passed in the `variables` object. Required variables vary by template. If a required variable is missing, the tool returns an error with the list of missing fields.\n\nEmail deliverability note: Transactional emails are sent from support@example.com. If the customer reports not receiving the email, check that their email address is correct in the account record and ask them to check spam.\n\nRate limit: 10 emails per customer per hour to prevent spam.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "customer_id": {
+          "type": "string",
+          "pattern": "^CUS-[0-9]{8}$",
+          "description": "Customer ID. Required. The email address will be pulled from the customer record."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Override email address. Optional. If provided, the email is sent to this address instead of the one on file. Use only when the customer explicitly requests delivery to a different address."
+        },
+        "template": {
+          "type": "string",
+          "enum": ["escalation_confirmation", "refund_confirmation", "ticket_created", "ticket_resolved", "billing_error_apology", "account_update", "csat_survey", "custom"],
+          "description": "Email template to use. Required."
+        },
+        "subject": {
+          "type": "string",
+          "maxLength": 150,
+          "description": "Email subject line. Required for 'custom' template. Optional for named templates (defaults to template subject if omitted). Custom subjects should be specific and reference the case ID when applicable."
+        },
+        "variables": {
+          "type": "object",
+          "description": "Key-value pairs for template variable substitution. Keys vary by template. For 'escalation_confirmation': customer_name, case_id, escalation_confirmation, issue_summary, resolution_deadline, refund_timeline, assigned_to, agent_name, support_phone. Check template documentation for full variable list.",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["standard", "high"],
+          "default": "standard",
+          "description": "Delivery priority. Use 'high' for security-related notifications or time-sensitive actions (e.g. session expiry warnings). Standard delivery is within 5 minutes."
+        },
+        "custom_body": {
+          "type": "string",
+          "description": "Full email body in plain text or HTML. Required when template is 'custom'. For plain text, use newline characters for formatting. For HTML, ensure proper escaping."
+        }
+      },
+      "required": ["customer_id", "template"]
+    }
+  },
+  {
+    "name": "get_crm_account",
+    "description": "Retrieve the full Salesforce CRM account record for a customer, including open and closed support cases, account health indicators, opportunity pipeline, account owner information, and CRM notes. This tool provides a comprehensive view of the customer's relationship with the company across all channels and touchpoints.\n\nUse this tool when: a customer mentions a previous support interaction (to check case history), before escalating (to give the receiving agent full context), or when assessing the business impact of a complaint (to understand customer value and risk).\n\nAccount health values:\n- `healthy` — No active issues, good payment history, engaged customer\n- `at_risk` — One or more open disputes, late payments, or expressed churn intent\n- `churned` — Subscription cancelled, account inactive\n- `new` — Account less than 90 days old\n- `strategic` — Named account or high-value contract requiring white-glove treatment\n\nThe `open_cases` array returns cases ordered by last-modified date (most recent first). Each case includes status, priority, assigned team, and a brief description. The `case_limit` parameter controls how many cases are returned — use 5 for a quick overview, 20 for comprehensive history review.\n\nCRM notes (`account_notes`) are freeform text added by account managers and senior support staff. These may include information about ongoing contract negotiations, known sensitivities, or VIP handling instructions. Always review these notes before responding to a flagged account.\n\nRate limit: 30 requests per minute. CRM data is not cached — each call reflects live Salesforce state.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "salesforce_account_id": {
+          "type": "string",
+          "pattern": "^[0-9]{3}[a-zA-Z0-9]{15}$",
+          "description": "Salesforce account ID in standard 18-character format. Required. Obtained from the `salesforce_account_id` field returned by lookup_customer."
+        },
+        "include_open_cases": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether to include open support cases in the response. Almost always true — open cases are critical context for any ongoing support interaction."
+        },
+        "include_closed_cases": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether to include closed/resolved cases. Set to true when reviewing account history for patterns (e.g. repeated billing issues) or when a customer references a specific old case."
+        },
+        "case_limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50,
+          "default": 5,
+          "description": "Maximum number of cases to return per status category (open and closed separately). Use 5 for routine checks, 20 for comprehensive history review, 50 for full audit."
+        },
+        "include_opportunities": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether to include Salesforce opportunity records (upsell/expansion pipeline). Set to true when handling account management conversations about plan changes or upgrades."
+        },
+        "include_contact_history": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether to include a log of recent contact activities (calls, emails, meetings logged in Salesforce). Set to true when investigating whether a customer received prior outreach about a known issue."
+        }
+      },
+      "required": ["salesforce_account_id"]
+    }
+  }
+]

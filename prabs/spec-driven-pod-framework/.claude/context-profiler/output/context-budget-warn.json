@@ -1,0 +1,215 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2024-11-14T17:55:12Z",
+  "session_id": "CS-2024-11-14-0047",
+  "model_window_size": 200000,
+  "estimation_method": "char_heuristic",
+  "estimation_note": "Token counts are estimates using the char_heuristic method (chars / 3.8 for prose, chars / 3.5 for JSON). Actual server-side tokenisation may differ by ±5–8%. Estimates use conservative (high) bias to trigger alerts before true limits are reached.",
+  "snapshot_sequence": 4,
+  "previous_snapshot_at": "2024-11-14T16:30:00Z",
+  "tokens_added_since_last_snapshot": 52701,
+
+  "segments": {
+    "system_prompt": {
+      "tokens": 847,
+      "percentage": 0.42,
+      "source": "input/system-prompt.md",
+      "char_count": 3219,
+      "method": "char_heuristic_prose",
+      "changed_since_last_snapshot": false,
+      "notes": "Unchanged from session start. System prompt is static."
+    },
+    "tool_schemas": {
+      "tokens": 12340,
+      "percentage": 6.17,
+      "source": "input/mcp-tools.json",
+      "char_count": 43190,
+      "method": "char_heuristic_json",
+      "tool_count": 8,
+      "changed_since_last_snapshot": false,
+      "notes": "Unchanged. All 8 CRM/Salesforce tools remain loaded."
+    },
+    "conversation_history": {
+      "tokens": 28040,
+      "percentage": 14.02,
+      "source": "input/conversation-transcript.md",
+      "char_count": 106552,
+      "method": "char_heuristic_prose",
+      "turn_count": 127,
+      "tool_calls_included": 63,
+      "tool_results_included": 63,
+      "changed_since_last_snapshot": true,
+      "tokens_added_since_last_snapshot": 11420,
+      "growth_rate_tokens_per_turn": 220,
+      "notes": "Session has grown to 127 turns over 3.5 hours. This is the primary growth driver. Large tool results from get_crm_account and get_billing_history (averaging 380 tokens each) account for 45% of history token cost. 63 tool call/result pairs contribute ~14,300 tokens (~51% of history total)."
+    },
+    "injected_files": {
+      "tokens": 114190,
+      "percentage": 57.10,
+      "source": "multiple",
+      "char_count": 434322,
+      "method": "char_heuristic_prose",
+      "changed_since_last_snapshot": true,
+      "tokens_added_since_last_snapshot": 41281,
+      "files": [
+        {
+          "path": "context/billing-statement-oct-2024.pdf",
+          "tokens": 2840,
+          "percentage_of_window": 1.42,
+          "injected_at": "2024-11-14T15:02:00Z",
+          "still_referenced": true
+        },
+        {
+          "path": "context/billing-statement-sep-2024.pdf",
+          "tokens": 2710,
+          "percentage_of_window": 1.36,
+          "injected_at": "2024-11-14T15:02:00Z",
+          "still_referenced": false,
+          "prune_candidate": true
+        },
+        {
+          "path": "context/account-contract-2022.pdf",
+          "tokens": 18900,
+          "percentage_of_window": 9.45,
+          "injected_at": "2024-11-14T15:14:00Z",
+          "still_referenced": true
+        },
+        {
+          "path": "context/kb-billing-retry-bug-full.md",
+          "tokens": 4200,
+          "percentage_of_window": 2.10,
+          "injected_at": "2024-11-14T15:28:00Z",
+          "still_referenced": false,
+          "prune_candidate": true
+        },
+        {
+          "path": "context/crm-account-full-export.json",
+          "tokens": 38740,
+          "percentage_of_window": 19.37,
+          "injected_at": "2024-11-14T15:45:00Z",
+          "still_referenced": true,
+          "notes": "Full CRM export including 5 years of case history. Only 3 cases are actively relevant to current session."
+        },
+        {
+          "path": "context/refund-policy-v3.md",
+          "tokens": 3180,
+          "percentage_of_window": 1.59,
+          "injected_at": "2024-11-14T16:10:00Z",
+          "still_referenced": false,
+          "prune_candidate": true
+        },
+        {
+          "path": "context/compliance-guidelines-pci-gdpr.md",
+          "tokens": 6720,
+          "percentage_of_window": 3.36,
+          "injected_at": "2024-11-14T16:22:00Z",
+          "still_referenced": true
+        },
+        {
+          "path": "context/customer-account-full-history-5yr.json",
+          "tokens": 36900,
+          "percentage_of_window": 18.45,
+          "injected_at": "2024-11-14T16:38:00Z",
+          "still_referenced": false,
+          "prune_candidate": true,
+          "notes": "Full 5-year account history loaded. Only the last 6 months are relevant to the current billing dispute."
+        }
+      ],
+      "prune_candidates_total_tokens": 53750,
+      "prune_candidates_count": 4,
+      "notes": "Injected files are the dominant cost at 57.10% of the window. Four files are no longer actively referenced and are prune candidates totalling 53,750 tokens. Pruning those alone would bring utilisation from 78.05% to 50.17%."
+    },
+    "memory_blocks": {
+      "tokens": 843,
+      "percentage": 0.42,
+      "source": "CLAUDE.md + session profile rules + accumulated session context",
+      "char_count": 3203,
+      "method": "char_heuristic_prose",
+      "changed_since_last_snapshot": true,
+      "tokens_added_since_last_snapshot": 0,
+      "blocks": [
+        { "name": "user_profile", "tokens": 180 },
+        { "name": "project_instructions", "tokens": 140 },
+        { "name": "session_preferences", "tokens": 100 },
+        { "name": "accumulated_session_facts", "tokens": 423, "notes": "Customer facts accumulated during session (account ID, case IDs, confirmed transactions). Growing slowly." }
+      ]
+    }
+  },
+
+  "totals": {
+    "total_used": 156260,
+    "total_percentage": 78.13,
+    "headroom": 43740,
+    "headroom_percentage": 21.87
+  },
+
+  "threshold_evaluation": {
+    "warn_threshold_pct": 70.0,
+    "critical_threshold_pct": 85.0,
+    "current_utilisation_pct": 78.13,
+    "threshold_crossed": true,
+    "threshold_level_crossed": "warn",
+    "crossed_warn_at_tokens": 140000,
+    "crossed_warn_at_timestamp": "2024-11-14T17:31:00Z",
+    "tokens_until_critical": 13740,
+    "estimated_turns_until_critical": "~62 additional turns at current average (220 tokens/turn)",
+    "estimated_minutes_until_critical": "~28 minutes at current session pace"
+  },
+
+  "status": "warn",
+  "alert_level": "warn",
+  "recommended_action": "invoke_strategic_compactor",
+
+  "action_payload": {
+    "skill": "StrategicCompactor",
+    "priority": "high",
+    "urgency": "schedule_before_next_heavy_tool_use",
+    "suggested_compaction_target_tokens": 11216,
+    "segments_to_compact": ["conversation_history"],
+    "segments_to_prune_first": ["injected_files"],
+    "compaction_rationale": "Conversation history (28,040 tokens, 127 turns) should be compacted to ~40% of current size (target: 11,216 tokens). This preserves factual continuity while recovering ~16,824 tokens. Combined with pruning 4 unreferenced injected files (53,750 tokens), total recovery is ~70,574 tokens, bringing utilisation from 78.13% to 42.84%.",
+    "prune_first": true,
+    "prune_rationale": "RelevancePruner should run before StrategicCompactor. 4 injected files are no longer referenced and can be dropped immediately without information loss. Pruning first reduces the compaction workload and is zero-risk.",
+    "recommended_sequence": [
+      {
+        "step": 1,
+        "skill": "RelevancePruner",
+        "action": "prune_injected_files",
+        "targets": [
+          "context/billing-statement-sep-2024.pdf",
+          "context/kb-billing-retry-bug-full.md",
+          "context/refund-policy-v3.md",
+          "context/customer-account-full-history-5yr.json"
+        ],
+        "expected_tokens_recovered": 53750
+      },
+      {
+        "step": 2,
+        "skill": "StrategicCompactor",
+        "action": "compact_conversation_history",
+        "target_tokens": 11216,
+        "expected_tokens_recovered": 16824
+      }
+    ],
+    "projected_utilisation_after_action": 42.84,
+    "projected_tokens_after_action": 85686
+  },
+
+  "risk_assessment": {
+    "immediate_risk": "moderate",
+    "risk_description": "At current growth rate (~220 tokens/turn, ~28 minutes per session hour), the critical threshold (85%) will be crossed in approximately 62 turns or 28 minutes. If any additional large files are injected, this timeline shortens significantly.",
+    "do_not_defer_beyond": "2024-11-14T18:30:00Z",
+    "blocking_risks": [
+      "Injecting any additional CRM export or document will likely push directly to critical without further warning.",
+      "The full CRM account export (38,740 tokens) is consuming 19.37% of the window — if a second full export is requested, the session could exceed critical immediately."
+    ]
+  },
+
+  "notes": [
+    "WARN threshold crossed at 78.13% utilisation. Action is recommended before the next heavy tool use.",
+    "Injected files are the primary driver (57.10% of window). 4 files are prune candidates totalling 53,750 tokens.",
+    "Conversation history is healthy relative to session length (127 turns, 28,040 tokens, 220 tokens/turn average).",
+    "Tool schemas and system prompt are fixed costs — these cannot be reduced without unloading tools or changing the system prompt.",
+    "Recommend: RelevancePruner on 4 unreferenced files THEN StrategicCompactor on conversation history. Combined action recovers ~70,574 tokens."
+  ]
+}

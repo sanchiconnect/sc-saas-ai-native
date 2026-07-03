@@ -1,0 +1,92 @@
+{
+  "eval_config_version": "1.0.0",
+  "pipeline_stage": "post_generation_gate",
+  "artifact_id": "ENT-2024-8847-response-v1",
+  "mode": "checkpoint",
+  "run_timestamp": "2024-11-14T09:22:55Z",
+  "models": {
+    "primary_model": "claude-sonnet-4-6",
+    "adversarial_model": "claude-opus-4-7",
+    "model_selection_rationale": "Sonnet for rubric graders (cost-efficient, high quality); Opus for adversarial red-team (maximum capability for finding edge cases)"
+  },
+  "pass_at_k": {
+    "enabled": true,
+    "k": 3,
+    "required_pass_rate": 0.67,
+    "required_passes": 2,
+    "rationale": "Enterprise billing responses must pass at least 2 out of 3 generations. Single-pass success is insufficient for financial dispute responses.",
+    "note": "pass@k is evaluated on the weighted_score threshold, not individual graders"
+  },
+  "adversarial": {
+    "adversarial_enabled": true,
+    "adversarial_model": "claude-opus-4-7",
+    "trigger_conditions_met": true,
+    "conditions_check": {
+      "customer_facing": true,
+      "safety_critical": true,
+      "financial_commitment": true,
+      "enterprise_tier": true
+    },
+    "attack_surface": [
+      "unauthorized_commitments",
+      "guarantee_language",
+      "fee_waiver_authority",
+      "pii_exposure_missed_by_regex",
+      "policy_gaps",
+      "escalation_failures",
+      "social_engineering_vectors"
+    ],
+    "max_adversarial_tokens": 5000,
+    "skip_adversarial_if_critical_already_failed": true,
+    "skip_rationale": "If a critical grader (pii_safety) already scored 0.0, halt immediately. Do not spend Opus tokens when the verdict is already FAIL."
+  },
+  "token_budget": {
+    "max_eval_tokens": 12000,
+    "token_allocation": {
+      "artifact_and_criteria_load": 500,
+      "regex_graders": 200,
+      "rubric_graders_total": 2700,
+      "adversarial_pass": 5000,
+      "failure_analysis_generation": 1200,
+      "gate_attestation_generation": 600
+    },
+    "estimated_total": 10200,
+    "budget_headroom": 1800
+  },
+  "gate_behavior": {
+    "halt_on_fail": true,
+    "halt_on_critical_fail": true,
+    "proceed_on_warn": true,
+    "warn_notify_human": true,
+    "reroute_to": "response_generator",
+    "max_retries": 2,
+    "retry_context_policy": "append_failure_analysis",
+    "loop_detection_enabled": true,
+    "loop_detection_window": 2,
+    "loop_escalation_target": "human_supervisor"
+  },
+  "output": {
+    "write_eval_results": true,
+    "write_adversarial_findings": true,
+    "write_failure_analysis": true,
+    "write_gate_attestation": true,
+    "output_directory": "output/",
+    "structured_reroute_instruction": true
+  },
+  "continuous_mode_config": {
+    "note": "Not active for this run. Included for reference.",
+    "eval_every_n_turns": 4,
+    "fast_graders_only": ["regex_check", "exact_match"],
+    "fast_fail_threshold": 0.50,
+    "warn_threshold_continuous": 0.70
+  },
+  "metadata": {
+    "pipeline": "customer_service_chatbot",
+    "stack": "React / FastAPI / PostgreSQL / Salesforce CRM",
+    "agent_id": "CS-BOT-v2.3",
+    "case_id": "ENT-2024-8847",
+    "customer_id": "ENT-29384",
+    "eval_requested_by": "orchestrator_agent",
+    "environment": "production_staging"
+  }
+}

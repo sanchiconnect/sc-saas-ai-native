@@ -1,0 +1,33 @@
+{
+  "routing": {
+    "regex_threshold": 20,
+    "hybrid_threshold": 13,
+    "prefer_deterministic": true,
+    "_comment_thresholds": "score >= regex_threshold → regex; score >= hybrid_threshold → hybrid; else → llm. prefer_deterministic promotes ties at threshold boundaries to the cheaper route."
+  },
+  "cost_model": {
+    "cost_per_llm_parse_usd": 0.00008,
+    "_comment_cost": "Assumes claude-haiku-4-5 at ~100 input tokens + ~50 output tokens per parse call. Rate: $0.80/M input, $4.00/M output → ~$0.00008 per call.",
+    "cost_per_regex_parse_usd": 0.0000001,
+    "_comment_regex_cost": "CPU cost only; negligible at scale. Included for completeness in ROI calculations.",
+    "llm_model": "claude-haiku-4-5"
+  },
+  "volume": {
+    "daily_parse_volume": 5000,
+    "_comment_volume": "Total parsing operations per day across all 8 task types combined, based on p50 production traffic."
+  },
+  "hybrid_policy": {
+    "fallthrough_promote_threshold": 0.10,
+    "_comment_promote": "If fallthrough rate drops below 10% over 7 days, promote hybrid to full regex.",
+    "fallthrough_demote_threshold": 0.60,
+    "_comment_demote": "If fallthrough rate exceeds 60% over 7 days, demote hybrid to full LLM and re-score.",
+    "min_sample_size_for_decision": 200,
+    "_comment_min_samples": "Do not act on promote/demote signals until at least 200 parse calls have been observed."
+  },
+  "monitoring": {
+    "parse_failure_alert_threshold": 0.02,
+    "_comment_failure_alert": "Trigger re-score review if parse failure rate exceeds 2% over a 7-day rolling window.",
+    "review_cadence_days": 90,
+    "_comment_review": "Scheduled quarterly re-score for all hybrid and regex tasks regardless of alert status."
+  }
+}

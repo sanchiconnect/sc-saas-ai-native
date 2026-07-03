@@ -1,0 +1,618 @@
+# ============================================================
+# OPPORTUNITY CATALOGUE
+# SpecPod Framework v2.1.0 · TransformIQ + ValueModeler Reference
+# ============================================================
+# PURPOSE
+# Master AI opportunity backlog. TransformIQ rescores entries
+# every Monday sprint planning session. Never delete entries —
+# set status: ARCHIVED when an opportunity is no longer relevant.
+#
+# SCORING DIMENSIONS (each 0–10, combined by TransformIQ weights)
+#   strategic_fit     — alignment with current programme objectives
+#   speed_to_value    — how quickly value is realised post-deploy
+#   risk_inverse      — 10 = low risk, 0 = high risk
+#   user_impact       — breadth × depth of user benefit
+#   tech_debt_reduction — code/process complexity removed
+#
+# EFFORT TIERS
+#   XS  ≤ 2h   |  S  2–4h  |  M  4–8h  |  L  8–16h  |  XL  > 16h
+# ============================================================
+
+meta:
+  version: "2.1.0"
+  last_updated: "2026-05-27"
+  total_active: 20
+  total_archived: 3
+  scoring_model: "weighted_composite_v2"
+  next_rescore_sprint: "SPRINT-002"
+
+# ── SCORING REFERENCE ────────────────────────────────────────
+scoring_reference:
+  - range: "8.0–10.0"
+    classification: HIGH_VALUE
+    action: "Prioritise for upcoming sprint"
+  - range: "6.0–7.9"
+    classification: MEDIUM_VALUE
+    action: "Candidate for sprint inclusion"
+  - range: "4.0–5.9"
+    classification: LOW_VALUE
+    action: "Hold in backlog — revisit next quarter"
+  - range: "0.0–3.9"
+    classification: DEPRIORITISED
+    action: "Revisit during quarterly backlog grooming"
+
+# ── ACTIVE OPPORTUNITIES ─────────────────────────────────────
+opportunities:
+
+  # ── PROCESS AUTOMATION ──────────────────────────────────────
+
+  - id: OPP-001
+    title: "Automated User Onboarding Sequence"
+    category: Process Automation
+    description: >
+      Replace the manually triggered, static onboarding email drip with an
+      AI-orchestrated sequence that adapts timing and content based on the
+      user's in-product actions in the first 7 days. Reduces support tickets
+      from confused new users and improves day-7 retention.
+    baseline_score: 7.2
+    scoring_breakdown:
+      strategic_fit: 8
+      speed_to_value: 7
+      risk_inverse: 7
+      user_impact: 8
+      tech_debt_reduction: 5
+    effort_tier: M
+    effort_estimate_hours: 6
+    value_category: Direct
+    annual_value_estimate: "$28,000"
+    value_basis: "Estimated 15% improvement in day-7 retention × avg LTV $200 × 1,000 new users/year"
+    dependencies: ["Email service integration (IR-001)", "User activity tracking"]
+    prior_sprint_actuals: null
+    status: ACTIVE
+    added_sprint: "SPRINT-001"
+    tags: [onboarding, retention, email, automation]
+
+  - id: OPP-002
+    title: "Smart Form Validation with Contextual Error Hints"
+    category: User Experience
+    description: >
+      Replace static, generic validation error messages with context-aware hints
+      generated at the field level. For example, instead of "Invalid email", the
+      system explains what is wrong and suggests a correction. Reduces form
+      abandonment and support contacts about registration errors.
+    baseline_score: 5.8
+    scoring_breakdown:
+      strategic_fit: 5
+      speed_to_value: 8
+      risk_inverse: 9
+      user_impact: 6
+      tech_debt_reduction: 4
+    effort_tier: S
+    effort_estimate_hours: 3
+    value_category: Experience
+    annual_value_estimate: "$8,000"
+    value_basis: "Estimated 10% reduction in registration drop-off × 50 daily registrations × $16 CAC"
+    dependencies: []
+    prior_sprint_actuals: null
+    status: ACTIVE
+    added_sprint: "SPRINT-001"
+    tags: [ux, forms, validation, registration]
+
+  - id: OPP-003
+    title: "Duplicate Account Detection at Registration"
+    category: Data Quality
+    description: >
+      Apply fuzzy name + email similarity scoring at the point of registration
+      to detect probable duplicate accounts before they are created. Flag matches
+      above a confidence threshold for admin review rather than auto-blocking.
+      Reduces downstream data reconciliation effort and inflated user counts.
+    baseline_score: 6.5
+    scoring_breakdown:
+      strategic_fit: 6
+      speed_to_value: 7
+      risk_inverse: 8
+      user_impact: 5
+      tech_debt_reduction: 7
+    effort_tier: S
+    effort_estimate_hours: 4
+    value_category: Quality
+    annual_value_estimate: "$12,000"
+    value_basis: "Estimated 2h/week admin saved on duplicate resolution × $75/h × 52 weeks = $7,800 + data quality risk reduction ~$4,200"
+    dependencies: ["User Registration (REQ-002)"]
+    prior_sprint_actuals: null
+    status: ACTIVE
+    added_sprint: "SPRINT-001"
+    tags: [data-quality, registration, deduplication, admin]
+
+  - id: OPP-004
+    title: "Automated GDPR Compliance Report Generation"
+    category: Compliance Automation
+    description: >
+      Generate monthly GDPR compliance summary reports automatically from audit
+      logs, consent records, and PII access events. Report covers: data access
+      requests fulfilled, deletion events, consent changes, and policy exception
+      log. Eliminates 4–6 hours of manual report assembly per month.
+    baseline_score: 8.1
+    scoring_breakdown:
+      strategic_fit: 9
+      speed_to_value: 8
+      risk_inverse: 8
+      user_impact: 6
+      tech_debt_reduction: 7
+    effort_tier: M
+    effort_estimate_hours: 5
+    value_category: Quality
+    annual_value_estimate: "$22,500"
+    value_basis: "5h/month × $75/h × 12 months = $4,500 direct + estimated $18,000 risk reduction from audit readiness"
+    dependencies: ["Audit logging (POL-AUDIT-001)", "DecisionLedger output"]
+    prior_sprint_actuals: null
+    status: ACTIVE
+    added_sprint: "SPRINT-001"
+    tags: [compliance, gdpr, reporting, audit, automation]
+
+  - id: OPP-005
+    title: "User Activity Anomaly Detection"
+    category: Security Intelligence
+    description: >
+      Flag unusual activity patterns — login from a new geography, bulk data
+      access within a short window, rapid role-escalation attempts — for admin
+      review. Integrates with the audit log. Does not auto-block; surfaces
+      signals to a review queue. First line of defence for account compromise.
+    baseline_score: 7.8
+    scoring_breakdown:
+      strategic_fit: 9
+      speed_to_value: 6
+      risk_inverse: 6
+      user_impact: 7
+      tech_debt_reduction: 5
+    effort_tier: L
+    effort_estimate_hours: 8
+    value_category: Quality
+    annual_value_estimate: "$35,000"
+    value_basis: "Estimated 1 incident prevented per quarter × avg breach cost $140K × 25% detection improvement = $35K/yr"
+    dependencies: ["Audit logging (POL-AUDIT-001)", "User activity schema (DR-001)"]
+    prior_sprint_actuals: null
+    status: ACTIVE
+    added_sprint: "SPRINT-001"
+    tags: [security, anomaly-detection, audit, soc2]
+
+  # ── INTELLIGENT AUTOMATION ───────────────────────────────────
+
+  - id: OPP-006
+    title: "AI-Assisted Support Ticket Triage"
+    category: Intelligent Automation
+    description: >
+      Classify incoming support tickets by category, urgency, and routing
+      destination using an LLM classification layer. Auto-assign to the correct
+      queue and pre-populate suggested resolution steps for the support agent.
+      Reduces average handle time and misrouting rate.
+    baseline_score: 8.4
+    scoring_breakdown:
+      strategic_fit: 8
+      speed_to_value: 9
+      risk_inverse: 8
+      user_impact: 8
+      tech_debt_reduction: 6
+    effort_tier: M
+    effort_estimate_hours: 7
+    value_category: Direct
+    annual_value_estimate: "$42,000"
+    value_basis: "Estimated 8 min/ticket saved × 50 tickets/day × $0.50/min × 250 days = $50,000 less 20% variance = ~$42K"
+    dependencies: ["Support ticket schema", "Email/webhook ingestion"]
+    prior_sprint_actuals: null
+    status: ACTIVE
+    added_sprint: "SPRINT-001"
+    tags: [support, triage, classification, automation, llm]
+
+  - id: OPP-007
+    title: "Natural Language Report Builder"
+    category: Intelligent Automation
+    description: >
+      Allow admin users to describe the report they want in plain English
+      ("show me all users who registered last month but haven't logged in since")
+      and have the system translate it to a database query and render the result.
+      Eliminates custom report requests to engineering.
+    baseline_score: 7.6
+    scoring_breakdown:
+      strategic_fit: 7
+      speed_to_value: 8
+      risk_inverse: 6
+      user_impact: 8
+      tech_debt_reduction: 8
+    effort_tier: L
+    effort_estimate_hours: 10
+    value_category: Direct
+    annual_value_estimate: "$18,000"
+    value_basis: "Estimated 3h/week engineering time freed from ad-hoc reports × $115/h × 52 weeks = $17,940"
+    dependencies: ["Database schema (DR-001)", "Admin role (REQ-001 + POL-AUTH-001)"]
+    prior_sprint_actuals: null
+    status: ACTIVE
+    added_sprint: "SPRINT-001"
+    tags: [reporting, nlp, admin, sql-generation]
+
+  - id: OPP-008
+    title: "Intelligent Data Import Validation"
+    category: Data Quality
+    description: >
+      When users upload CSV or JSON data files, apply LLM-assisted validation
+      to detect: schema mismatches, likely encoding errors, semantically wrong
+      fields (e.g., a phone number in an email column), and duplicate rows.
+      Surface a pre-import quality report before committing records.
+    baseline_score: 6.9
+    scoring_breakdown:
+      strategic_fit: 6
+      speed_to_value: 8
+      risk_inverse: 8
+      user_impact: 7
+      tech_debt_reduction: 6
+    effort_tier: M
+    effort_estimate_hours: 6
+    value_category: Quality
+    annual_value_estimate: "$14,000"
+    value_basis: "Estimated 50% reduction in post-import data cleanup × 3h/import × 20 imports/month × $75/h × 12"
+    dependencies: ["File upload infrastructure", "Data schema (DR-001)"]
+    prior_sprint_actuals: null
+    status: ACTIVE
+    added_sprint: "SPRINT-001"
+    tags: [data-quality, import, validation, csv]
+
+  # ── DEVELOPER EXPERIENCE ─────────────────────────────────────
+
+  - id: OPP-009
+    title: "Automated API Documentation Generator"
+    category: Developer Experience
+    description: >
+      Generate OpenAPI 3.1 documentation from code annotations and route
+      definitions on each build. Publish to a live docs site. Eliminates
+      manually maintained API docs that drift from the implementation within
+      days of each sprint.
+    baseline_score: 7.1
+    scoring_breakdown:
+      strategic_fit: 7
+      speed_to_value: 9
+      risk_inverse: 9
+      user_impact: 6
+      tech_debt_reduction: 9
+    effort_tier: S
+    effort_estimate_hours: 3
+    value_category: Technical
+    annual_value_estimate: "$9,600"
+    value_basis: "2h/sprint saved on doc maintenance × 2 builders × $60/h × 40 sprints/year = $9,600"
+    dependencies: ["API spec (specs/api.md)", "CI/CD pipeline"]
+    prior_sprint_actuals: null
+    status: ACTIVE
+    added_sprint: "SPRINT-001"
+    tags: [documentation, api, openapi, developer-experience]
+
+  - id: OPP-010
+    title: "Automated Test Case Generation from Spec"
+    category: Developer Experience
+    description: >
+      Use the locked openspec.yaml acceptance criteria to auto-generate BDD
+      feature file stubs for each requirement. Builders review and fill in
+      step implementations rather than writing tests from scratch. Ensures
+      test coverage maps to every requirement before any code is written.
+    baseline_score: 8.6
+    scoring_breakdown:
+      strategic_fit: 9
+      speed_to_value: 9
+      risk_inverse: 9
+      user_impact: 7
+      tech_debt_reduction: 8
+    effort_tier: S
+    effort_estimate_hours: 2
+    value_category: Technical
+    annual_value_estimate: "$15,600"
+    value_basis: "1.5h/sprint saved on test skeleton writing × 2 builders × $60/h × 40 sprints = $7,200 + quality improvement value ~$8,400"
+    dependencies: ["openspec.yaml", "TraceGraph skill"]
+    prior_sprint_actuals: null
+    status: ACTIVE
+    added_sprint: "SPRINT-001"
+    tags: [testing, bdd, automation, spec, developer-experience]
+
+  # ── ANALYTICS & INSIGHT ──────────────────────────────────────
+
+  - id: OPP-011
+    title: "Sprint Retrospective Insight Synthesiser"
+    category: Analytics
+    description: >
+      At the end of each sprint, aggregate: decision-ledger events, assumption
+      resolution outcomes, ValueTracker actuals vs forecasts, and build
+      completion data. Generate a structured retrospective digest — what was
+      deferred, what overran, which assumptions were wrong — in 2 minutes
+      rather than 30.
+    baseline_score: 7.4
+    scoring_breakdown:
+      strategic_fit: 8
+      speed_to_value: 9
+      risk_inverse: 9
+      user_impact: 7
+      tech_debt_reduction: 5
+    effort_tier: M
+    effort_estimate_hours: 5
+    value_category: Direct
+    annual_value_estimate: "$11,700"
+    value_basis: "28 min/sprint saved × 40 sprints × $125/h POD Lead time = $2,333 + improved sprint calibration value ~$9,367"
+    dependencies: ["decision-ledger.md", "roi-brief.md", "ValueTracker (Operate phase)"]
+    prior_sprint_actuals: null
+    status: ACTIVE
+    added_sprint: "SPRINT-001"
+    tags: [retrospective, analytics, sprint-ops, decision-ledger]
+
+  - id: OPP-012
+    title: "Feature Usage Heatmap for Backlog Prioritisation"
+    category: Analytics
+    description: >
+      Instrument key feature paths and generate a weekly usage heatmap that
+      feeds directly into TransformIQ's rescoring model. High-usage features
+      with low satisfaction scores surface as priority improvement candidates.
+      Replaces gut-feel prioritisation with behavioural data.
+    baseline_score: 8.0
+    scoring_breakdown:
+      strategic_fit: 9
+      speed_to_value: 7
+      risk_inverse: 7
+      user_impact: 8
+      tech_debt_reduction: 5
+    effort_tier: M
+    effort_estimate_hours: 6
+    value_category: Enabling
+    annual_value_estimate: "$24,000"
+    value_basis: "Estimated 1 mis-prioritised sprint avoided per quarter × 36h build cost × $115/h = $16,560 + data-driven prioritisation lift ~$7,440"
+    dependencies: ["User activity schema (DR-001)", "TransformIQ opportunity-catalogue"]
+    prior_sprint_actuals: null
+    status: ACTIVE
+    added_sprint: "SPRINT-001"
+    tags: [analytics, telemetry, prioritisation, heatmap]
+
+  # ── DATA INTEGRITY & GOVERNANCE ──────────────────────────────
+
+  - id: OPP-013
+    title: "Schema Drift Detector"
+    category: Data Integrity
+    description: >
+      Compare the deployed database schema against specs/database.md on each
+      sprint start. Flag undocumented columns, type mismatches, and missing
+      indexes. Prevents silent schema drift from accumulating across sprints
+      into a major refactor debt.
+    baseline_score: 7.3
+    scoring_breakdown:
+      strategic_fit: 7
+      speed_to_value: 9
+      risk_inverse: 9
+      user_impact: 4
+      tech_debt_reduction: 9
+    effort_tier: S
+    effort_estimate_hours: 3
+    value_category: Technical
+    annual_value_estimate: "$10,800"
+    value_basis: "Estimated 0.5 major refactor avoided per year × 18h refactor cost × $115/h = $1,035 + continuous drift prevention $9,765"
+    dependencies: ["Database schema (specs/database.md)", "CI/CD pipeline or Monday hook"]
+    prior_sprint_actuals: null
+    status: ACTIVE
+    added_sprint: "SPRINT-001"
+    tags: [data-integrity, schema, drift-detection, technical-debt]
+
+  - id: OPP-014
+    title: "PII Field Lineage Tracker"
+    category: Data Governance
+    description: >
+      Automatically trace every PII field from its entry point (form/API) through
+      all transformations, storage locations, and egress points (exports, emails,
+      third-party sends). Produces a live PII data flow diagram. Critical for
+      GDPR Art. 30 records of processing activities.
+    baseline_score: 8.3
+    scoring_breakdown:
+      strategic_fit: 9
+      speed_to_value: 7
+      risk_inverse: 7
+      user_impact: 5
+      tech_debt_reduction: 8
+    effort_tier: L
+    effort_estimate_hours: 10
+    value_category: Quality
+    annual_value_estimate: "$30,000"
+    value_basis: "GDPR Art. 30 non-compliance risk avoidance — estimated €20K fine risk at 10% probability = €2K expected value + 8h/year manual audit elimination × $75/h = $600 + strategic compliance value ~$27,400"
+    dependencies: ["policy-library.md", "Database schema (DR-001)", "API spec (specs/api.md)"]
+    prior_sprint_actuals: null
+    status: ACTIVE
+    added_sprint: "SPRINT-001"
+    tags: [pii, gdpr, data-governance, compliance, lineage]
+
+  # ── INTEGRATION & CONNECTIVITY ───────────────────────────────
+
+  - id: OPP-015
+    title: "Webhook Event Bus for Third-Party Integrations"
+    category: Integration
+    description: >
+      Implement a versioned, retry-capable webhook event bus so third-party
+      systems can subscribe to key domain events (user.created, user.deleted,
+      payment.completed). Eliminates brittle point-to-point API polling by
+      integrators and opens a platform extension model.
+    baseline_score: 7.5
+    scoring_breakdown:
+      strategic_fit: 8
+      speed_to_value: 6
+      risk_inverse: 6
+      user_impact: 7
+      tech_debt_reduction: 7
+    effort_tier: L
+    effort_estimate_hours: 10
+    value_category: Enabling
+    annual_value_estimate: "$45,000"
+    value_basis: "Platform extensibility value: estimated 3 integration partnerships enabled × $15K average integration deal value = $45K"
+    dependencies: ["API spec (specs/api.md)", "Audit logging (POL-AUDIT-001)"]
+    prior_sprint_actuals: null
+    status: ACTIVE
+    added_sprint: "SPRINT-001"
+    tags: [integration, webhooks, events, platform, api]
+
+  - id: OPP-016
+    title: "Idempotent Background Job Queue"
+    category: Reliability
+    description: >
+      Replace ad-hoc background task execution with a persistent, idempotent
+      job queue (e.g., BullMQ or equivalent). Ensures tasks like email sends,
+      report generation, and data exports are never lost on server restart,
+      not double-executed on retry, and observable via a job status API.
+    baseline_score: 6.8
+    scoring_breakdown:
+      strategic_fit: 6
+      speed_to_value: 6
+      risk_inverse: 8
+      user_impact: 6
+      tech_debt_reduction: 9
+    effort_tier: M
+    effort_estimate_hours: 6
+    value_category: Technical
+    annual_value_estimate: "$12,000"
+    value_basis: "Estimated 1h/sprint debugging dropped background tasks × 40 sprints × $115/h = $4,600 + incident reduction value $7,400"
+    dependencies: ["Email service integration (IR-001)"]
+    prior_sprint_actuals: null
+    status: ACTIVE
+    added_sprint: "SPRINT-001"
+    tags: [reliability, jobs, queue, infrastructure, technical-debt]
+
+  # ── CONTENT & COMMUNICATION ──────────────────────────────────
+
+  - id: OPP-017
+    title: "Dynamic Notification Preference Engine"
+    category: Communication
+    description: >
+      Replace the static notification checkbox list with an AI-assisted
+      preference engine that learns communication frequency preferences per
+      user from open rates and dismissal patterns. Reduces unsubscribe rates
+      and improves email engagement metrics.
+    baseline_score: 6.2
+    scoring_breakdown:
+      strategic_fit: 6
+      speed_to_value: 7
+      risk_inverse: 8
+      user_impact: 7
+      tech_debt_reduction: 4
+    effort_tier: M
+    effort_estimate_hours: 7
+    value_category: Experience
+    annual_value_estimate: "$9,000"
+    value_basis: "Estimated 5% improvement in email engagement × 10,000 monthly emails × $0.15 LTV per engaged email × 12 months = $9,000"
+    dependencies: ["User Profile (REQ-003)", "Email service integration (IR-001)", "Consent (POL-GDPR-005)"]
+    prior_sprint_actuals: null
+    status: ACTIVE
+    added_sprint: "SPRINT-001"
+    tags: [notifications, preferences, email, personalisation, gdpr]
+
+  - id: OPP-018
+    title: "AI-Generated Release Notes from Sprint Artifacts"
+    category: Communication
+    description: >
+      At sprint close, auto-generate user-facing and internal release notes
+      from the decision-ledger, completed task list, and sprint spec. Two
+      audiences: technical (internal) and non-technical (business/end-user).
+      Saves 1–2 hours of post-sprint communication work per POD.
+    baseline_score: 6.7
+    scoring_breakdown:
+      strategic_fit: 7
+      speed_to_value: 9
+      risk_inverse: 9
+      user_impact: 6
+      tech_debt_reduction: 4
+    effort_tier: XS
+    effort_estimate_hours: 2
+    value_category: Direct
+    annual_value_estimate: "$5,000"
+    value_basis: "1.5h/sprint × 40 sprints × $83/h blended rate = $4,980"
+    dependencies: ["decision-ledger.md", "sprint-board.md", "Conductor output"]
+    prior_sprint_actuals: null
+    status: ACTIVE
+    added_sprint: "SPRINT-001"
+    tags: [release-notes, communication, automation, sprint-ops]
+
+  # ── OBSERVABILITY ────────────────────────────────────────────
+
+  - id: OPP-019
+    title: "AI-Powered Log Anomaly Summariser"
+    category: Observability
+    description: >
+      Instead of engineers scanning error logs, an LLM layer processes the
+      past hour of application logs and produces a structured digest: new error
+      types, frequency spikes, and suggested root causes. Surfaces in a Slack
+      digest or dashboard widget. Reduces mean-time-to-detect for production
+      issues.
+    baseline_score: 7.9
+    scoring_breakdown:
+      strategic_fit: 8
+      speed_to_value: 8
+      risk_inverse: 7
+      user_impact: 6
+      tech_debt_reduction: 6
+    effort_tier: M
+    effort_estimate_hours: 6
+    value_category: Quality
+    annual_value_estimate: "$22,000"
+    value_basis: "Estimated 20 min/day saved in log triage × 2 builders × $60/h × 250 days = $10,000 + incident MTTD reduction value $12,000"
+    dependencies: ["Structured logging (POL-AUDIT-001)", "Observability infrastructure"]
+    prior_sprint_actuals: null
+    status: ACTIVE
+    added_sprint: "SPRINT-001"
+    tags: [observability, logging, anomaly-detection, devops]
+
+  - id: OPP-020
+    title: "Dependency Vulnerability Auto-Triage"
+    category: Security
+    description: >
+      Run Dependabot or equivalent on every sprint start and use an LLM
+      to triage which CVEs are actually reachable in the current codebase,
+      classify severity in context (not just CVSS score), and generate a
+      prioritised patch list. Removes the noise of irrelevant low-risk CVE
+      alerts.
+    baseline_score: 7.2
+    scoring_breakdown:
+      strategic_fit: 8
+      speed_to_value: 8
+      risk_inverse: 8
+      user_impact: 5
+      tech_debt_reduction: 7
+    effort_tier: S
+    effort_estimate_hours: 3
+    value_category: Quality
+    annual_value_estimate: "$13,000"
+    value_basis: "Estimated 2h/sprint saved on CVE triage × 40 sprints × $75/h = $6,000 + security risk reduction $7,000"
+    dependencies: ["CI/CD pipeline", "Dependency manifest (package.json / requirements.txt)"]
+    prior_sprint_actuals: null
+    status: ACTIVE
+    added_sprint: "SPRINT-001"
+    tags: [security, cve, dependencies, devops, automation]
+
+# ── ARCHIVED OPPORTUNITIES ────────────────────────────────────
+archived:
+
+  - id: OPP-000
+    title: "Manual CSV Import Tool"
+    archived_reason: "Superseded by Webhook Event Bus (OPP-015) and Intelligent Data Import Validation (OPP-008)"
+    archived_sprint: "SPRINT-000"
+    archived_date: "2026-05-01"
+    original_score: 5.2
+
+  - id: OPP-A01
+    title: "Static FAQ Chatbot"
+    archived_reason: "Descoped — product direction moved to human-assisted support with AI triage (OPP-006)"
+    archived_sprint: "SPRINT-000"
+    archived_date: "2026-04-15"
+    original_score: 4.8
+
+  - id: OPP-A02
+    title: "In-App Tutorial Tooltips (Hardcoded)"
+    archived_reason: "Replaced by Automated User Onboarding Sequence (OPP-001) with dynamic sequencing"
+    archived_sprint: "SPRINT-000"
+    archived_date: "2026-04-15"
+    original_score: 4.1
+
+# ── MAINTENANCE INSTRUCTIONS ──────────────────────────────────
+# 1. TransformIQ rescores ALL active entries every Monday.
+#    Update baseline_score with the TransformIQ output after each sprint.
+# 2. When an opportunity is built, set status: DELIVERED and record
+#    actual value in prior_sprint_actuals for ValueModeler calibration.
+# 3. Never assign an id that has been previously used (including archived).
+#    Next available ID: OPP-021
+# 4. The scoring_breakdown fields are for TransformIQ weighting inputs.
+#    Keep them honest — inflated scores degrade prioritisation quality.

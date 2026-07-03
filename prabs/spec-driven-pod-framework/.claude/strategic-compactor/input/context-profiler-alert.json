@@ -1,0 +1,56 @@
+{
+  "schema_version": "1.0",
+  "alert_source": "ContextProfiler",
+  "alert_id": "CPA-2024-118843-002",
+  "session_id": "SES-2024-118843",
+  "generated_at": "2024-11-18T11:31:05Z",
+  "alert_level": "warn",
+  "utilization": 0.78,
+  "context_window": {
+    "model": "claude-sonnet-4-6",
+    "max_tokens": 200000,
+    "tokens_used": 156000,
+    "tokens_available": 44000,
+    "headroom_tokens": 44000,
+    "headroom_percentage": 0.22
+  },
+  "token_breakdown": {
+    "system_prompt_tokens": 4200,
+    "conversation_history_tokens": 28450,
+    "tool_schemas_tokens": 3100,
+    "recent_turns_tokens": 8600,
+    "current_turn_tokens": 850,
+    "compressible_history_tokens": 26800,
+    "total_tokens_used": 156000
+  },
+  "trend": {
+    "tokens_added_last_5_turns": 2340,
+    "tokens_added_last_10_turns": 4890,
+    "projected_turns_to_critical": 8,
+    "projected_turns_to_overflow": 22,
+    "growth_rate_per_turn": 468
+  },
+  "thresholds": {
+    "warn_threshold": 0.70,
+    "critical_threshold": 0.85,
+    "overflow_threshold": 0.95
+  },
+  "compaction_recommendation": {
+    "action": "compact_history",
+    "target_agent": "StrategicCompactor",
+    "rationale": "Conversation history alone is 28,450 tokens (18.2% of context). 49 turns present with significant stale content (failed lookups, supervisor unavailability loops, pleasantries). Estimated compactable: 18,000–22,000 tokens.",
+    "priority": "medium",
+    "estimated_tokens_recoverable": 20000,
+    "estimated_post_compaction_utilization": 0.55,
+    "compaction_urgency": "schedule_before_next_tool_call"
+  },
+  "previous_alerts": [
+    {
+      "alert_id": "CPA-2024-118843-001",
+      "alert_level": "info",
+      "utilization": 0.62,
+      "generated_at": "2024-11-18T09:45:00Z",
+      "action_taken": "none"
+    }
+  ]
+}

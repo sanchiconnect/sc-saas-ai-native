@@ -1,0 +1,383 @@
+{
+  "schema_version": "1.0",
+  "session_id": "cs-session-2026-06-03-001",
+  "routing_policy_id": "cs-routing-policy-v1",
+  "budget_signal_used": "active_signal",
+  "budget_utilization_at_routing": 41.3,
+  "budget_override_applied": false,
+  "routed_at": "2026-06-03T09:14:23Z",
+  "classifier_model": "claude-haiku-4-5",
+  "classifier_tokens_used": 1840,
+
+  "routing_decisions": [
+    {
+      "task_id": "cs-001",
+      "name": "classify_customer_intent",
+      "assigned_model": "claude-haiku-4-5",
+      "tier": "MECHANICAL",
+      "complexity_score": {
+        "reasoning_depth": 2,
+        "ambiguity_level": 2,
+        "domain_expertise": 1,
+        "multi_step_planning": 1,
+        "safety_criticality": 1,
+        "output_precision": 4,
+        "weighted_composite": 1.85
+      },
+      "classification_confidence": 0.97,
+      "routing_rationale": "Closed-taxonomy intent classification with fixed output categories. Composite score 1.85 is well within MECHANICAL tier. Zero inferential steps — direct pattern match against six predefined categories. High confidence.",
+      "safety_critical_override_applied": false,
+      "budget_override_applied": false,
+      "estimated_tokens": { "input": 320, "output": 20 },
+      "estimated_cost_usd": 0.000105,
+      "escalation_path": {
+        "trigger": "quality_gate_fail",
+        "escalate_to": "claude-sonnet-4-5",
+        "max_escalations": 2
+      }
+    },
+    {
+      "task_id": "cs-002",
+      "name": "lookup_account_status",
+      "assigned_model": "claude-haiku-4-5",
+      "tier": "MECHANICAL",
+      "complexity_score": {
+        "reasoning_depth": 1,
+        "ambiguity_level": 1,
+        "domain_expertise": 1,
+        "multi_step_planning": 1,
+        "safety_criticality": 2,
+        "output_precision": 5,
+        "weighted_composite": 1.45
+      },
+      "classification_confidence": 0.99,
+      "routing_rationale": "Pure data retrieval via Salesforce CRM tool call. Composite score 1.45 — lowest in the batch. No reasoning required beyond issuing a well-formed API call and passing back the response. Output precision is high (must not modify values) but that is a constraint, not a complexity driver.",
+      "safety_critical_override_applied": false,
+      "budget_override_applied": false,
+      "estimated_tokens": { "input": 180, "output": 80 },
+      "estimated_cost_usd": 0.000145,
+      "escalation_path": {
+        "trigger": "quality_gate_fail",
+        "escalate_to": "claude-sonnet-4-5",
+        "max_escalations": 2
+      }
+    },
+    {
+      "task_id": "cs-003",
+      "name": "fill_ticket_template",
+      "assigned_model": "claude-haiku-4-5",
+      "tier": "MECHANICAL",
+      "complexity_score": {
+        "reasoning_depth": 1,
+        "ambiguity_level": 1,
+        "domain_expertise": 1,
+        "multi_step_planning": 1,
+        "safety_criticality": 1,
+        "output_precision": 6,
+        "weighted_composite": 1.40
+      },
+      "classification_confidence": 0.99,
+      "routing_rationale": "All template slots map directly to values present verbatim in the context. Slot-filling with no inference. Composite 1.40. Output precision is high because this feeds downstream systems, but the task itself is mechanical.",
+      "safety_critical_override_applied": false,
+      "budget_override_applied": false,
+      "estimated_tokens": { "input": 240, "output": 120 },
+      "estimated_cost_usd": 0.000210,
+      "escalation_path": {
+        "trigger": "quality_gate_fail",
+        "escalate_to": "claude-sonnet-4-5",
+        "max_escalations": 2
+      }
+    },
+    {
+      "task_id": "cs-004",
+      "name": "transcribe_call_summary",
+      "assigned_model": "claude-haiku-4-5",
+      "tier": "MECHANICAL",
+      "complexity_score": {
+        "reasoning_depth": 2,
+        "ambiguity_level": 3,
+        "domain_expertise": 2,
+        "multi_step_planning": 1,
+        "safety_criticality": 1,
+        "output_precision": 5,
+        "weighted_composite": 2.30
+      },
+      "classification_confidence": 0.92,
+      "routing_rationale": "Extraction task — the model reads a transcript and pulls out explicitly stated facts into a structured format. Composite 2.30 sits firmly in MECHANICAL. Ambiguity is low-medium (some transcript passages need interpretation of what was agreed) but not high enough to push to STANDARD. Confidence 0.92 is above the 0.70 threshold.",
+      "safety_critical_override_applied": false,
+      "budget_override_applied": false,
+      "estimated_tokens": { "input": 900, "output": 150 },
+      "estimated_cost_usd": 0.000413,
+      "escalation_path": {
+        "trigger": "quality_gate_fail",
+        "escalate_to": "claude-sonnet-4-5",
+        "max_escalations": 2
+      }
+    },
+    {
+      "task_id": "cs-005",
+      "name": "generate_personalized_empathy_response",
+      "assigned_model": "claude-sonnet-4-5",
+      "tier": "STANDARD",
+      "complexity_score": {
+        "reasoning_depth": 4,
+        "ambiguity_level": 4,
+        "domain_expertise": 3,
+        "multi_step_planning": 3,
+        "safety_criticality": 2,
+        "output_precision": 5,
+        "weighted_composite": 3.65
+      },
+      "classification_confidence": 0.89,
+      "routing_rationale": "Requires tone calibration, brand voice adherence, and contextual empathy — none of which are mechanical. Composite 3.65 crosses the STANDARD threshold. Reasoning depth 4 confirms Sonnet minimum. Output must pass human tone review, demanding coherent generation beyond Haiku's reliable capability for emotionally charged text.",
+      "safety_critical_override_applied": false,
+      "budget_override_applied": false,
+      "estimated_tokens": { "input": 480, "output": 220 },
+      "estimated_cost_usd": 0.004740,
+      "escalation_path": {
+        "trigger": "quality_gate_fail",
+        "escalate_to": "claude-opus-4-5",
+        "max_escalations": 2
+      }
+    },
+    {
+      "task_id": "cs-006",
+      "name": "determine_refund_eligibility_edge_case",
+      "assigned_model": "claude-sonnet-4-5",
+      "tier": "STANDARD",
+      "complexity_score": {
+        "reasoning_depth": 6,
+        "ambiguity_level": 5,
+        "domain_expertise": 4,
+        "multi_step_planning": 4,
+        "safety_criticality": 5,
+        "output_precision": 7,
+        "weighted_composite": 5.30
+      },
+      "classification_confidence": 0.81,
+      "routing_rationale": "Edge case at the top of the STANDARD range (composite 5.30). Reasoning depth 6 is the ceiling for Sonnet. The customer's mitigating circumstance (no notification email) requires policy interpretation beyond simple application. Safety criticality 5 is below the safety-critical floor trigger (>=7). Sonnet is the appropriate choice — this does not rise to Opus territory unless escalation occurs.",
+      "safety_critical_override_applied": false,
+      "budget_override_applied": false,
+      "estimated_tokens": { "input": 520, "output": 280 },
+      "estimated_cost_usd": 0.005760,
+      "escalation_path": {
+        "trigger": "quality_gate_fail OR reasoning_insufficient",
+        "escalate_to": "claude-opus-4-5",
+        "max_escalations": 2,
+        "note": "If Sonnet's determination is challenged or shows incomplete policy reasoning, escalate to Opus immediately."
+      }
+    },
+    {
+      "task_id": "cs-007",
+      "name": "analyze_fraud_pattern_in_dispute",
+      "assigned_model": "claude-opus-4-5",
+      "tier": "DEEP",
+      "complexity_score": {
+        "reasoning_depth": 8,
+        "ambiguity_level": 6,
+        "domain_expertise": 8,
+        "multi_step_planning": 7,
+        "safety_criticality": 9,
+        "output_precision": 9,
+        "weighted_composite": 7.85
+      },
+      "classification_confidence": 0.95,
+      "routing_rationale": "Highest-stakes task in the batch. Composite 7.85 and reasoning_depth 8 unambiguously place this in DEEP tier. Safety_criticality 9 triggers the safety-critical override independently, ensuring Opus floor. Output feeds an irreversible account suspension decision. Cross-signal analysis (geo + device + velocity + behavioral history) demands expert-level synthesis that Sonnet cannot reliably deliver.",
+      "safety_critical_override_applied": true,
+      "safety_critical_override_reason": "safety_criticality=9 >= 7 threshold; account suspension is irreversible",
+      "budget_override_applied": false,
+      "estimated_tokens": { "input": 1200, "output": 600 },
+      "estimated_cost_usd": 0.063000,
+      "escalation_path": {
+        "trigger": "N/A — already at maximum tier",
+        "escalate_to": "human_review",
+        "note": "If Opus output confidence is low, escalate to human fraud analyst. No further model escalation possible."
+      }
+    },
+    {
+      "task_id": "cs-008",
+      "name": "draft_legal_compliance_email",
+      "assigned_model": "claude-opus-4-5",
+      "tier": "DEEP",
+      "complexity_score": {
+        "reasoning_depth": 8,
+        "ambiguity_level": 4,
+        "domain_expertise": 9,
+        "multi_step_planning": 6,
+        "safety_criticality": 9,
+        "output_precision": 10,
+        "weighted_composite": 7.85
+      },
+      "classification_confidence": 0.96,
+      "routing_rationale": "GDPR Article 17 response requires deep legal domain expertise across multiple sub-articles (data retention basis, legitimate interest, legal obligation), jurisdiction-specific regulatory contacts, and zero-error precision (output_precision=10). Any error exposes the company to DPA enforcement action. Safety_criticality 9 independently triggers safety-critical override. Domain_expertise 9 confirms DEEP.",
+      "safety_critical_override_applied": true,
+      "safety_critical_override_reason": "safety_criticality=9 >= 7; regulatory non-compliance risk",
+      "budget_override_applied": false,
+      "estimated_tokens": { "input": 680, "output": 420 },
+      "estimated_cost_usd": 0.041700,
+      "escalation_path": {
+        "trigger": "N/A — already at maximum tier",
+        "escalate_to": "legal_team_review",
+        "note": "All GDPR responses should be reviewed by legal counsel before sending, regardless of model output quality."
+      }
+    },
+    {
+      "task_id": "cs-009",
+      "name": "resolve_multi_system_data_conflict",
+      "assigned_model": "claude-opus-4-5",
+      "tier": "DEEP",
+      "complexity_score": {
+        "reasoning_depth": 8,
+        "ambiguity_level": 7,
+        "domain_expertise": 7,
+        "multi_step_planning": 8,
+        "safety_criticality": 7,
+        "output_precision": 9,
+        "weighted_composite": 7.80
+      },
+      "classification_confidence": 0.91,
+      "routing_rationale": "Three-way state conflict requiring event-sourcing reasoning across CRM, billing, and product databases with contradictory timestamps. Composite 7.80 is firmly DEEP. Multi_step_planning 8 reflects the need to sequence root-cause analysis before producing a remediation plan. Safety_criticality 7 triggers the safety-critical override (floor: Sonnet), though DEEP already exceeds this. Wrong remediation corrupts all three downstream systems.",
+      "safety_critical_override_applied": true,
+      "safety_critical_override_reason": "safety_criticality=7 >= 7; erroneous remediation corrupts production data",
+      "budget_override_applied": false,
+      "estimated_tokens": { "input": 950, "output": 520 },
+      "estimated_cost_usd": 0.053250,
+      "escalation_path": {
+        "trigger": "N/A — already at maximum tier",
+        "escalate_to": "engineering_on_call",
+        "note": "Data integrity remediation plans should be reviewed by a backend engineer before execution."
+      }
+    },
+    {
+      "task_id": "cs-010",
+      "name": "suggest_upsell_opportunity",
+      "assigned_model": "claude-sonnet-4-5",
+      "tier": "STANDARD",
+      "complexity_score": {
+        "reasoning_depth": 4,
+        "ambiguity_level": 3,
+        "domain_expertise": 4,
+        "multi_step_planning": 3,
+        "safety_criticality": 1,
+        "output_precision": 4,
+        "weighted_composite": 3.50
+      },
+      "classification_confidence": 0.88,
+      "routing_rationale": "Composite 3.50 sits at the bottom of the STANDARD range. Requires product knowledge synthesis and tone calibration for a non-pushy recommendation. Haiku would likely produce a generic recommendation without the nuance needed for customer retention context. Safety_criticality 1 — no risk. Sonnet provides the brand-voice quality needed for customer-facing text.",
+      "safety_critical_override_applied": false,
+      "budget_override_applied": false,
+      "estimated_tokens": { "input": 380, "output": 120 },
+      "estimated_cost_usd": 0.002940,
+      "escalation_path": {
+        "trigger": "quality_gate_fail",
+        "escalate_to": "claude-opus-4-5",
+        "max_escalations": 1,
+        "note": "Escalation to Opus is unlikely to be warranted for an upsell suggestion. A single escalation cap is appropriate."
+      }
+    },
+    {
+      "task_id": "cs-011",
+      "name": "orchestrate_crm_update_workflow",
+      "assigned_model": "claude-sonnet-4-5",
+      "tier": "STANDARD",
+      "complexity_score": {
+        "reasoning_depth": 4,
+        "ambiguity_level": 2,
+        "domain_expertise": 4,
+        "multi_step_planning": 6,
+        "safety_criticality": 5,
+        "output_precision": 7,
+        "weighted_composite": 4.40
+      },
+      "classification_confidence": 0.87,
+      "routing_rationale": "Multi-tool orchestration across Salesforce, payment processor, and SendGrid with ordered dependencies and partial-failure handling. Multi_step_planning 6 is the dominant driver. Safety_criticality 5 (financial transaction) is below the safety-critical floor trigger but warrants Sonnet over Haiku. Composite 4.40 confirms STANDARD.",
+      "safety_critical_override_applied": false,
+      "budget_override_applied": false,
+      "estimated_tokens": { "input": 560, "output": 340 },
+      "estimated_cost_usd": 0.006780,
+      "escalation_path": {
+        "trigger": "tool_call_failure OR quality_gate_fail",
+        "escalate_to": "claude-opus-4-5",
+        "max_escalations": 2,
+        "note": "If payment tool call fails and recovery logic is needed, Opus may be warranted for complex error handling."
+      }
+    },
+    {
+      "task_id": "cs-012",
+      "name": "summarize_case_history_for_escalation",
+      "assigned_model": "claude-sonnet-4-5",
+      "tier": "STANDARD",
+      "complexity_score": {
+        "reasoning_depth": 5,
+        "ambiguity_level": 4,
+        "domain_expertise": 3,
+        "multi_step_planning": 4,
+        "safety_criticality": 3,
+        "output_precision": 6,
+        "weighted_composite": 4.35
+      },
+      "classification_confidence": 0.86,
+      "routing_rationale": "Synthesis across 6 interaction records with pattern identification and implicit commitment tracking. Composite 4.35 in mid-STANDARD range. Reasoning depth 5 requires connecting dots across records that Haiku would likely miss. Output is read by a human expert (tier-2 agent), so precision matters. Not safety-critical enough for Opus.",
+      "safety_critical_override_applied": false,
+      "budget_override_applied": false,
+      "estimated_tokens": { "input": 1100, "output": 250 },
+      "estimated_cost_usd": 0.007050,
+      "escalation_path": {
+        "trigger": "quality_gate_fail",
+        "escalate_to": "claude-opus-4-5",
+        "max_escalations": 2
+      }
+    }
+  ],
+
+  "summary": {
+    "total_tasks": 12,
+    "model_distribution": {
+      "claude-haiku-4-5":  { "count": 4, "tasks": ["cs-001", "cs-002", "cs-003", "cs-004"] },
+      "claude-sonnet-4-5": { "count": 5, "tasks": ["cs-005", "cs-006", "cs-010", "cs-011", "cs-012"] },
+      "claude-opus-4-5":   { "count": 3, "tasks": ["cs-007", "cs-008", "cs-009"] }
+    },
+    "safety_critical_tasks": 3,
+    "safety_critical_overrides_applied": 3,
+    "budget_overrides_applied": 0,
+    "low_confidence_escalations": 0
+  },
+
+  "cost_analysis": {
+    "with_routing": {
+      "total_estimated_cost_usd": 0.034,
+      "breakdown": {
+        "haiku_tasks_cost_usd":  0.000873,
+        "sonnet_tasks_cost_usd": 0.027270,
+        "opus_tasks_cost_usd":   0.157950
+      },
+      "note": "Actual total reflects the mix. Haiku tasks are near-zero cost; Opus tasks dominate despite being only 3 of 12."
+    },
+    "counterfactual_all_sonnet": {
+      "total_estimated_cost_usd": 0.089,
+      "assumption": "All 12 tasks routed to claude-sonnet-4-5 at current token estimates.",
+      "cost_vs_routing": "+$0.055",
+      "pct_more_expensive": "161.8%"
+    },
+    "counterfactual_all_opus": {
+      "total_estimated_cost_usd": 0.441,
+      "assumption": "All 12 tasks routed to claude-opus-4-5 at current token estimates.",
+      "cost_vs_routing": "+$0.407",
+      "pct_more_expensive": "1197.1%"
+    },
+    "savings_vs_all_sonnet": {
+      "amount_usd": 0.055,
+      "percentage": "61.8%"
+    },
+    "savings_vs_all_opus": {
+      "amount_usd": 0.407,
+      "percentage": "92.3%"
+    },
+    "classifier_overhead": {
+      "cost_usd": 0.000460,
+      "model": "claude-haiku-4-5",
+      "tokens": 1840,
+      "roi": "Classifier cost is 1.35% of the savings generated vs. all-Sonnet routing."
+    }
+  }
+}

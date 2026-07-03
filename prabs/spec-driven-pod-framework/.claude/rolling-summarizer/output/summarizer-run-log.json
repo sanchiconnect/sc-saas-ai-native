@@ -1,0 +1,138 @@
+{
+  "run_id": "RSR-2024-1114-001",
+  "skill": "RollingSummarizer",
+  "version": "1.0.0",
+  "session_id": "CS-78234",
+  "timestamp_start": "2024-11-14T14:58:55Z",
+  "timestamp_end": "2024-11-14T14:59:04Z",
+  "duration_ms": 9100,
+
+  "trigger": {
+    "turns_trigger": true,
+    "token_trigger": true,
+    "fired_on": "both",
+    "turns_since_last_summary": 12,
+    "new_turns_token_count": 2800,
+    "cadence_turns_threshold": 10,
+    "cadence_token_threshold": 3000
+  },
+
+  "input": {
+    "prior_summary_file": "input/prior-summary.md",
+    "prior_summary_tokens": 680,
+    "prior_summary_covered_turns": "1-20",
+    "new_turns_file": "input/recent-turns.md",
+    "new_turns_count": 12,
+    "new_turns_range": "21-32",
+    "new_turns_tokens": 2800,
+    "total_input_tokens": 3480
+  },
+
+  "escalation": {
+    "escalation_triggered": true,
+    "escalation_reason": "formal_commitment_detected",
+    "escalation_signals_found": [
+      {
+        "signal_type": "formal_commitment",
+        "turn": 32,
+        "excerpt": "I can confirm that your refund of $149.99 will be processed within 3-5 business days per our SLA",
+        "confidence": "high"
+      },
+      {
+        "signal_type": "legal_language",
+        "turn": 32,
+        "excerpt": "per our SLA",
+        "confidence": "high"
+      }
+    ],
+    "escalation_decision": "Full summarization run processed by escalation model. Haiku was not used for any portion of this run."
+  },
+
+  "model": {
+    "model_selected": "claude-sonnet-4-6",
+    "model_default": "claude-haiku-4-5",
+    "model_used": "claude-sonnet-4-6",
+    "escalated": true
+  },
+
+  "output": {
+    "summary_file": "output/rolling-summary-updated.md",
+    "output_summary_tokens": 820,
+    "sections_updated": ["Session Context", "Issue Summary", "Actions Taken", "Pending Items", "Commitments Made"],
+    "sections_unchanged": ["Customer Profile"],
+    "token_budget_max": 800,
+    "token_budget_status": "slightly_over",
+    "token_budget_note": "Output is 820 tokens, 20 above the 800 target. Commitments Made section was not compressed per policy. Session Context and Actions Taken were kept at minimum viable detail. Acceptable overage given verbatim preservation requirements."
+  },
+
+  "context_reduction": {
+    "before_tokens": 3480,
+    "after_tokens": 820,
+    "tokens_saved": 2660,
+    "reduction_percent": 76.4,
+    "note": "Before = prior summary (680) + new turns (2800). After = updated rolling summary (820). Net saving: 2,660 tokens removed from active context."
+  },
+
+  "preserved_verbatim": [
+    {
+      "field": "commitment_text",
+      "value": "I can confirm that your refund of $149.99 will be processed within 3-5 business days per our SLA, starting from today's Finance batch review.",
+      "source_turn": 32,
+      "location_in_summary": "Commitments Made — Commitment 1"
+    },
+    {
+      "field": "ticket_id",
+      "value": "TKT-2024-9871",
+      "source_turns": [22, 24, 27],
+      "location_in_summary": "Issue Summary, Actions Taken, Pending Items"
+    },
+    {
+      "field": "customer_id",
+      "value": "CUST-004821",
+      "source_turns": [23, 27, 31],
+      "location_in_summary": "Customer Profile, Actions Taken"
+    },
+    {
+      "field": "amounts",
+      "value": "$149.99",
+      "source_turns": [23, 24, 25, 29, 32],
+      "location_in_summary": "Issue Summary, Commitments Made"
+    },
+    {
+      "field": "amounts",
+      "value": "$25.00",
+      "source_turns": [29, 31, 32],
+      "location_in_summary": "Actions Taken, Commitments Made"
+    }
+  ],
+
+  "session_state_update": {
+    "last_summarized_at_turn": 32,
+    "last_summarized_at_timestamp": "2024-11-14T14:59:04Z",
+    "total_turns_in_session": 32,
+    "summarization_cycles_completed": 2,
+    "summary_token_count": 820,
+    "raw_turns_retained_after_cutoff": 0,
+    "next_summarization_due_at_turn": 42,
+    "next_summarization_token_trigger": 3000
+  },
+
+  "quality_checks": {
+    "no_duplicate_facts": true,
+    "all_verbatim_fields_preserved": true,
+    "commitment_section_uncompressed": true,
+    "pending_items_reconciled": true,
+    "annotation_tags_applied": true,
+    "section_order_correct": true
+  },
+
+  "warnings": [
+    {
+      "code": "TOKEN_BUDGET_SLIGHT_OVERAGE",
+      "message": "Output summary is 820 tokens, 20 over the configured max of 800. This is within acceptable tolerance due to verbatim preservation requirements. Consider adjusting max_summary_tokens to 850 if overages recur.",
+      "severity": "low"
+    }
+  ],
+
+  "errors": []
+}

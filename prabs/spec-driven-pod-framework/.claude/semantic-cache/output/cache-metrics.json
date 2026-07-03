@@ -1,0 +1,203 @@
+{
+  "_meta": {
+    "description": "SemanticCache performance metrics — 30-day rolling window",
+    "window_start": "2026-05-04T00:00:00Z",
+    "window_end": "2026-06-03T00:00:00Z",
+    "window_days": 30,
+    "generated_at": "2026-06-03T01:00:00Z",
+    "deployment_id": "cs-cache-prod-01",
+    "cache_version": "1.2.0"
+  },
+
+  "volume": {
+    "total_lookups": 12450,
+    "exact_hits": 6823,
+    "semantic_hits": 2104,
+    "misses": 3523,
+    "pii_bypasses": 187,
+    "expired_entry_encounters": 312,
+    "invalidation_triggered_misses": 89
+  },
+
+  "hit_rates": {
+    "overall_hit_rate": 0.717,
+    "overall_hit_rate_pct": "71.7%",
+    "exact_hit_rate": 0.548,
+    "exact_hit_rate_pct": "54.8%",
+    "semantic_hit_rate": 0.169,
+    "semantic_hit_rate_pct": "16.9%",
+    "miss_rate": 0.283,
+    "miss_rate_pct": "28.3%",
+    "note": "Hit rates computed over total_lookups (12,450). PII bypasses excluded from rate calculation as they are not eligible for caching."
+  },
+
+  "token_economics": {
+    "tokens_avoided": 7526040,
+    "tokens_avoided_breakdown": {
+      "from_exact_hits": 5731320,
+      "from_semantic_hits": 1794720,
+      "avg_tokens_saved_per_exact_hit": 840,
+      "avg_tokens_saved_per_semantic_hit": 853
+    },
+    "tokens_consumed_for_semantic_embedding": 631200,
+    "tokens_consumed_breakdown": {
+      "embedding_tokens_for_semantic_path": 631200,
+      "avg_embedding_tokens_per_semantic_lookup": 300,
+      "note": "Embedding tokens are charged at text-embedding-3-small rates (~$0.00002/1K), not Sonnet rates"
+    },
+    "net_tokens_avoided": 6894840,
+    "estimated_cost_saved_usd": 22.58,
+    "estimated_cost_saved_breakdown": {
+      "sonnet_input_at_003_per_1k": 10.52,
+      "sonnet_output_at_015_per_1k": 12.06,
+      "total_gross_savings_usd": 22.58,
+      "embedding_cost_for_semantic_path_usd": 0.01,
+      "net_savings_after_embedding_cost_usd": 22.57,
+      "pricing_basis": "claude-sonnet-4-5 input $0.003/1K, output $0.015/1K, mixed 60/40 input/output split"
+    }
+  },
+
+  "latency": {
+    "p50_exact_hit_ms": 2,
+    "p95_exact_hit_ms": 5,
+    "p99_exact_hit_ms": 9,
+    "p50_semantic_hit_ms": 43,
+    "p95_semantic_hit_ms": 78,
+    "p99_semantic_hit_ms": 112,
+    "p50_miss_passthrough_ms": 1247,
+    "p95_miss_passthrough_ms": 2103,
+    "p99_miss_passthrough_ms": 3891,
+    "overall_p50_ms": 4,
+    "overall_p95_ms": 1189,
+    "note": "Overall P95 is dominated by miss path. Blended median is very low due to 71.7% hit rate."
+  },
+
+  "cache_store_health": {
+    "total_entries": 2847,
+    "max_entries_configured": 10000,
+    "utilization_pct": "28.5%",
+    "active_entries": 2601,
+    "expired_and_pending_purge": 246,
+    "entries_added_this_window": 3523,
+    "entries_invalidated_this_window": 89,
+    "entries_evicted_lru_this_window": 0,
+    "average_entry_hit_count": 4.4,
+    "entries_never_hit": 312,
+    "entries_with_10_plus_hits": 891
+  },
+
+  "top_cached_queries": [
+    {
+      "rank": 1,
+      "cache_key": "cke_017",
+      "query": "Do you offer a free trial?",
+      "source_tags": ["faq", "pricing_policy"],
+      "hit_count_30d": 334,
+      "tokens_saved_30d": 220440,
+      "cache_type": "seeded",
+      "avg_daily_hits": 11.1
+    },
+    {
+      "rank": 2,
+      "cache_key": "cke_002",
+      "query": "What are your customer support hours?",
+      "source_tags": ["faq", "support_hours"],
+      "hit_count_30d": 489,
+      "tokens_saved_30d": 303180,
+      "cache_type": "seeded",
+      "avg_daily_hits": 16.3
+    },
+    {
+      "rank": 3,
+      "cache_key": "cke_001",
+      "query": "What is your refund policy for double charges?",
+      "source_tags": ["billing_policy", "refund_rules"],
+      "hit_count_30d": 312,
+      "tokens_saved_30d": 262080,
+      "cache_type": "seeded",
+      "avg_daily_hits": 10.4
+    },
+    {
+      "rank": 4,
+      "cache_key": "cke_003",
+      "query": "How do I cancel my subscription?",
+      "source_tags": ["faq", "subscription_policy", "billing_policy"],
+      "hit_count_30d": 267,
+      "tokens_saved_30d": 208260,
+      "cache_type": "seeded",
+      "avg_daily_hits": 8.9
+    },
+    {
+      "rank": 5,
+      "cache_key": "cke_014",
+      "query": "Is my data secure on your platform?",
+      "source_tags": ["security_policy", "faq", "data_policy"],
+      "hit_count_30d": 203,
+      "tokens_saved_30d": 176610,
+      "cache_type": "seeded",
+      "avg_daily_hits": 6.8
+    }
+  ],
+
+  "semantic_hit_quality": {
+    "total_semantic_hits": 2104,
+    "semantic_hits_flagged_for_review": 2104,
+    "semantic_hits_verified_correct": 1996,
+    "semantic_hits_found_inappropriate": 23,
+    "semantic_hits_pending_review": 85,
+    "verification_accuracy_rate": 0.989,
+    "verification_accuracy_pct": "98.9%",
+    "inappropriate_hit_rate": 0.011,
+    "inappropriate_hit_rate_pct": "1.1%",
+    "similarity_distribution": {
+      "0.92_to_0.93": 312,
+      "0.93_to_0.94": 498,
+      "0.94_to_0.95": 621,
+      "0.95_to_0.97": 489,
+      "0.97_to_0.99": 184
+    },
+    "most_common_inappropriate_hit_reason": "customer_asked_about_specific_account_state_not_general_policy"
+  },
+
+  "daily_trends": {
+    "note": "Abbreviated to last 7 days for brevity",
+    "days": [
+      { "date": "2026-05-28", "lookups": 398, "hit_rate": 0.699, "tokens_saved": 234780 },
+      { "date": "2026-05-29", "lookups": 412, "hit_rate": 0.711, "tokens_saved": 243288 },
+      { "date": "2026-05-30", "lookups": 445, "hit_rate": 0.718, "tokens_saved": 268092 },
+      { "date": "2026-05-31", "lookups": 389, "hit_rate": 0.706, "tokens_saved": 230244 },
+      { "date": "2026-06-01", "lookups": 421, "hit_rate": 0.724, "tokens_saved": 256068 },
+      { "date": "2026-06-02", "lookups": 467, "hit_rate": 0.731, "tokens_saved": 284844 },
+      { "date": "2026-06-03", "lookups": 203, "hit_rate": 0.738, "tokens_saved": 123828, "partial_day": true }
+    ]
+  },
+
+  "invalidation_impact": {
+    "total_invalidations_30d": 7,
+    "entries_invalidated_30d": 89,
+    "lookups_that_were_misses_due_to_invalidation": 89,
+    "tokens_not_saved_due_to_invalidation": 74760,
+    "note": "Invalidations are necessary for correctness. The 89 forced misses represent ~1% of total lookups — a healthy tradeoff for cache freshness."
+  },
+
+  "recommendations": [
+    {
+      "priority": "high",
+      "action": "Pre-seed cache with top-50 FAQ answers before next marketing campaign",
+      "rationale": "Hit rate drops to ~55% on the first day of new promotions as cache warms. Pre-seeding would hold hit rate at 70%+ from day one.",
+      "estimated_additional_tokens_saved": 42000
+    },
+    {
+      "priority": "medium",
+      "action": "Lower similarity threshold to 0.90 for apology_template and escalation_script tags",
+      "rationale": "Template content is stylistically flexible. Tightening to 0.92 may be causing unnecessary misses for paraphrased requests that would be adequately served by the cached template.",
+      "estimated_additional_semantic_hits": 120
+    },
+    {
+      "priority": "low",
+      "action": "Evict 312 never-hit entries older than 14 days",
+      "rationale": "These entries are consuming index space without generating value. LRU eviction will handle this naturally but a one-time sweep would free index capacity.",
+      "estimated_index_size_reduction_pct": 11
+    }
+  ]
+}

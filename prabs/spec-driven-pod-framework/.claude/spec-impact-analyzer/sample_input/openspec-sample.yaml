@@ -1,0 +1,120 @@
+# openspec.yaml — SpecPod Sprint Spec (Sample)
+# POD Lead locks this file to trigger all planning skills
+# SpecPod Framework v2.1.0
+
+sprint_id: SPRINT-001
+sprint_week: "2026-05-27"
+locked_by: "POD Lead"
+locked_at: "2026-05-27T08:00:00Z"
+status: LOCKED
+
+project_ref: "specs/program.md"
+data_classification: confidential
+pii_present: true
+jurisdiction: [EU-GDPR, SOC2]
+
+# ─── Functional Requirements ────────────────────────────────────────────
+
+functional_requirements:
+  - id: REQ-001
+    title: "User Login with Email and Password"
+    description: "Users must be able to log in using their registered email and password. Failed attempts must be rate-limited after 5 consecutive failures."
+    priority: MUST
+    effort_estimate: 3h
+    acceptance_criteria:
+      - "Login succeeds with valid credentials"
+      - "Login fails with clear error for invalid credentials"
+      - "Account locked after 5 failed attempts within 10 minutes"
+    pii_fields: [email]
+    assumption: false
+
+  - id: REQ-002
+    title: "User Registration"
+    description: "New users can register with email, password, and display name. Email verification required before account activation."
+    priority: MUST
+    effort_estimate: 4h
+    acceptance_criteria:
+      - "Registration form validates email format and password strength (min 8 chars, 1 number, 1 special char)"
+      - "Verification email sent within 30 seconds of registration"
+      - "Account inactive until email verified"
+    pii_fields: [email, display_name]
+    assumption: false
+
+  - id: REQ-003
+    title: "User Profile View and Edit"
+    description: "Authenticated users can view and edit their profile: display name, bio, and notification preferences."
+    priority: SHOULD
+    effort_estimate: 2h
+    acceptance_criteria:
+      - "Profile page loads within 1 second"
+      - "Changes saved and reflected immediately"
+      - "Notification preferences persisted to database"
+    pii_fields: [display_name, bio]
+    assumption: false
+
+  - id: REQ-004
+    title: "Activity Dashboard"
+    description: "Users see a personalised dashboard showing their recent activity, summary statistics, and recommended next actions."
+    priority: SHOULD
+    effort_estimate: 5h
+    acceptance_criteria:
+      - "Dashboard loads in under 2 seconds"
+      - "Shows last 10 activities"
+      - "Recommended actions are contextually relevant"
+    assumption: true
+    assumption_text: "Assumes recommendation engine exists or can be scaffolded in this sprint"
+
+# ─── Non-Functional Requirements ────────────────────────────────────────
+
+non_functional_requirements:
+  - id: NFR-001
+    title: "Authentication Security"
+    description: "All authentication flows must comply with OWASP Top 10 authentication best practices."
+    category: security
+    measurable: true
+    threshold: "Zero OWASP auth vulnerabilities in security scan"
+
+  - id: NFR-002
+    title: "API Response Time"
+    description: "All API endpoints must respond within acceptable latency thresholds under normal load."
+    category: performance
+    measurable: true
+    threshold: "p95 < 300ms, p99 < 1000ms under 100 concurrent users"
+
+  - id: NFR-003
+    title: "Accessibility"
+    description: "All UI components must meet WCAG 2.1 AA compliance."
+    category: accessibility
+    measurable: true
+    threshold: "Zero WCAG 2.1 AA violations in automated scan"
+
+# ─── Integration Requirements ────────────────────────────────────────────
+
+integration_requirements:
+  - id: IR-001
+    title: "Email Service Integration"
+    description: "System must integrate with the configured SMTP/email service provider for transactional emails."
+    target_system: "Email service (SMTP or API)"
+    effort_estimate: 1h
+
+# ─── Data Requirements ───────────────────────────────────────────────────
+
+data_requirements:
+  - id: DR-001
+    title: "User Schema"
+    description: "Define and migrate the users table with all required fields."
+    tables: [users, user_preferences, user_activity]
+    effort_estimate: 1h
+
+# ─── Sprint Metadata ─────────────────────────────────────────────────────
+
+sprint_capacity:
+  builders: 2
+  hours_per_builder_per_day: 6
+  sprint_days: 3
+  total_available_hours: 36
+  buffer_pct: 15
+  usable_hours: 30.6
+
+total_estimated_effort: 16h
+capacity_headroom: 14.6h

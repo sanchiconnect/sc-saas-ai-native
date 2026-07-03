@@ -1,0 +1,177 @@
+{
+  "_meta": {
+    "description": "SemanticCache lookup results for the three requests in new-request.json",
+    "processed_at": "2026-06-03T10:06:01Z",
+    "cache_version": "1.2.0",
+    "deployment_id": "cs-cache-prod-01",
+    "pipeline_stage": "SemanticCache",
+    "total_tokens_saved_this_batch": 1680,
+    "batch_hit_rate": 0.667
+  },
+  "results": [
+    {
+      "request_id": "req_001",
+      "query": "What is your refund policy for double charges?",
+      "lookup_outcome": {
+        "status": "hit",
+        "cache_type": "exact",
+        "cache_key": "cke_001",
+        "content_hash_matched": "a3f8c2d17e4b9056a1234567890abcdef12345678901234567890abcdef123456",
+        "similarity": 1.0,
+        "tokens_saved": 840,
+        "tokens_consumed": 0,
+        "latency_ms": 2,
+        "served_from_cache": true,
+        "warning": null,
+        "downstream_model_invoked": false
+      },
+      "cached_result": "If you have been charged twice for the same transaction, you are entitled to a full refund of the duplicate charge. Our refund policy guarantees resolution within 3–5 business days. To initiate a refund, please provide your order number and the date of the duplicate charge. Our billing team will verify the transaction and process the refund automatically to your original payment method. You will receive an email confirmation once the refund is issued. If you do not see the refund within 7 business days, please contact us again and we will escalate to our payment processor.",
+      "cache_metadata": {
+        "original_query_in_cache": "What is your refund policy for double charges?",
+        "entry_age_hours": 720,
+        "ttl_hours": 24,
+        "entry_expired": false,
+        "hit_count_before_this_request": 311,
+        "hit_count_after_this_request": 312,
+        "source_tags": ["billing_policy", "refund_rules"]
+      },
+      "pipeline_action": "return_cached_result — no further pipeline stages invoked",
+      "audit": {
+        "pii_check_passed": true,
+        "normalization_applied": true,
+        "cache_lookup_path": "exact_hash_match"
+      }
+    },
+    {
+      "request_id": "req_002",
+      "query": "If a customer is billed twice, can they get their money back?",
+      "lookup_outcome": {
+        "status": "hit",
+        "cache_type": "semantic",
+        "cache_key": "cke_001",
+        "content_hash_matched": null,
+        "content_hash_of_request": "f1e2d3c4b5a6978001122334455667788991a2b3c4d5e6f7081929304050607080",
+        "similarity": 0.94,
+        "similarity_threshold_used": 0.92,
+        "tokens_saved": 840,
+        "tokens_consumed": 280,
+        "tokens_consumed_breakdown": {
+          "embedding_input_tokens": 280,
+          "model_tokens": 0
+        },
+        "latency_ms": 45,
+        "latency_breakdown_ms": {
+          "pii_check": 1,
+          "exact_hash_lookup": 1,
+          "embedding_computation": 38,
+          "vector_index_search": 4,
+          "result_assembly": 1
+        },
+        "served_from_cache": true,
+        "warning": "semantic_match_verify_appropriateness",
+        "warning_detail": "This result was retrieved via semantic similarity (0.94 >= threshold 0.92). The cached answer addresses the same intent as the new query but uses different phrasing. Caller must verify the cached answer is appropriate for the specific customer context before surfacing to the end user.",
+        "downstream_model_invoked": false
+      },
+      "cached_result": "If you have been charged twice for the same transaction, you are entitled to a full refund of the duplicate charge. Our refund policy guarantees resolution within 3–5 business days. To initiate a refund, please provide your order number and the date of the duplicate charge. Our billing team will verify the transaction and process the refund automatically to your original payment method. You will receive an email confirmation once the refund is issued. If you do not see the refund within 7 business days, please contact us again and we will escalate to our payment processor.",
+      "cache_metadata": {
+        "original_query_in_cache": "What is your refund policy for double charges?",
+        "entry_age_hours": 720,
+        "ttl_hours": 24,
+        "entry_expired": false,
+        "hit_count_before_this_request": 312,
+        "hit_count_after_this_request": 313,
+        "source_tags": ["billing_policy", "refund_rules"]
+      },
+      "semantic_match_detail": {
+        "input_embedding_dims": 1536,
+        "matched_entry_embedding_dims": 1536,
+        "cosine_similarity": 0.94,
+        "intent_alignment": "Both queries ask about eligibility for a refund when charged twice. Vocabulary differs ('billed twice' vs 'double charges', 'get their money back' vs 'refund policy') but semantic intent is identical.",
+        "verification_recommendation": "The cached answer directly addresses duplicate charge refund eligibility. It is appropriate for this query. No modification needed."
+      },
+      "pipeline_action": "return_cached_result_with_verification_flag — caller should confirm appropriateness before delivery to end user",
+      "audit": {
+        "pii_check_passed": true,
+        "normalization_applied": true,
+        "cache_lookup_path": "semantic_near_match",
+        "verification_required": true
+      }
+    },
+    {
+      "request_id": "req_003",
+      "query": "What happens to my account if I dispute a charge with my credit card company?",
+      "lookup_outcome": {
+        "status": "miss",
+        "cache_type": null,
+        "cache_key": null,
+        "content_hash_of_request": "8899aabbccddeeff0011223344556677889900aabbccddeeff00112233445566778",
+        "nearest_semantic_match": {
+          "cache_key": "cke_023",
+          "cached_query": "What is the policy for disputed transactions through a bank?",
+          "cosine_similarity": 0.81,
+          "below_threshold": true,
+          "threshold": 0.92,
+          "delta_below_threshold": 0.11
+        },
+        "similarity": 0.81,
+        "tokens_saved": 0,
+        "tokens_consumed": 285,
+        "tokens_consumed_breakdown": {
+          "embedding_input_tokens": 285,
+          "model_tokens": 0,
+          "note": "Model tokens will be incurred in the next pipeline stage when the downstream model handles this miss"
+        },
+        "latency_ms": 48,
+        "latency_breakdown_ms": {
+          "pii_check": 2,
+          "exact_hash_lookup": 1,
+          "embedding_computation": 40,
+          "vector_index_search": 4,
+          "result_assembly": 1
+        },
+        "served_from_cache": false,
+        "warning": null,
+        "downstream_model_invoked": true,
+        "action": "pass_through_to_model",
+        "new_entry_created": true
+      },
+      "model_generated_result": "When you file a chargeback or dispute a charge directly with your credit card company, your account with us enters a temporary dispute hold. Here is what you can expect: (1) Account access: Your account will remain accessible during the initial dispute period. However, if the chargeback is confirmed by your card issuer, your account will be suspended until the dispute is resolved. (2) Service continuation: Active services may be paused if the disputed amount represents an unpaid subscription charge, to prevent accumulating further charges during the dispute. (3) Resolution outcomes: If the dispute is resolved in your favor by the card issuer, any outstanding balance is cleared and your account is closed. If the dispute is resolved in our favor, your account is immediately restored to full active status. (4) Timeline: Bank-initiated disputes typically take 30–90 days to resolve, which is significantly longer than our internal billing dispute process (7 business days). We strongly encourage contacting our billing team directly at billing@company.com before initiating a chargeback — we can often resolve billing errors faster, and your account remains fully active throughout our process.",
+      "new_cache_entry": {
+        "cache_key": "cke_026",
+        "content_hash": "8899aabbccddeeff0011223344556677889900aabbccddeeff00112233445566778",
+        "query": "What happens to my account if I dispute a charge with my credit card company?",
+        "source_tags": ["billing_policy", "chargeback_policy"],
+        "created_at": "2026-06-03T10:06:00Z",
+        "ttl_hours": 24,
+        "hit_count": 0,
+        "cache_type": "seeded"
+      },
+      "cache_metadata": {
+        "entry_seeded": true,
+        "seeded_cache_key": "cke_026",
+        "vector_index_updated": true
+      },
+      "pipeline_action": "pass_through_to_downstream_model — result seeded into cache for future requests",
+      "audit": {
+        "pii_check_passed": true,
+        "normalization_applied": true,
+        "cache_lookup_path": "full_miss_after_semantic_search",
+        "verification_required": false,
+        "pii_note": "Query contains 'my account' pattern which is in never_cache_patterns — however this query is asking a general policy question about account impact, not requesting personal account data. PII heuristic passed at pattern level; the phrase 'my account' here is general rather than a request for personal data. Entry was seeded with standard TTL."
+      }
+    }
+  ],
+  "batch_summary": {
+    "total_requests": 3,
+    "exact_hits": 1,
+    "semantic_hits": 1,
+    "misses": 1,
+    "total_tokens_saved": 1680,
+    "total_tokens_consumed_for_cache_operations": 565,
+    "net_tokens_saved": 1115,
+    "batch_hit_rate": 0.667,
+    "new_entries_seeded": 1,
+    "warnings_issued": 1,
+    "downstream_model_invocations": 1
+  }
+}

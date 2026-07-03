@@ -1,0 +1,184 @@
+{
+  "report_version": "1.0",
+  "project": "acme-customer-service-chatbot",
+  "run_date": "2026-06-03",
+  "run_id": "PSR-20260603-001",
+  "status": "PENDING_HUMAN_ACTION",
+  "pending_items": 5,
+
+  "token_metrics": {
+    "tokens_before": 950,
+    "tokens_after": 380,
+    "tokens_saved": 570,
+    "reduction_percentage": 60.0,
+    "counting_method": "cl100k_base tiktoken estimate",
+    "note": "Token counts are estimates. Exact counts depend on the tokenizer version used at inference time."
+  },
+
+  "changes_summary": {
+    "total_changes": 23,
+    "safe": 18,
+    "review_required": 4,
+    "critical_human_approval": 1
+  },
+
+  "changes_by_type": {
+    "safe": {
+      "count": 18,
+      "auto_applied": true,
+      "categories": [
+        "role_description_compression",
+        "polite_reminder_deduplication",
+        "response_length_compression",
+        "tool_preamble_removal",
+        "duplicate_ticket_rule_removal",
+        "deprecated_tool_consolidation",
+        "voicecallback_notice_compression",
+        "crm_send_sms_deduplication",
+        "quality_checklist_removal",
+        "formatting_section_compression",
+        "greeting_rules_removal",
+        "closing_rules_removal",
+        "knowledge_accuracy_rules_removal",
+        "complaint_acknowledgment_compression",
+        "rules_file_escalation_dedup",
+        "data_handling_rules_subsumed",
+        "latency_guidance_compression",
+        "response_quality_filler_removal"
+      ]
+    },
+    "review_required": {
+      "count": 4,
+      "auto_applied": false,
+      "apply_after_hours": 24,
+      "items": [
+        {
+          "change_id": "CHANGE-06",
+          "description": "crm_lookup_customer 5-step flow compressed to inline constraints",
+          "tokens_saved": 55,
+          "reviewer_required": "product-or-cx-ops",
+          "concern": "Numbered flow compressed to inline text; error-handling step now implicit in general retry rule"
+        },
+        {
+          "change_id": "CHANGE-07",
+          "description": "crm_update_customer multi-field constraint merged into confirm-exact-changes wording",
+          "tokens_saved": 28,
+          "reviewer_required": "product-or-cx-ops",
+          "concern": "Single-field constraint now implied rather than explicit"
+        },
+        {
+          "change_id": "CHANGE-18",
+          "description": "Liability admission warning moved from system prompt to rules file only",
+          "tokens_saved": 10,
+          "reviewer_required": "legal",
+          "concern": "System prompt weight reduction may lower model attention to this constraint"
+        },
+        {
+          "change_id": "CHANGE-19",
+          "description": "Tool-call audit logging instruction removed from prompt",
+          "tokens_saved": 9,
+          "reviewer_required": "platform-engineering",
+          "concern": "If logging is not enforced at infrastructure level, this removal silently eliminates audit coverage"
+        }
+      ]
+    },
+    "critical_human_approval": {
+      "count": 1,
+      "auto_applied": false,
+      "items": [
+        {
+          "change_id": "CHANGE-20",
+          "description": "Tier 2 escalation criteria block reformatted from verbose 4-sentence list to compact 4-bullet list",
+          "tokens_saved": 22,
+          "category": "escalation_procedures",
+          "criticality_flag": "critical",
+          "opus_review": {
+            "model": "claude-opus-4-7",
+            "verdict": "PRESERVED",
+            "reason": "The proposed rewrite retains all four escalation triggers with identical thresholds ($500, two attempts, Enterprise tier, explicit supervisor request). No semantic or operational drift detected.",
+            "reviewed_at": "2026-06-03T10:14:32Z"
+          },
+          "approval_status": "PENDING_APPROVAL",
+          "approval_instructions": "Edit prompt-diff.md CHANGE-20 STATUS field from PENDING_APPROVAL to APPROVED or REJECTED, then re-run PromptSlimmer with --apply-approved flag.",
+          "reviewer_required": "cx-ops-lead or compliance-officer"
+        }
+      ]
+    }
+  },
+
+  "protected_phrases_audit": {
+    "total_protected": 6,
+    "all_preserved": true,
+    "items": [
+      { "id": "PPH-001", "label": "GDPR/CCPA data deletion response", "status": "PRESERVED" },
+      { "id": "PPH-002", "label": "Crisis hotline numbers", "status": "PRESERVED" },
+      { "id": "PPH-003", "label": "7-year transcript retention statement", "status": "PRESERVED" },
+      { "id": "PPH-004", "label": "[SECURITY-URGENT] tag", "status": "PRESERVED" },
+      { "id": "PPH-005", "label": "[DATA-DELETION-REQUEST] tag", "status": "PRESERVED" },
+      { "id": "PPH-006", "label": "[CRISIS] tag", "status": "PRESERVED" }
+    ]
+  },
+
+  "roi_estimates": {
+    "token_price_usd_per_million": 2.00,
+    "token_price_model": "claude-sonnet-4-6 input tokens",
+    "tokens_saved_per_call": 570,
+    "usd_saved_per_call": 0.00114,
+    "estimated_monthly_saving_at_1000_calls": "$1.14 at $2/MTok",
+    "estimated_monthly_saving_at_10000_calls": "$11.40 at $2/MTok",
+    "estimated_monthly_saving_at_100000_calls": "$114.00 at $2/MTok",
+    "note": "Savings are for input tokens only. If the slimmed prompt also reduces output length (shorter model responses due to shorter context), actual savings may be higher. These estimates do not account for cached prompt tokens which cost 0.1x."
+  },
+
+  "model_used": {
+    "bulk_processing": "claude-sonnet-4-6",
+    "critical_sections": "claude-opus-4-7",
+    "rationale": "Sonnet used for safe/review classification and compression at lower cost. Opus used for semantic-drift verification on critical escalation and compliance sections."
+  },
+
+  "source_files_audited": [
+    {
+      "file": "input/system-prompt-verbose.md",
+      "tokens": 750,
+      "directives_found": 41
+    },
+    {
+      "file": "customer-service-rules.md (from rules-files.json)",
+      "tokens": 140,
+      "directives_found": 40
+    },
+    {
+      "file": "tool-usage-rules.md (from rules-files.json)",
+      "tokens": 60,
+      "directives_found": 25
+    }
+  ],
+
+  "contradictions_found": [],
+
+  "superseded_rules_removed": [
+    {
+      "rule": "Do not offer voice callback to customers",
+      "reason": "VoiceCallback feature removed in v2.0. Warning note retained; positive instruction to offer alternatives preserved.",
+      "source": "system-prompt-verbose.md"
+    },
+    {
+      "rule": "crm_send_sms — direct to email if SMS needed",
+      "reason": "crm_send_sms removed in v2.1. Deprecated tool entry kept; alternative channel guidance merged into general fallback.",
+      "source": "tool-usage-rules.md"
+    }
+  ],
+
+  "next_steps": [
+    "Review 4 PENDING_REVIEW items in prompt-diff.md with appropriate stakeholders.",
+    "Obtain APPROVED annotation on CHANGE-20 from cx-ops-lead or compliance-officer.",
+    "Re-run PromptSlimmer with --apply-approved once CHANGE-20 is annotated.",
+    "Commit annotated prompt-diff.md and slimming-report.json to version control as audit record.",
+    "Schedule next slimming run in 90 days or after any significant prompt update to catch new drift."
+  ],
+
+  "warnings": [
+    "Prompt drift is cumulative. Each time a rule is added without removing a redundant one, the prompt grows. Re-run PromptSlimmer after every batch of prompt edits.",
+    "This report reflects the prompt as of 2026-06-03. Any changes made after this date are not captured here."
+  ]
+}

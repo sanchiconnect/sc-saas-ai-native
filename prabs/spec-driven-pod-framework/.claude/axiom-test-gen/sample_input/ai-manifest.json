@@ -1,0 +1,18 @@
+{
+  "sprint_id": "CS-CHAT-S05",
+  "ac_version": "spec-2.1.0-sha-9f3c1a",
+  "artifacts": [
+    {
+      "task_id": "TASK-03.2",
+      "produced_by": "DevCopilot",
+      "builder": "Builder-01",
+      "source_files": ["src/ratelimit/limiter.py"],
+      "spec_refs": ["AC-03.2.1","AC-03.2.2","AC-03.2.3","AC-03.2.4","AC-03.2.5","AC-03.2.6"],
+      "symbols": [
+        "RateLimiter.__init__(limit, window_seconds, clock)",
+        "RateLimiter.check(key) -> Decision",
+        "Decision(allowed, remaining, retry_after)"
+      ]
+    }
+  ]
+}

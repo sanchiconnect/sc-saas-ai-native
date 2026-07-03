@@ -1,0 +1,41 @@
+# Guardian — Sample Input: openspec.yaml (excerpt)
+# This file represents the locked openspec.yaml that Guardian reads to generate tests.
+
+sprint_id: "SPRINT-2025-W22"
+sprint_name: "AI Document Processing — Core Extraction"
+locked_by: "pod-lead@aligned.io"
+locked_at: "2025-05-27T09:00:00Z"
+
+features:
+  - id: "FEAT-001"
+    name: "Document Upload and Validation"
+    requirements:
+      - id: "REQ-001"
+        description: "System must accept PDF documents up to 50MB"
+        acceptance_criteria:
+          - "Given a PDF file of exactly 50MB, when uploaded, then the system returns HTTP 200 and a document_id"
+          - "Given a PDF file of 50.1MB, when uploaded, then the system returns HTTP 413 with error code DOC_TOO_LARGE"
+          - "Given a non-PDF file, when uploaded, then the system returns HTTP 415 with error code UNSUPPORTED_FORMAT"
+        component: "upload-service"
+        builder: "builder-1"
+
+      - id: "REQ-002"
+        description: "Uploaded documents must be virus-scanned before processing"
+        acceptance_criteria:
+          - "Given a clean document, when scanned, then processing proceeds within 5 seconds"
+          - "Given a document flagged by scanner, when scanned, then processing is halted and document_id is quarantined"
+        component: "security-service"
+        builder: "builder-2"
+
+  - id: "FEAT-002"
+    name: "AI Text Extraction"
+    requirements:
+      - id: "REQ-003"
+        description: "AI extraction must achieve ≥ 95% field accuracy on structured documents"
+        acceptance_criteria:
+          - "Given a structured invoice PDF with 20 fields, when extracted, then ≥ 19 fields match ground truth"
+          - "Given an unstructured document, when extracted, then confidence score < 0.7 triggers human review flag"
+        component: "extraction-engine"
+        builder: "builder-1"
+        semantic_eval: true
+        golden_reference: "sample_input/golden-extraction-REQ-003.json"
