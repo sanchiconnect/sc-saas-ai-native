@@ -1,0 +1,147 @@
+{
+  "meta": {
+    "generated_at": "2026-06-03T00:00:00Z",
+    "description": "Hybrid pipeline specifications for tasks T04 and T07. Each pipeline runs a deterministic regex stage first; only unmatched inputs proceed to the LLM stage.",
+    "expected_aggregate_llm_call_rate": 0.35,
+    "expected_aggregate_llm_call_rate_note": "Weighted average across T04 and T07. Without this hybrid layer, both tasks would route 100% to LLM."
+  },
+  "hybrid_tasks": [
+    {
+      "task_id": "T04",
+      "name": "Extract Customer Name from Intro",
+      "total_score": 16,
+      "expected_regex_hit_rate": 0.65,
+      "expected_llm_fallthrough_rate": 0.35,
+      "daily_volume": 700,
+      "expected_llm_calls_per_day": 245,
+      "expected_llm_calls_saved_vs_full_llm_per_day": 455,
+      "pipeline": {
+        "step_1_regex": {
+          "description": "Try to extract a full name using common introductory phrase patterns.",
+          "patterns": [
+            {
+              "id": "intro_my_name_is",
+              "pattern": "(?:My name is|My name's)\\s+([A-Z][a-z]+(?:\\s+[A-Z][a-z]+)+)",
+              "flags": ["re.IGNORECASE"],
+              "note": "Handles 'My name is Sarah Johnson' and 'My name's Tom Smith'. IGNORECASE because customers sometimes type lowercase.",
+              "example_match": "My name is Sarah Johnson and I'm having trouble logging in."
+            },
+            {
+              "id": "intro_this_is",
+              "pattern": "(?:This is|It's|Its|I am|I'm)\\s+([A-Z][a-z]+(?:\\s+[A-Z][a-z]+)+)",
+              "flags": ["re.IGNORECASE"],
+              "note": "Handles 'This is Marcus Rivera', 'I'm Priya Nair', 'It's Tom Bruckner'. IGNORECASE applied.",
+              "example_match": "Hi, this is Marcus Rivera. I'd like to update my billing address."
+            },
+            {
+              "id": "name_is_pattern",
+              "pattern": "(?:name is|name's)\\s+([A-Z][a-z]+(?:\\s+[A-Z][a-z]+)+)",
+              "flags": ["re.IGNORECASE"],
+              "note": "Catches trailing phrasings: 'The name is Dana Cho', '...name is Dana Cho'.",
+              "example_match": "4421983 — that's my account. The name is Dana Cho."
+            }
+          ],
+          "python_implementation": "import re\n\n_NAME_PATTERNS = [\n    re.compile(r\"(?:My name is|My name's)\\s+([A-Z][a-z]+(?:\\s+[A-Z][a-z]+)+)\", re.IGNORECASE),\n    re.compile(r\"(?:This is|It's|Its|I am|I'm)\\s+([A-Z][a-z]+(?:\\s+[A-Z][a-z]+)+)\", re.IGNORECASE),\n    re.compile(r\"(?:name is|name's)\\s+([A-Z][a-z]+(?:\\s+[A-Z][a-z]+)+)\", re.IGNORECASE),\n]\n\ndef extract_name_regex(text: str) -> str | None:\n    for pattern in _NAME_PATTERNS:\n        m = pattern.search(text)\n        if m:\n            # Title-case the captured group to normalize any casing quirks\n            return m.group(1).title()\n    return None  # Signal: fall through to LLM"
+        },
+        "step_2_sanity_check": {
+          "description": "Before accepting the regex result, run a lightweight sanity check.",
+          "checks": [
+            "Captured string contains exactly one space (first + last name; reject if title/suffix complicates it)",
+            "Each word starts with an uppercase letter after .title() normalization",
+            "Neither word is in a blocklist of common non-name words: ['This', 'That', 'The', 'Your', 'My']",
+            "Total character count between 4 and 40"
+          ],
+          "on_sanity_check_failure": "fall_through_to_llm"
+        },
+        "step_3_llm_fallback": {
+          "description": "Call claude-haiku-4-5 only when regex produced no match or sanity check failed.",
+          "prompt_template": "Extract the customer's full name from the following support message. Return only the name (first and last) with no explanation. If no name is present, return null.\n\nMessage: {message}",
+          "max_tokens": 20,
+          "temperature": 0,
+          "expected_call_rate": 0.35
+        }
+      },
+      "test_cases": {
+        "regex_should_handle": [
+          {"input": "My name is Sarah Johnson and I'm having trouble logging in.", "regex_result": "Sarah Johnson", "llm_called": false},
+          {"input": "Hi, this is Marcus Rivera. I'd like to update my billing address.", "regex_result": "Marcus Rivera", "llm_called": false},
+          {"input": "I'm Priya Nair. My account number is ACC-4481923.", "regex_result": "Priya Nair", "llm_called": false},
+          {"input": "4421983 — that's my account. The name is Dana Cho.", "regex_result": "Dana Cho", "llm_called": false}
+        ],
+        "llm_should_handle": [
+          {"input": "Hey — it's Tom. Tom Bruckner. I placed an order last week.", "regex_result": null, "llm_called": true, "note": "Repeated name, unconventional structure"},
+          {"input": "sergio here, account probs", "regex_result": null, "llm_called": true, "note": "Lowercase, single name, no intro phrase"},
+          {"input": "This is the third time I've called about this.", "regex_result": null, "llm_called": true, "note": "'This is' pattern fires but no name follows — sanity check blocks"}
+        ]
+      },
+      "monitoring": {
+        "metric": "regex_hit_rate",
+        "promote_to_regex_if_below": 0.10,
+        "demote_to_llm_if_above": 0.60,
+        "review_cadence_days": 90
+      }
+    },
+    {
+      "task_id": "T07",
+      "name": "Extract Mentioned Products",
+      "total_score": 15,
+      "expected_regex_hit_rate": 0.40,
+      "expected_llm_fallthrough_rate": 0.60,
+      "daily_volume": 300,
+      "expected_llm_calls_per_day": 105,
+      "expected_llm_calls_saved_vs_full_llm_per_day": 195,
+      "pipeline": {
+        "step_1_regex": {
+          "description": "Extract formal product codes in the format PROD-XX000 (two uppercase letters + three digits).",
+          "pattern": "PROD-[A-Z]{2}\\d{3}",
+          "flags": [],
+          "python_implementation": "import re\n\n_PRODUCT_CODE_PATTERN = re.compile(r'PROD-[A-Z]{2}\\d{3}')\n\ndef extract_product_codes_regex(text: str) -> list[str]:\n    \"\"\"\n    Returns all formal product codes found in the text.\n    Returns empty list (not None) to distinguish 'no codes found' from error.\n    \"\"\"\n    return _PRODUCT_CODE_PATTERN.findall(text)",
+          "example_match": "The PROD-PR001 plan and the PROD-AD005 add-on are both broken."
+        },
+        "step_2_llm_enrichment": {
+          "description": "After extracting formal codes, always call LLM to capture free-form product mentions the regex cannot handle. The LLM result is merged with the regex result (union, deduplicated).",
+          "rationale": "Unlike T04 where LLM is a pure fallback, here LLM runs on every message because free-form product names (60% of mentions) provide business-critical information. The regex reduces LLM workload by pre-annotating formal codes so the LLM does not need to extract them again.",
+          "prompt_template": "The following customer message may mention products. Formal product codes already identified: {regex_codes}.\n\nExtract any additional product names or references not covered by the formal codes. Return a JSON array of strings. Use null if no additional products are mentioned.\n\nMessage: {message}",
+          "max_tokens": 80,
+          "temperature": 0,
+          "expected_call_rate": 0.60,
+          "note": "LLM is called only when regex found no codes OR always — see step_2_always_llm flag below",
+          "always_llm": false,
+          "always_llm_rationale": "LLM is called only when regex extracts zero codes. If formal codes were found, we skip the LLM enrichment call unless the message is longer than 120 characters (indicating free-form text is likely present alongside the code)."
+        },
+        "step_3_merge": {
+          "description": "Merge regex codes and LLM-extracted names into a single deduplicated list.",
+          "python_implementation": "def merge_product_results(\n    regex_codes: list[str],\n    llm_extras: list[str] | None\n) -> list[str]:\n    results = list(regex_codes)\n    if llm_extras:\n        for item in llm_extras:\n            if item not in results:\n                results.append(item)\n    return results"
+        }
+      },
+      "test_cases": {
+        "regex_captures_fully": [
+          {"input": "The PROD-PR001 plan and the PROD-AD005 add-on are both broken.", "regex_codes": ["PROD-PR001", "PROD-AD005"], "llm_called": false, "note": "Short message, codes found, LLM skipped"},
+          {"input": "PROD-EN010 enterprise package is unavailable.", "regex_codes": ["PROD-EN010"], "llm_called": false}
+        ],
+        "llm_required": [
+          {"input": "The Pro subscription and the mobile app but neither are working.", "regex_codes": [], "llm_called": true, "llm_additions": ["Pro subscription", "mobile app"]},
+          {"input": "Your basic tier is fine but I need the enterprise features for my team.", "regex_codes": [], "llm_called": true, "llm_additions": ["basic tier", "enterprise"]},
+          {"input": "I signed up for 'ProMax' or whatever it's called — the one above Pro.", "regex_codes": [], "llm_called": true, "llm_additions": ["ProMax", "Pro"]}
+        ],
+        "mixed": [
+          {"input": "The PROD-PR001 plan doesn't include the analytics dashboard I was promised.", "regex_codes": ["PROD-PR001"], "llm_called": true, "note": "Message > 120 chars with likely free-form detail", "llm_additions": ["analytics dashboard"]}
+        ]
+      },
+      "monitoring": {
+        "metric": "regex_hit_rate",
+        "promote_threshold_note": "T07 is unlikely to promote to full regex given the open-vocabulary nature of product mentions; monitor for code-format adoption instead",
+        "demote_to_llm_if_regex_hit_rate_drops_below": 0.20,
+        "review_cadence_days": 90
+      }
+    }
+  ],
+  "economic_summary": {
+    "combined_daily_llm_calls_without_hybrid": 1000,
+    "combined_daily_llm_calls_with_hybrid": 350,
+    "combined_daily_llm_calls_saved": 650,
+    "daily_cost_saved_usd": 0.052,
+    "monthly_cost_saved_usd": 1.56,
+    "note": "Hybrid savings are modest at 5K/day volume but the pattern is correct regardless of scale. At 100K daily parses the monthly saving is ~$31.20."
+  }
+}

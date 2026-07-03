@@ -1,0 +1,194 @@
+[
+  {
+    "item": "customer_id: CS-78234",
+    "reason": "Primary account identifier — keep-anchor, verbatim required for all CRM tool calls",
+    "original_tokens": 12,
+    "retained_as": "verbatim",
+    "source_turns": [11, 12, 13],
+    "section": "Key IDs & References"
+  },
+  {
+    "item": "customer_name: Sarah Chen",
+    "reason": "Customer identity anchor — required for personalized communication and account verification",
+    "original_tokens": 8,
+    "retained_as": "verbatim",
+    "source_turns": [3, 13],
+    "section": "Key IDs & References"
+  },
+  {
+    "item": "customer_email: s.chen.apex@gmail.com",
+    "reason": "Authoritative account email from CRM (differs from emails customer initially provided) — critical for outbound contact by billing team",
+    "original_tokens": 18,
+    "retained_as": "verbatim",
+    "source_turns": [13, 36],
+    "section": "Key IDs & References"
+  },
+  {
+    "item": "plan: Business Pro at $149.99/month",
+    "reason": "Plan type determines constraint eligibility (BIL-004 billing pause restriction) and refund thresholds",
+    "original_tokens": 15,
+    "retained_as": "verbatim",
+    "source_turns": [13],
+    "section": "Key IDs & References"
+  },
+  {
+    "item": "duplicate_charge_date: 2024-11-15",
+    "reason": "Issue anchor — the date of the inciting event; required for billing investigation reference",
+    "original_tokens": 10,
+    "retained_as": "verbatim",
+    "source_turns": [15, 16],
+    "section": "Key IDs & References"
+  },
+  {
+    "item": "transaction_id: TXN-20241115-884421 (original charge)",
+    "reason": "Transaction anchor — must be preserved verbatim to distinguish original charge from duplicate; billing team needs both IDs",
+    "original_tokens": 22,
+    "retained_as": "verbatim",
+    "source_turns": [15, 16, 42],
+    "section": "Key IDs & References"
+  },
+  {
+    "item": "transaction_id: TXN-20241115-884567 (duplicate — refund target)",
+    "reason": "Transaction anchor — the specific transaction to be refunded; verbatim required for refund API call",
+    "original_tokens": 22,
+    "retained_as": "verbatim",
+    "source_turns": [15, 16, 17, 18, 42],
+    "section": "Key IDs & References"
+  },
+  {
+    "item": "charge_amount: $149.99",
+    "reason": "Monetary anchor — exact amount required for refund processing and constraint evaluation against $200 manager-approval threshold",
+    "original_tokens": 8,
+    "retained_as": "verbatim",
+    "source_turns": [15, 16, 17, 36],
+    "section": "Key IDs & References"
+  },
+  {
+    "item": "payment_method: Visa ending 4821",
+    "reason": "Refund destination — required verbatim to confirm refund will go to correct card; customer used this to verify their account",
+    "original_tokens": 12,
+    "retained_as": "verbatim",
+    "source_turns": [15, 36],
+    "section": "Key IDs & References"
+  },
+  {
+    "item": "fraud_flag_id: BDF-2024-441, set 2024-11-16 by automated_fraud_detection",
+    "reason": "Blocking item anchor — the root cause of why direct refund failed; must be preserved verbatim for billing team to look up and clear the correct flag",
+    "original_tokens": 35,
+    "retained_as": "verbatim",
+    "source_turns": [19, 20, 30, 31],
+    "section": "Key IDs & References"
+  },
+  {
+    "item": "ticket_id: TKT-2024-9871 (high priority, billing team queue)",
+    "reason": "Ticket anchor — primary case reference for all follow-up actions; must be preserved for status tracking and escalation",
+    "original_tokens": 28,
+    "retained_as": "verbatim",
+    "source_turns": [21, 22, 24, 28, 30, 42, 47, 48],
+    "section": "Key IDs & References"
+  },
+  {
+    "item": "SLA deadlines: original 2024-11-19 09:17 UTC, expedited 2024-11-18 12:18 UTC",
+    "reason": "Constraint anchor — both deadlines preserved so next agent can assess breach risk; expedited SLA is the binding one",
+    "original_tokens": 30,
+    "retained_as": "verbatim",
+    "source_turns": [21, 31, 32],
+    "section": "Key IDs & References"
+  },
+  {
+    "item": "expedite_reference: EXP-2024-3301",
+    "reason": "Reference anchor — required to track the expedite request status and reference it if billing team needs to be contacted again",
+    "original_tokens": 14,
+    "retained_as": "verbatim",
+    "source_turns": [31, 32, 48],
+    "section": "Key IDs & References"
+  },
+  {
+    "item": "assigned_specialist: BS-0042, assigned 2024-11-18 11:28 UTC",
+    "reason": "Live anchor — most recent status update; specific specialist assignment enables direct follow-up escalation if needed",
+    "original_tokens": 24,
+    "retained_as": "verbatim",
+    "source_turns": [48, 49],
+    "section": "Key IDs & References"
+  },
+  {
+    "item": "Refund eligibility details: full refund, auto-eligible, under $200 threshold",
+    "reason": "Decision anchor — confirms refund will auto-process once BDF-2024-441 cleared; no additional approval needed at $149.99",
+    "original_tokens": 45,
+    "retained_as": "summarized",
+    "source_turns": [17],
+    "section": "Decisions Made"
+  },
+  {
+    "item": "ERR_REFUND_HOLD_FLAG — reason direct refund failed",
+    "reason": "Error anchor — the specific error that changed the resolution path; required context for why ticket was created instead of direct refund",
+    "original_tokens": 40,
+    "retained_as": "summarized",
+    "source_turns": [19],
+    "section": "Task State"
+  },
+  {
+    "item": "Supervisor escalation attempts: 2 attempts, queue positions 4 and 6, both unavailable",
+    "reason": "Attempted path anchor — informs next agent that supervisor path was already tried twice; prevents redundant re-attempt without checking availability first",
+    "original_tokens": 180,
+    "retained_as": "summarized",
+    "source_turns": [24, 25, 27, 28, 29, 30],
+    "section": "Decisions Made"
+  },
+  {
+    "item": "Policy BIL-004: billing pause unavailable during active dispute for Business Pro",
+    "reason": "Constraint anchor — customer asked about this explicitly; must be preserved so next agent doesn't re-check or contradict",
+    "original_tokens": 55,
+    "retained_as": "summarized",
+    "source_turns": [38, 39, 40],
+    "section": "Constraints"
+  },
+  {
+    "item": "December 15 charge risk and manual deferral requirement",
+    "reason": "Open thread anchor — customer was informed of this condition; next agent must monitor and action by December 14 if ticket not resolved",
+    "original_tokens": 65,
+    "retained_as": "summarized",
+    "source_turns": [39, 40, 42],
+    "section": "Open Threads"
+  },
+  {
+    "item": "Post-refund workflow: 3–5 business days to Visa ending 4821, confirmation email to s.chen.apex@gmail.com",
+    "reason": "Live decision anchor — customer expectation was set; must be preserved to avoid contradicting what customer was told",
+    "original_tokens": 80,
+    "retained_as": "summarized",
+    "source_turns": [35, 36],
+    "section": "Open Threads"
+  },
+  {
+    "item": "2 failed email CRM lookups (ERR_EMAIL_NOT_FOUND x2) before ID-based lookup succeeded",
+    "reason": "Discarded loop — counted only; informs next agent not to retry email-based lookup without confirming correct address first",
+    "original_tokens": 320,
+    "retained_as": "counted-only",
+    "source_turns": [4, 5, 6, 7, 8, 9, 10],
+    "section": "Discarded Material"
+  },
+  {
+    "item": "Session greeting and pleasantry exchanges (Turns 2, 4, 6, 8, 10, 22, 43, 44)",
+    "reason": "Zero-information content — standard service language with no actionable data; fully discarded",
+    "original_tokens": 410,
+    "retained_as": "counted-only",
+    "source_turns": [2, 4, 6, 8, 10, 22, 43, 44],
+    "section": "Discarded Material"
+  },
+  {
+    "item": "Intermediate follow-up status checks at 10:45 and 11:30 UTC (Turns 46, 47, 49)",
+    "reason": "Superseded by Turn 48 which contains the definitive status (BS-0042 assigned, in_review); intermediate checks discarded",
+    "original_tokens": 280,
+    "retained_as": "counted-only",
+    "source_turns": [46, 47, 49],
+    "section": "Discarded Material"
+  },
+  {
+    "item": "Customer summary confirmation at Turns 41–42",
+    "reason": "Fully redundant — customer restated what agent had already captured; agent confirmation at Turn 42 is the source of record and that information is now in this digest",
+    "original_tokens": 190,
+    "retained_as": "counted-only",
+    "source_turns": [41, 42],
+    "section": "Discarded Material"
+  }
+]

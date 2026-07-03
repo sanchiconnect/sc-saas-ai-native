@@ -1,0 +1,260 @@
+{
+  "schema_version": "1.0",
+  "session_id": "cs-session-2026-06-03-001",
+  "submitted_at": "2026-06-03T09:14:22Z",
+  "pipeline": "customer_service_resolution",
+  "tasks": [
+    {
+      "task_id": "cs-001",
+      "name": "classify_customer_intent",
+      "description": "Determine which support category the incoming customer message belongs to. Categories are fixed: billing, technical_issue, cancellation, shipping, account_access, general_inquiry. Input is the raw customer message.",
+      "input_complexity_hints": {
+        "reasoning_depth": 2,
+        "ambiguity_level": 2,
+        "domain_expertise": 1,
+        "multi_step_planning": 1,
+        "safety_criticality": 1,
+        "output_precision": 4
+      },
+      "safety_critical": false,
+      "output_requirements": {
+        "format": "single_label",
+        "acceptable_error_rate": "5%",
+        "latency_sla_ms": 400
+      },
+      "example_input": "Hi, I was charged twice for my subscription this month and I need help getting the extra charge reversed.",
+      "notes": "Closed taxonomy. All categories well-defined. Ambiguity only arises in ~5% of messages."
+    },
+    {
+      "task_id": "cs-002",
+      "name": "lookup_account_status",
+      "description": "Retrieve and return the customer's current account standing: active/suspended/cancelled, subscription tier, last payment date, and any open flags. Data fetched via Salesforce CRM tool call.",
+      "input_complexity_hints": {
+        "reasoning_depth": 1,
+        "ambiguity_level": 1,
+        "domain_expertise": 1,
+        "multi_step_planning": 1,
+        "safety_criticality": 2,
+        "output_precision": 5
+      },
+      "safety_critical": false,
+      "output_requirements": {
+        "format": "structured_json",
+        "acceptable_error_rate": "0%",
+        "latency_sla_ms": 600
+      },
+      "example_input": "customer_id: CRM-88421",
+      "notes": "Pure data retrieval. No interpretation. Must pass exact values from CRM without modification."
+    },
+    {
+      "task_id": "cs-003",
+      "name": "fill_ticket_template",
+      "description": "Populate a standardized support ticket template with extracted values: customer name, issue category, priority level, affected product, and first-contact timestamp. All values are already present in the conversation context.",
+      "input_complexity_hints": {
+        "reasoning_depth": 1,
+        "ambiguity_level": 1,
+        "domain_expertise": 1,
+        "multi_step_planning": 1,
+        "safety_criticality": 1,
+        "output_precision": 6
+      },
+      "safety_critical": false,
+      "output_requirements": {
+        "format": "ticket_json_template",
+        "acceptable_error_rate": "0%",
+        "latency_sla_ms": 300
+      },
+      "example_input": "Context: customer Sarah Chen, billing dispute, priority: medium, product: Pro Plan, contact_time: 2026-06-03T09:02Z",
+      "notes": "Slot-filling only. Zero inferential steps required. All source values are present verbatim in context."
+    },
+    {
+      "task_id": "cs-004",
+      "name": "transcribe_call_summary",
+      "description": "Convert a raw call transcript into a structured summary: extract customer complaint, agent actions taken, resolution status, and any follow-up commitments made. Do not interpret intent — extract stated facts only.",
+      "input_complexity_hints": {
+        "reasoning_depth": 2,
+        "ambiguity_level": 3,
+        "domain_expertise": 2,
+        "multi_step_planning": 1,
+        "safety_criticality": 1,
+        "output_precision": 5
+      },
+      "safety_critical": false,
+      "output_requirements": {
+        "format": "structured_summary_json",
+        "acceptable_error_rate": "5%",
+        "latency_sla_ms": 800
+      },
+      "example_input": "Transcript: [Agent]: Hello, thank you for calling... [Customer]: I've been waiting three weeks for my refund... (800 tokens)",
+      "notes": "Extraction task, not analysis. Model reads and structures what is explicitly stated in the transcript."
+    },
+    {
+      "task_id": "cs-005",
+      "name": "generate_personalized_empathy_response",
+      "description": "Draft a first-response message to an upset customer who has experienced a billing error. Response must acknowledge their frustration, confirm the issue is understood, and commit to a resolution timeline. Tone must match the customer's communication style inferred from their message.",
+      "input_complexity_hints": {
+        "reasoning_depth": 4,
+        "ambiguity_level": 4,
+        "domain_expertise": 3,
+        "multi_step_planning": 3,
+        "safety_criticality": 2,
+        "output_precision": 5
+      },
+      "safety_critical": false,
+      "output_requirements": {
+        "format": "prose_email",
+        "acceptable_error_rate": "subjective — must pass human tone review",
+        "latency_sla_ms": 1500
+      },
+      "example_input": "Customer message: 'This is absolutely unacceptable. I've been a paying customer for 4 years and you just took $200 from my account without any notice. I want answers NOW.'",
+      "notes": "Requires tone calibration, brand voice adherence, and contextual empathy. Not mechanical — varies per customer."
+    },
+    {
+      "task_id": "cs-006",
+      "name": "determine_refund_eligibility_edge_case",
+      "description": "Assess whether a customer qualifies for a full refund on a 6-month subscription renewal that auto-charged 3 days before their cancellation request. Policy allows refunds within 48 hours of charge; customer is 24 hours outside window but claims they received no renewal notification email.",
+      "input_complexity_hints": {
+        "reasoning_depth": 6,
+        "ambiguity_level": 5,
+        "domain_expertise": 4,
+        "multi_step_planning": 4,
+        "safety_criticality": 5,
+        "output_precision": 7
+      },
+      "safety_critical": false,
+      "output_requirements": {
+        "format": "eligibility_decision_with_rationale",
+        "acceptable_error_rate": "1%",
+        "latency_sla_ms": 2000
+      },
+      "example_input": "charge_date: 2026-05-29, cancellation_request_date: 2026-06-01, notification_email_sent: false (system log), refund_policy_window: 48h",
+      "notes": "Edge case requiring policy interpretation plus mitigating circumstance analysis. Customer claims company fault (no notification). Decision has financial and retention implications."
+    },
+    {
+      "task_id": "cs-007",
+      "name": "analyze_fraud_pattern_in_dispute",
+      "description": "Investigate a chargeback dispute where a customer claims they did not authorize 7 transactions totaling $1,340 over 14 days. Analyze transaction velocity, geolocation data, device fingerprints, and historical behavior patterns to determine likelihood of account compromise versus friendly fraud. Output feeds an account suspension decision.",
+      "input_complexity_hints": {
+        "reasoning_depth": 8,
+        "ambiguity_level": 6,
+        "domain_expertise": 8,
+        "multi_step_planning": 7,
+        "safety_criticality": 9,
+        "output_precision": 9
+      },
+      "safety_critical": true,
+      "output_requirements": {
+        "format": "fraud_assessment_report",
+        "acceptable_error_rate": "0.5%",
+        "latency_sla_ms": 5000
+      },
+      "example_input": "transactions: [{id: TXN-4421, amount: 189.99, location: Lagos, device: unknown}, ...7 transactions], customer_location_history: [US, US, US], account_age: 3.2 years",
+      "notes": "High-stakes. Wrong fraud determination triggers irreversible account suspension or financial loss. Requires cross-signal synthesis: geo + device + velocity + history."
+    },
+    {
+      "task_id": "cs-008",
+      "name": "draft_legal_compliance_email",
+      "description": "Compose a regulatory response to a customer who has submitted a GDPR Article 17 right-to-erasure request. Email must cite correct legal basis for any data retention (legitimate interest, legal obligation), specify data categories being deleted vs. retained, include retention period for retained data, and provide the supervisory authority contact. Must be legally accurate.",
+      "input_complexity_hints": {
+        "reasoning_depth": 8,
+        "ambiguity_level": 4,
+        "domain_expertise": 9,
+        "multi_step_planning": 6,
+        "safety_criticality": 9,
+        "output_precision": 10
+      },
+      "safety_critical": true,
+      "output_requirements": {
+        "format": "formal_legal_email",
+        "acceptable_error_rate": "0%",
+        "latency_sla_ms": 6000
+      },
+      "example_input": "request_type: GDPR_Art17_erasure, customer_data_categories: [account_data, transaction_history, support_tickets, marketing_preferences], jurisdiction: EU_Germany",
+      "notes": "Any legal error exposes company to ICO/DPA enforcement action. Must cite specific regulation articles. Requires deep GDPR domain knowledge."
+    },
+    {
+      "task_id": "cs-009",
+      "name": "resolve_multi_system_data_conflict",
+      "description": "Customer's account shows 'active' in Salesforce CRM but 'suspended' in the billing system and 'cancelled' in the product access database. All three systems were updated within a 72-hour window. Determine the authoritative state, identify which system event triggered the conflict, and produce a remediation plan to reconcile all three.",
+      "input_complexity_hints": {
+        "reasoning_depth": 8,
+        "ambiguity_level": 7,
+        "domain_expertise": 7,
+        "multi_step_planning": 8,
+        "safety_criticality": 7,
+        "output_precision": 9
+      },
+      "safety_critical": true,
+      "output_requirements": {
+        "format": "conflict_analysis_and_remediation_plan",
+        "acceptable_error_rate": "0%",
+        "latency_sla_ms": 8000
+      },
+      "example_input": "crm_state: active (updated: 2026-05-31T14:22Z), billing_state: suspended (updated: 2026-06-01T09:15Z), product_state: cancelled (updated: 2026-06-01T11:47Z), event_log: [payment_failure, manual_agent_reactivation, webhook_cancellation]",
+      "notes": "Three-way state conflict with causal chain analysis required. Wrong remediation corrupts all downstream systems. Requires event-sourcing reasoning."
+    },
+    {
+      "task_id": "cs-010",
+      "name": "suggest_upsell_opportunity",
+      "description": "Based on the customer's current Pro Plan usage (CRM API calls: 850/month vs 1000 limit, support tickets: 3 in 90 days, team size: 4 users), identify the most relevant upgrade path from the product catalog and compose a brief, non-pushy upsell suggestion to append to the resolution email.",
+      "input_complexity_hints": {
+        "reasoning_depth": 4,
+        "ambiguity_level": 3,
+        "domain_expertise": 4,
+        "multi_step_planning": 3,
+        "safety_criticality": 1,
+        "output_precision": 4
+      },
+      "safety_critical": false,
+      "output_requirements": {
+        "format": "prose_recommendation_2_sentences",
+        "acceptable_error_rate": "subjective",
+        "latency_sla_ms": 1200
+      },
+      "example_input": "plan: Pro, api_calls_used: 850, api_calls_limit: 1000, tickets_90d: 3, team_size: 4, available_upgrades: [Business (5000 calls, 10 users), Enterprise (unlimited)]",
+      "notes": "Low stakes. Missed upsell is a minor revenue miss, not an error. Tone is more important than perfect product-fit logic."
+    },
+    {
+      "task_id": "cs-011",
+      "name": "orchestrate_crm_update_workflow",
+      "description": "After a refund is approved, coordinate the multi-step CRM update: (1) log refund decision in Salesforce case, (2) trigger refund via payment processor tool, (3) update account balance field, (4) send confirmation email via SendGrid tool, (5) close the support ticket. Handle partial failures gracefully.",
+      "input_complexity_hints": {
+        "reasoning_depth": 4,
+        "ambiguity_level": 2,
+        "domain_expertise": 4,
+        "multi_step_planning": 6,
+        "safety_criticality": 5,
+        "output_precision": 7
+      },
+      "safety_critical": false,
+      "output_requirements": {
+        "format": "workflow_execution_log",
+        "acceptable_error_rate": "0% for financial steps",
+        "latency_sla_ms": 4000
+      },
+      "example_input": "refund_amount: 189.99, customer_id: CRM-88421, case_id: CASE-2291, payment_method: stripe_token_xxx",
+      "notes": "Multi-tool orchestration with ordered dependencies. Partial failure handling requires rollback logic for financial steps."
+    },
+    {
+      "task_id": "cs-012",
+      "name": "summarize_case_history_for_escalation",
+      "description": "Produce a concise case handoff summary for a tier-2 human agent taking over a complex unresolved dispute. Must synthesize 6 previous interaction records, highlight unresolved commitments, identify pattern of issues, and recommend starting point for the next agent. Target: 200 words, skimmable.",
+      "input_complexity_hints": {
+        "reasoning_depth": 5,
+        "ambiguity_level": 4,
+        "domain_expertise": 3,
+        "multi_step_planning": 4,
+        "safety_criticality": 3,
+        "output_precision": 6
+      },
+      "safety_critical": false,
+      "output_requirements": {
+        "format": "structured_handoff_summary",
+        "acceptable_error_rate": "5%",
+        "latency_sla_ms": 2500
+      },
+      "example_input": "case_id: CASE-2291, interactions: [6 records spanning 3 weeks], open_commitments: ['refund promised by June 5'], escalation_reason: 'customer requested manager'",
+      "notes": "Requires synthesis across multiple records and identification of implicit patterns (e.g., repeated agent errors, policy inconsistencies)."
+    }
+  ]
+}

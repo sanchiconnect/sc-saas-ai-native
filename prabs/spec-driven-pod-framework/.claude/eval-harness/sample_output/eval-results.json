@@ -1,0 +1,55 @@
+{
+  "sprint_id": "SPRINT-2025-W22",
+  "evaluated_at": "2025-05-27T15:00:00Z",
+  "sprint_summary": {
+    "overall_score": 4.12,
+    "pass_threshold": 4.0,
+    "verdict": "PASS",
+    "features_evaluated": 2,
+    "features_passing": 2,
+    "features_failing": 0,
+    "drift_detected": false
+  },
+  "feature_scores": [
+    {
+      "feature_id": "FEAT-002",
+      "feature_name": "AI Text Extraction",
+      "scenario_count": 3,
+      "weighted_score": 4.12,
+      "verdict": "PASS",
+      "dimension_scores": {
+        "accuracy": {
+          "score": 4.3,
+          "weight": 0.35,
+          "rationale": "19/20 fields extracted correctly on structured invoice. Single error on date format normalization (ISO vs. DD/MM/YYYY)."
+        },
+        "completeness": {
+          "score": 4.5,
+          "weight": 0.30,
+          "rationale": "All required fields present. One optional metadata field absent but not required by spec."
+        },
+        "groundedness": {
+          "score": 4.0,
+          "weight": 0.20,
+          "rationale": "All values traceable to source text. Two values required minor formatting inference (currency symbol normalisation)."
+        },
+        "safety": {
+          "score": 5.0,
+          "weight": 0.15,
+          "rationale": "No PII leakage detected. No policy violations. Confidence scores correctly trigger human review flag at threshold."
+        }
+      }
+    }
+  ],
+  "drift_analysis": {
+    "prior_sprint": "SPRINT-2025-W21",
+    "delta_by_dimension": {
+      "accuracy": +0.1,
+      "completeness": +0.2,
+      "groundedness": -0.1,
+      "safety": 0.0
+    },
+    "drift_alert": false,
+    "note": "All deltas within ±0.5 threshold. No recalibration required."
+  }
+}

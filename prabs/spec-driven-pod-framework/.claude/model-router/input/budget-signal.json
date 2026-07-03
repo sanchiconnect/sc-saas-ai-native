@@ -1,0 +1,125 @@
+{
+  "schema_version": "1.0",
+  "signal_source": "BudgetGovernor",
+  "pipeline": "customer_service_resolution",
+  "generated_at": "2026-06-03T09:14:20Z",
+
+  "active_signal": {
+    "label": "nominal",
+    "description": "Current session is at 41.3% utilization. No budget pressure overrides apply. Route on complexity scores only.",
+    "session_id": "cs-session-2026-06-03-001",
+
+    "spend": {
+      "current_session_spend_usd": 0.062,
+      "session_cap_usd": 0.150,
+      "remaining_budget_usd": 0.088,
+      "budget_utilization_pct": 41.3
+    },
+
+    "model_spend_breakdown": {
+      "haiku": {
+        "calls": 28,
+        "input_tokens": 14200,
+        "output_tokens": 4800,
+        "spend_usd": 0.00955
+      },
+      "sonnet": {
+        "calls": 11,
+        "input_tokens": 18600,
+        "output_tokens": 9200,
+        "spend_usd": 0.04938
+      },
+      "opus": {
+        "calls": 2,
+        "input_tokens": 3100,
+        "output_tokens": 1800,
+        "spend_usd": 0.00382
+      }
+    },
+
+    "budget_pressure": "low",
+    "pressure_tier": "nominal",
+    "override_active": false,
+    "downgrade_allowed": false,
+    "safety_critical_floor": "sonnet",
+
+    "routing_instruction": {
+      "apply_budget_override": false,
+      "message": "Budget utilization is below 80%. Use complexity-based routing without modification. No downgrades required."
+    },
+
+    "trend": {
+      "spend_rate_usd_per_minute": 0.0021,
+      "projected_session_end_usd": 0.094,
+      "projected_utilization_at_session_end_pct": 62.7,
+      "risk": "low",
+      "note": "At current spend rate, session will end well within cap. No intervention needed."
+    }
+  },
+
+  "reference_signal_high_pressure": {
+    "label": "elevated",
+    "description": "Hypothetical signal at 87% utilization demonstrating budget-pressure downgrade behavior. This is NOT the active signal — for documentation and testing purposes only.",
+    "session_id": "cs-session-hypothetical-87pct",
+
+    "spend": {
+      "current_session_spend_usd": 0.1305,
+      "session_cap_usd": 0.150,
+      "remaining_budget_usd": 0.0195,
+      "budget_utilization_pct": 87.0
+    },
+
+    "model_spend_breakdown": {
+      "haiku": {
+        "calls": 52,
+        "input_tokens": 28400,
+        "output_tokens": 9600,
+        "spend_usd": 0.01910
+      },
+      "sonnet": {
+        "calls": 24,
+        "input_tokens": 41200,
+        "output_tokens": 19800,
+        "spend_usd": 0.09390
+      },
+      "opus": {
+        "calls": 6,
+        "input_tokens": 9300,
+        "output_tokens": 5400,
+        "spend_usd": 0.01750
+      }
+    },
+
+    "budget_pressure": "elevated",
+    "pressure_tier": "elevated",
+    "override_active": true,
+    "downgrade_allowed": true,
+    "safety_critical_floor": "sonnet",
+
+    "routing_instruction": {
+      "apply_budget_override": true,
+      "message": "Budget utilization is at 87.0% — between 80% and 90% threshold. Apply one-tier downgrade for all tasks where safety_criticality < 7. Tasks with safety_criticality >= 7 retain complexity-based model assignment.",
+      "downgrade_rule": "one_tier_down_if_not_critical",
+      "exemption_condition": "safety_criticality >= 7",
+      "affected_tier_transitions": [
+        { "from": "opus",   "to": "sonnet", "condition": "safety_criticality < 7" },
+        { "from": "sonnet", "to": "haiku",  "condition": "safety_criticality < 7" }
+      ]
+    },
+
+    "trend": {
+      "spend_rate_usd_per_minute": 0.0038,
+      "projected_session_end_usd": 0.162,
+      "projected_utilization_at_session_end_pct": 108.0,
+      "risk": "high",
+      "note": "At current rate, session will exceed cap before completion. Budget-pressure routing activated to reduce remaining spend by ~35%."
+    },
+
+    "expected_savings_from_override": {
+      "tasks_downgraded": 3,
+      "tasks_protected": 2,
+      "estimated_savings_usd": 0.014,
+      "projected_final_utilization_pct": 96.3
+    }
+  }
+}

@@ -1,0 +1,169 @@
+{
+  "queue_version": "1.0.0",
+  "generated_at": "2026-06-03T09:52:00Z",
+  "session_id": "sess_20260603_001",
+  "reviewer_instructions": "For each READY item: read the candidate SKILL.md, verify it generalises beyond this session, check the overlap decision, confirm no anti-pattern flags, then either promote or reject with a reason. For NEEDS_MORE_EVIDENCE items: no action required today — re-evaluate after the specified number of additional sessions.",
+  "promotion_threshold": 0.75,
+  "needs_evidence_threshold": 0.50,
+  "items": [
+    {
+      "queue_id": "PQ_001",
+      "pattern_id": "billing_lookup_sequence",
+      "name": "Billing Dispute Lookup Sequence",
+      "status": "READY",
+      "confidence": 0.87,
+      "priority": 1,
+      "candidate_skill_file": "output/SKILL-billing-lookup-candidate.md",
+      "evidence_summary": {
+        "occurrences": 3,
+        "consistency_score": 0.95,
+        "sessions_observed": 1,
+        "failure_rate": 0.0,
+        "anti_pattern_flag": false
+      },
+      "overlap_summary": {
+        "overlapping_skills": ["crm_lookup_order", "proactive_case_check"],
+        "overlap_type": "PARTIAL",
+        "reviewer_decision_required": true,
+        "options": [
+          "A: Promote as new dedicated billing-dispute skill (recommended)",
+          "B: Enhance crm_lookup_order with billing sub-sequence",
+          "C: Merge proactive_case_check into this skill for billing contexts"
+        ]
+      },
+      "risk_assessment": {
+        "level": "LOW",
+        "notes": "Pattern is mechanically deterministic (tool call order). Cannot encode incorrect behaviour as long as the lookup sequence is valid. Main risk is redundancy with existing skills — overlap decision resolves this."
+      },
+      "reviewer_checklist": [
+        "Read SKILL-billing-lookup-candidate.md",
+        "Verify sequence order is correct: lookup_customer → get_cases → get_billing_history",
+        "Confirm days=30 default is appropriate for billing cycle",
+        "Make overlap decision (Option A / B / C)",
+        "Note: single-session origin — consider waiting for one more confirming session or proceed given strong consistency score and artifact corroboration"
+      ],
+      "reviewer_fields": {
+        "decision": null,
+        "overlap_resolution": null,
+        "reviewer_name": null,
+        "review_date": null,
+        "rejection_reason": null,
+        "promotion_notes": null
+      },
+      "estimated_reuse_value": "~3,000 tokens saved per billing session. High value."
+    },
+    {
+      "queue_id": "PQ_002",
+      "pattern_id": "escalation_phrase",
+      "name": "Canonical Escalation Phrase",
+      "status": "READY",
+      "confidence": 0.82,
+      "priority": 2,
+      "candidate_skill_file": null,
+      "candidate_skill_stub": {
+        "name": "canonical-escalation-phrase",
+        "trigger": "When escalating to a supervisor or specialist in any context",
+        "canonical_phrase": "I want to make sure you receive the best assistance — let me connect you with a specialist who can resolve this directly.",
+        "personalisation_allowed": "May substitute customer name ('I want to make sure [Name] receives...') while keeping the rest of the phrase intact.",
+        "do_not_use": ["I'll transfer you to a supervisor", "Let me get a supervisor for you", "Hold on while I transfer you"],
+        "pairs_with": "escalation_context_bundling — use that skill to determine WHAT context to include; use this skill for HOW to communicate the handoff to the customer.",
+        "evidence_file_reference": "output/pattern-catalogue.json → escalation_phrase"
+      },
+      "evidence_summary": {
+        "occurrences": 2,
+        "consistency_score": 1.0,
+        "sessions_observed": 1,
+        "failure_rate": 0.0,
+        "anti_pattern_flag": false
+      },
+      "overlap_summary": {
+        "overlapping_skills": ["escalation_context_bundling"],
+        "overlap_type": "COMPLEMENTARY",
+        "reviewer_decision_required": false,
+        "notes": "escalation_context_bundling covers context content. This pattern covers customer-facing language. They address orthogonal concerns and should coexist."
+      },
+      "risk_assessment": {
+        "level": "VERY_LOW",
+        "notes": "Perfect consistency (1.0). Directly corroborated by template update and quality config change — both committed to main during this session. Phrase already encoded in approved list by the session's artifacts."
+      },
+      "reviewer_checklist": [
+        "Confirm the canonical phrase reads naturally in the product's voice",
+        "Verify that the deprecated phrases ('I'll transfer you', 'Let me get a supervisor') should indeed be removed",
+        "Add cross-reference to escalation_context_bundling in the promoted skill",
+        "No overlap decision required — complementary skill confirmed"
+      ],
+      "reviewer_fields": {
+        "decision": null,
+        "overlap_resolution": "COMPLEMENTARY — no action needed",
+        "reviewer_name": null,
+        "review_date": null,
+        "rejection_reason": null,
+        "promotion_notes": null
+      },
+      "estimated_reuse_value": "~200 tokens saved per escalation. Secondary value: quality metric compliance and consistent customer experience."
+    }
+  ],
+  "needs_more_evidence": [
+    {
+      "queue_id": "PQ_003",
+      "pattern_id": "double_charge_30day_check",
+      "name": "Immediate 30-Day Billing Scope for Double Charge Reports",
+      "status": "NEEDS_MORE_EVIDENCE",
+      "confidence": 0.70,
+      "confidence_needed_to_promote": 0.75,
+      "confidence_gap": 0.05,
+      "re_evaluate_after_sessions": 3,
+      "re_evaluate_note": "One additional confirming session with 2+ occurrences at consistency >= 0.85 will bring confidence above threshold. The pattern is plausible and well-motivated; the main gap is single-session evidence.",
+      "current_evidence_summary": {
+        "occurrences": 2,
+        "consistency_score": 0.90,
+        "sessions_observed": 1
+      },
+      "instinct_stub": {
+        "instinct_id": "inst_double_charge_30day",
+        "description": "When customer says 'double charge' or 'charged twice', immediately call get_billing_history(days=30) without asking for the date. The scoped query resolves faster than a clarifying question.",
+        "supersedes": "inst_30day_billing_window",
+        "status": "stored_as_instinct"
+      },
+      "action": "Store as instinct. Do not promote yet. Flag for re-evaluation after 3 additional sessions."
+    },
+    {
+      "queue_id": "PQ_004",
+      "pattern_id": "amount_formatting",
+      "name": "Monetary Amount Formatting: $X.XX USD",
+      "status": "NEEDS_MORE_EVIDENCE",
+      "confidence": 0.62,
+      "confidence_needed_to_promote": 0.75,
+      "confidence_gap": 0.13,
+      "re_evaluate_after_sessions": 3,
+      "re_evaluate_note": "High occurrence count (8 in one session) but confidence held back by single-session origin and minor consistency dip. Strong artifact corroboration (regex added to codebase) suggests this is already an established convention. 3 more sessions will likely confirm.",
+      "current_evidence_summary": {
+        "occurrences": 8,
+        "consistency_score": 0.75,
+        "sessions_observed": 1
+      },
+      "instinct_stub": {
+        "instinct_id": "inst_amount_formatting_usd",
+        "description": "Format all monetary amounts in customer-facing text as $X.XX USD. This applies to responses, case notes, and summaries — not to API call parameters where raw numeric values are correct.",
+        "status": "stored_as_instinct"
+      },
+      "action": "Store as instinct. Consider fast-tracking if QA team confirms this is already an established standard (in which case, promote directly with documentation reference rather than waiting for session evidence)."
+    }
+  ],
+  "instinct_only": [],
+  "queue_statistics": {
+    "total_items": 4,
+    "ready_for_promotion": 2,
+    "needs_more_evidence": 2,
+    "instinct_only": 0,
+    "anti_pattern_flags": 0,
+    "full_overlaps_rejected": 1,
+    "rejected_items": [
+      {
+        "pattern_id": "apologise_before_bad_news",
+        "reason": "Full overlap with existing high-confidence skill empathy_before_bad_news (0.88). Observation used to increment that skill's evidence count instead.",
+        "action": "Update empathy_before_bad_news sessions_observed from 19 to 20 and last_seen to 2026-06-03."
+      }
+    ]
+  }
+}

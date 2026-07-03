@@ -1,0 +1,112 @@
+{
+  "version": "1.0.0",
+  "currency": "USD",
+  "environment": "production",
+  "last_updated": "2025-06-03",
+  "owner": "pod-lead@company.com",
+  "caps": {
+    "task_cap_usd": 0.05,
+    "session_cap_usd": 0.15,
+    "daily_cap_usd": 50.00,
+    "sprint_cap_usd": 500.00,
+    "monthly_cap_usd": 2000.00
+  },
+  "cap_notes": {
+    "task_cap_usd": "Maximum cost for a single customer service interaction (one user message → one agent response cycle). At $0.034 average, this gives 47% headroom for complex cases.",
+    "session_cap_usd": "Maximum cost for a full multi-turn conversation session (typically 3–5 task cycles). Prevents expensive escalation chains from spiraling.",
+    "daily_cap_usd": "Aggregate daily spend across all agent instances. At $0.034/session this supports ~1,470 sessions/day before the cap. Sized for current traffic.",
+    "sprint_cap_usd": "Two-week sprint budget. At $50/day this supports 10 full working days. Includes buffer for load spikes and experiments.",
+    "monthly_cap_usd": "Hard monthly ceiling. Aligns with finance-approved AI spend envelope. Sprint caps enforce this indirectly."
+  },
+  "thresholds": {
+    "warn_threshold_percentage": 80,
+    "block_threshold_percentage": 100,
+    "early_warning_percentage": 60,
+    "threshold_notes": {
+      "warn": "At 80% utilization, emit gate=warn and notify via webhook. Allow execution to continue. Log to spend ledger.",
+      "block": "At 100% utilization (projected cost >= cap), halt execution immediately. Emit gate=block with remediation suggestions.",
+      "early_warning": "At 60% utilization for sprint/monthly caps, send early warning to POD Lead. No execution halt."
+    }
+  },
+  "alerts": {
+    "alert_webhook": "https://hooks.company.com/ai-ops/budget-alerts",
+    "alert_webhook_method": "POST",
+    "alert_webhook_headers": {
+      "Content-Type": "application/json",
+      "X-Source": "BudgetGovernor"
+    },
+    "notification_channels": {
+      "slack_channel": "#ai-ops-alerts",
+      "pagerduty_service": null,
+      "email_recipients": [
+        "pod-lead@company.com",
+        "ai-ops@company.com"
+      ]
+    },
+    "alert_conditions": [
+      {
+        "condition": "task_utilization >= 80",
+        "severity": "warn",
+        "message_template": "Task {task_id} projected at {utilization_pct}% of ${task_cap_usd} cap (${projected_usd}). Gate: warn."
+      },
+      {
+        "condition": "task_utilization >= 100",
+        "severity": "critical",
+        "message_template": "BLOCKED: Task {task_id} projected at {utilization_pct}% of ${task_cap_usd} cap (${projected_usd}). Execution halted."
+      },
+      {
+        "condition": "daily_utilization >= 80",
+        "severity": "warn",
+        "message_template": "Daily spend at {utilization_pct}% of ${daily_cap_usd} cap (${daily_spend_usd} spent today)."
+      },
+      {
+        "condition": "daily_utilization >= 100",
+        "severity": "critical",
+        "message_template": "DAILY CAP REACHED: All new agent tasks blocked until UTC midnight. Spent: ${daily_spend_usd}."
+      },
+      {
+        "condition": "sprint_utilization >= 60",
+        "severity": "info",
+        "message_template": "Sprint spend early warning: {utilization_pct}% of ${sprint_cap_usd} budget used. {sprint_days_remaining} days remaining."
+      },
+      {
+        "condition": "sprint_utilization >= 80",
+        "severity": "warn",
+        "message_template": "Sprint spend at {utilization_pct}% of ${sprint_cap_usd}. Consider deferring non-critical agent tasks."
+      }
+    ]
+  },
+  "overrides": {
+    "allow_manual_override": true,
+    "override_requires_approval": true,
+    "approvers": ["pod-lead@company.com"],
+    "override_max_multiplier": 2.0,
+    "override_notes": "A POD Lead can approve a one-time override up to 2x the cap for a specific task_id. Override must be logged to the audit trail before execution proceeds."
+  },
+  "scaling_profiles": {
+    "startup_mvp": {
+      "task_cap_usd": 0.02,
+      "session_cap_usd": 0.06,
+      "daily_cap_usd": 10.00,
+      "sprint_cap_usd": 100.00,
+      "monthly_cap_usd": 400.00,
+      "notes": "Tight caps for pre-revenue MVP. Forces use of Haiku for all non-critical steps."
+    },
+    "growth_stage": {
+      "task_cap_usd": 0.05,
+      "session_cap_usd": 0.15,
+      "daily_cap_usd": 50.00,
+      "sprint_cap_usd": 500.00,
+      "monthly_cap_usd": 2000.00,
+      "notes": "Current profile. Balanced quality/cost for 1K–2K sessions/day."
+    },
+    "enterprise_scale": {
+      "task_cap_usd": 0.10,
+      "session_cap_usd": 0.30,
+      "daily_cap_usd": 500.00,
+      "sprint_cap_usd": 5000.00,
+      "monthly_cap_usd": 20000.00,
+      "notes": "High-volume deployment with SLA requirements allowing Sonnet for more steps."
+    }
+  }
+}

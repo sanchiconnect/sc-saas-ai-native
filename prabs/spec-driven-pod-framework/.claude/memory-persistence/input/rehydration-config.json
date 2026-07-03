@@ -1,0 +1,114 @@
+{
+  "schema": "rehydration-config/v1",
+  "config_version": "1.0",
+  "agent_id": "cs-agent-007",
+  "last_updated": "2024-11-28T09:15:00Z",
+  "updated_by": "platform-admin",
+
+  "capacity": {
+    "max_rehydration_chars": 6000,
+    "max_rehydration_chars_note": "Hard cap on injected context block. Items are dropped in reverse priority order when exceeded.",
+    "emergency_override_chars": 8000,
+    "emergency_override_note": "Used only when active commitments with < 2h deadlines would otherwise be truncated. Requires explicit flag.",
+    "warn_at_chars": 5400,
+    "warn_at_note": "Log a warning in persistence-log.json when rehydration block exceeds this threshold"
+  },
+
+  "priority_order": [
+    "commitments",
+    "open_decisions",
+    "active_task",
+    "constraints",
+    "context_notes"
+  ],
+  "priority_order_rationale": {
+    "commitments": "Customer-facing promises with deadlines — missing these causes SLA breach and reputational harm",
+    "open_decisions": "Pending approvals and gates — re-discovering these wastes significant time",
+    "active_task": "The primary work stream — required for immediate resumption without re-briefing",
+    "constraints": "Discovered system limits and policy rules — prevents re-hitting known blockers",
+    "context_notes": "Observational notes and background color — helpful but lowest impact if dropped"
+  },
+
+  "staleness": {
+    "staleness_warn_hours": 24,
+    "staleness_critical_hours": 168,
+    "staleness_warn_hours_note": "State older than this threshold is marked potentially_stale — include inline warning in rehydration block",
+    "staleness_critical_hours_note": "State older than 7 days is marked stale — reduce confidence, flag all values as unverified",
+    "auto_expire_days": 30,
+    "auto_expire_note": "Sessions older than 30 days are pruned from history and not loaded during rehydration"
+  },
+
+  "session_history": {
+    "max_sessions_to_retain": 10,
+    "max_sessions_to_load_in_rehydration": 2,
+    "max_sessions_to_load_note": "Only the most recent N sessions are included in rehydration context to bound total size"
+  },
+
+  "security": {
+    "never_persist": [
+      "auth_tokens",
+      "session_cookies",
+      "customer_passwords",
+      "credit_card_numbers",
+      "bank_account_numbers",
+      "social_security_numbers",
+      "driver_license_numbers",
+      "passport_numbers",
+      "api_keys",
+      "oauth_tokens",
+      "jwt_tokens",
+      "private_keys",
+      "webhook_secrets"
+    ],
+    "never_persist_note": "These fields must be actively scrubbed from state before writing session-state.json. Any match on field name OR value pattern triggers scrub.",
+    "pii_handling": {
+      "customer_names": "allowed — needed for callback and commitment tracking",
+      "customer_emails": "redact — store account_id instead",
+      "customer_phone_numbers": "redact — store case_id instead; retrieve phone from CRM at runtime",
+      "customer_addresses": "redact — not needed for session continuity",
+      "account_ids": "allowed — opaque identifiers safe to persist",
+      "case_ids": "allowed — opaque identifiers safe to persist"
+    }
+  },
+
+  "domain_specific": {
+    "project": "customer-service-chatbot",
+    "always_include_in_rehydration": [
+      "active_cases",
+      "pending_callbacks",
+      "escalations_in_progress",
+      "commitments"
+    ],
+    "cs_specific_priority_boost": {
+      "commitments_within_24h": "promote to top of commitments list regardless of age",
+      "pending_callbacks_within_4h": "flag as urgent in rehydration block header"
+    }
+  },
+
+  "storage": {
+    "base_path": ".claude/memory",
+    "snapshot_filename": "session-state.json",
+    "log_filename": "persistence-log.json",
+    "history_subdir": "session-history",
+    "shared_state_path": ".claude/memory/shared"
+  },
+
+  "model_selection": {
+    "default_model": "claude-haiku-4-5",
+    "escalation_model": "claude-sonnet-4-6",
+    "escalation_triggers": {
+      "open_thread_count_threshold": 3,
+      "interdependency_count_threshold": 2,
+      "commitment_deadline_hours_threshold": 12,
+      "explicit_high_complexity_flag": true
+    }
+  },
+
+  "formatting": {
+    "rehydration_block_format": "markdown",
+    "rehydration_block_header": "## Resuming from Previous Session",
+    "staleness_warn_prefix": "WARNING: State is {age}h old — verify before acting",
+    "staleness_critical_prefix": "STALE STATE ({age}h old) — treat all cached values as unverified",
+    "truncation_notice": "[{n} lower-priority item(s) truncated to stay within {cap}-char rehydration cap]"
+  }
+}

@@ -1,0 +1,178 @@
+{
+  "schema": "session-end-state/v1",
+  "agent_id": "cs-agent-007",
+  "session_id": "sess-2024-1203-1547",
+  "session_start": "2024-12-03T15:47:00Z",
+  "session_end": "2024-12-03T17:22:00Z",
+  "session_duration_minutes": 95,
+
+  "active_task": {
+    "description": "Resolving billing discrepancy on ticket TKT-9871 — customer was double-charged on Nov invoice",
+    "status": "in_progress",
+    "blocked_by": "billing_department_response",
+    "ticket_id": "TKT-9871",
+    "customer_account_id": "ACC-00441892"
+  },
+
+  "active_cases": [
+    {
+      "case_id": "CS78234",
+      "customer_name": "Sarah Chen",
+      "customer_account_id": "ACC-00441892",
+      "issue_summary": "Double charge of $89.99 on November billing cycle, refund approved in principle but not yet processed",
+      "status": "pending_supervisor_callback",
+      "next_action": "Supervisor Martinez to call back and authorize refund processing in billing system",
+      "next_action_owner": "supervisor",
+      "next_action_owner_id": "SUP-MARTINEZ-04",
+      "sla_deadline": "2024-12-04T17:00:00Z",
+      "priority": "high",
+      "notes": "Customer was polite but frustrated — has been waiting 3 days. Refund amount confirmed as $89.99."
+    },
+    {
+      "case_id": "CS91045",
+      "customer_name": "Marcus Thompson",
+      "customer_account_id": "ACC-00887234",
+      "issue_summary": "Suspicious charge of $249.00 flagged by customer — possible unauthorized transaction",
+      "status": "pending_department_review",
+      "next_action": "Billing department to review transaction history and determine if fraud team escalation is warranted",
+      "next_action_owner": "billing",
+      "next_action_owner_id": "DEPT-BILLING",
+      "sla_deadline": "2024-12-05T12:00:00Z",
+      "priority": "high",
+      "notes": "Transaction origin is ambiguous — could be legitimate subscription renewal or unauthorized. Do not close until billing confirms."
+    }
+  ],
+
+  "commitments": [
+    {
+      "commitment_id": "CMT-001",
+      "type": "refund_promise",
+      "made_to": "Sarah Chen",
+      "customer_account_id": "ACC-00441892",
+      "case_id": "CS78234",
+      "description": "Refund of $89.99 will be processed and reflected in next billing cycle",
+      "deadline": "2024-12-04T17:00:00Z",
+      "deadline_human": "December 4th, end of business",
+      "status": "pending_authorization",
+      "made_at": "2024-12-03T16:14:00Z",
+      "urgency": "high"
+    },
+    {
+      "commitment_id": "CMT-002",
+      "type": "scheduled_callback",
+      "made_to": "Marcus Thompson",
+      "customer_account_id": "ACC-00887234",
+      "case_id": "CS91045",
+      "description": "Agent will call Marcus Thompson back at 2:00 PM tomorrow to provide update on billing investigation",
+      "deadline": "2024-12-04T14:00:00Z",
+      "deadline_human": "December 4th at 2:00 PM",
+      "status": "scheduled",
+      "made_at": "2024-12-03T17:05:00Z",
+      "urgency": "high"
+    }
+  ],
+
+  "open_decisions": [
+    {
+      "decision_id": "approve_refund_CS78234",
+      "case_id": "CS78234",
+      "description": "Approve and process $89.99 refund to Sarah Chen — supervisor authorization pending",
+      "decision_type": "financial_approval",
+      "amount_usd": 89.99,
+      "approval_required_from": "supervisor",
+      "status": "awaiting_approval",
+      "created_at": "2024-12-03T16:14:00Z",
+      "urgency": "high"
+    },
+    {
+      "decision_id": "escalate_to_fraud_team_CS91045",
+      "case_id": "CS91045",
+      "description": "Determine whether CS91045 ($249.00 suspicious charge) should be escalated to fraud investigation team",
+      "decision_type": "escalation_gate",
+      "status": "pending_information",
+      "pending_from": "billing_department",
+      "created_at": "2024-12-03T17:01:00Z",
+      "urgency": "medium"
+    }
+  ],
+
+  "pending_callbacks": [
+    {
+      "customer_name": "Marcus Thompson",
+      "customer_account_id": "ACC-00887234",
+      "case_id": "CS91045",
+      "scheduled_time": "2024-12-04T14:00:00Z",
+      "callback_number": null,
+      "note": "Customer prefers afternoon calls. Do not call before noon."
+    }
+  ],
+
+  "escalations_in_progress": [],
+
+  "constraints": [
+    {
+      "constraint_id": "CON-001",
+      "description": "Billing system was experiencing elevated latency today (avg 8–12s per query vs normal 2s)",
+      "discovered_at": "2024-12-03T15:52:00Z",
+      "affects": ["TKT-9871", "CS78234", "CS91045"],
+      "may_affect_next_session": true,
+      "notes": "May affect ticket TKT-9871 resolution time. Check billing system status at session start before making customer-facing commitments about processing speed."
+    },
+    {
+      "constraint_id": "CON-002",
+      "description": "Refunds above $100 require two-level supervisor authorization — CS78234 is under threshold and needs only one level",
+      "discovered_at": "2024-12-03T16:10:00Z",
+      "affects": ["CS78234"],
+      "may_affect_next_session": true,
+      "notes": "Policy reference: CS-POL-2024-REFUND-042"
+    }
+  ],
+
+  "context_notes": [
+    {
+      "note_id": "CTX-001",
+      "content": "Billing system slow today — may affect TKT-9871 resolution. Verify system status before committing to timeline.",
+      "relevance": ["TKT-9871", "CS78234"],
+      "created_at": "2024-12-03T15:52:00Z"
+    },
+    {
+      "note_id": "CTX-002",
+      "content": "Supervisor Martinez (SUP-MARTINEZ-04) is the point of contact for CS78234 authorization. She was briefed verbally at 16:14 today.",
+      "relevance": ["CS78234"],
+      "created_at": "2024-12-03T16:14:00Z"
+    },
+    {
+      "note_id": "CTX-003",
+      "content": "Salesforce CRM showed sync lag during this session — case notes for CS91045 may not have fully propagated. Verify CRM state at next session start.",
+      "relevance": ["CS91045"],
+      "created_at": "2024-12-03T17:18:00Z"
+    }
+  ],
+
+  "key_entity_ids": {
+    "cases": ["CS78234", "CS91045"],
+    "tickets": ["TKT-9871"],
+    "customers": ["ACC-00441892", "ACC-00887234"],
+    "supervisors": ["SUP-MARTINEZ-04"],
+    "departments": ["DEPT-BILLING"]
+  },
+
+  "tools_state": {
+    "salesforce_crm": {
+      "status": "sync_lag_detected",
+      "last_successful_sync": "2024-12-03T16:45:00Z",
+      "note": "Case notes for CS91045 may not be fully propagated — verify at next session start"
+    },
+    "billing_system": {
+      "status": "degraded_performance",
+      "last_checked": "2024-12-03T17:20:00Z",
+      "note": "Elevated latency — 8–12s per query. Normal is ~2s."
+    },
+    "ticketing_system": {
+      "status": "operational",
+      "last_checked": "2024-12-03T17:20:00Z"
+    }
+  },
+
+  "tool_auth_tokens": null
+}

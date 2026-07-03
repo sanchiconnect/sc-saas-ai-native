@@ -1,0 +1,14 @@
+# Sample Knowledge Query
+# Requesting agent: DevCopilot | Task: TASK-042
+
+query_id: "Q-20250916-042"
+requesting_agent: "DevCopilot"
+task_id: "TASK-042"
+requirement_id: "REQ-API-003"
+domain_keywords:
+  - "user registration"
+  - "POST /users"
+  - "password hashing"
+  - "email validation"
+context_type: "code_generation"
+max_chunks: 5

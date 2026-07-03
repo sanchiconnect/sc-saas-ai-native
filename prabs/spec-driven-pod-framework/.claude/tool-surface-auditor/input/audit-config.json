@@ -1,0 +1,66 @@
+{
+  "audit_version": "1.0.0",
+  "generated_at": "2026-06-03T08:00:00Z",
+  "deployment": "customer-service-chatbot-production",
+
+  "ceilings": {
+    "tool_ceiling": 80,
+    "mcp_ceiling": 10,
+    "current_tool_count": 96,
+    "current_mcp_count": 14,
+    "tools_above_ceiling": 16,
+    "mcps_above_ceiling": 4
+  },
+
+  "scoring": {
+    "usage_weight": 0.5,
+    "recency_weight": 0.3,
+    "reliability_weight": 0.2,
+    "recency_tiers": {
+      "within_7_days": 1.0,
+      "within_30_days": 0.5,
+      "older_than_30_days": 0.1,
+      "never_called": 0.0
+    }
+  },
+
+  "classification_thresholds": {
+    "active_min_score": 0.4,
+    "occasional_min_score": 0.1,
+    "dormant_min_score": 0.0,
+    "never_used_calls": 0,
+    "auto_disable_threshold": 0.0,
+    "review_threshold": 0.1,
+    "note": "auto_disable_threshold=0.0 means only tools with zero calls AND zero errors are auto-disable candidates; all are still subject to the safety rule requiring human confirmation"
+  },
+
+  "safety_rules": {
+    "zero_call_zero_error_requires_review": true,
+    "zero_call_zero_error_label": "REVIEW_REQUIRED",
+    "zero_call_zero_error_reason": "zero-call-zero-error: possible emergency tool",
+    "note": "Tools with error_rate=0.0 AND calls_30d=0 may be emergency-only. Never auto-disable without human confirmation."
+  },
+
+  "cost_model": {
+    "context_window_size_tokens": 200000,
+    "standing_context_per_token_cost": 0.000003,
+    "currency": "USD",
+    "note": "standing_context_per_token_cost represents the cost of including one token in every session's context. At $3/M input tokens for Haiku, a tool description loaded in every session costs this per token per session.",
+    "sessions_per_day_estimate": 1000,
+    "working_days_per_month": 30
+  },
+
+  "telemetry": {
+    "window_days": 30,
+    "normalization_basis": "max_calls_in_window",
+    "note": "calls_per_session for scoring is normalised by dividing by the single highest calls_30d value across all tools, producing a value in [0,1]"
+  },
+
+  "output": {
+    "sort_by": "usage_score",
+    "sort_order": "descending",
+    "include_server_summary": true,
+    "include_overlap_flags": true,
+    "overlap_detection": "name_pattern_heuristic"
+  }
+}

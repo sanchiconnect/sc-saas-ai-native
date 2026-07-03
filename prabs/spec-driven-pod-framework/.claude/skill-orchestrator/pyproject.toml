@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "skill-orchestrator"
+version = "0.3.0"
+description = "Dispatch-mode workflow engine that executes AI-native skills across ordered planning/build/validate phases with HITL gates, artifact-derived dependencies, parallel scheduling, rework loops, and per-phase governance."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Proprietary - © Acme Corp. All rights reserved." }
+keywords = ["llm", "agents", "skills", "workflow", "orchestration", "claude-code", "governance"]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[project.scripts]
+skill-orchestrator = "skill_orchestrator.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

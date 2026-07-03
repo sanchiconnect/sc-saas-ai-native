@@ -1,0 +1,158 @@
+{
+  "meta": {
+    "generated_at": "2026-06-03T00:00:00Z",
+    "language_note": "All patterns are Python (re module). JavaScript equivalents are provided inline where they differ.",
+    "python_version": "3.9+"
+  },
+  "patterns": [
+    {
+      "task_id": "T01",
+      "name": "Extract Order ID",
+      "language": "python",
+      "pattern": "ORD-\\d{5}",
+      "flags": ["re.IGNORECASE"],
+      "flags_note": "IGNORECASE included defensively; in practice the prefix is always uppercase in system-generated IDs. Customers occasionally type 'ord-48291' in lowercase.",
+      "usage": {
+        "find_all": "import re\nmatches = re.findall(r'ORD-\\d{5}', text, re.IGNORECASE)\n# returns: ['ORD-48291', 'ORD-10034']",
+        "single_extract": "import re\nm = re.search(r'ORD-\\d{5}', text, re.IGNORECASE)\norder_id = m.group(0).upper() if m else None",
+        "javascript_equivalent": "/ORD-\\d{5}/gi"
+      },
+      "test_cases": {
+        "positive": [
+          {"input": "I need help with my order ORD-48291.", "expected": ["ORD-48291"]},
+          {"input": "orders ORD-10034 and ORD-10035 are late", "expected": ["ORD-10034", "ORD-10035"]},
+          {"input": "ord-00001 is the order number", "expected_after_upper": ["ORD-00001"]},
+          {"input": "ORD-99999 was supposed to arrive yesterday", "expected": ["ORD-99999"]},
+          {"input": "PLEASE CHECK ORD-73812 ASAP", "expected": ["ORD-73812"]}
+        ],
+        "negative": [
+          {"input": "I have no order yet.", "expected": []},
+          {"input": "Reference number: REF-48291", "expected": [], "note": "Different prefix, no match"},
+          {"input": "ORD-1234 is only 4 digits", "expected": [], "note": "Fewer than 5 digits, no match"}
+        ]
+      },
+      "edge_cases_handled": [
+        "Multiple order IDs in a single message (findall returns all)",
+        "Lowercase prefix (re.IGNORECASE + .upper() normalization)",
+        "Leading zeros in the numeric portion (ORD-00001 is valid)"
+      ],
+      "known_failures": [
+        "Order IDs with more than 5 digits will not match (e.g., if the system migrates to ORD-XXXXXX format)",
+        "Order IDs embedded in URLs without spaces (e.g., '/orders/ORD-48291/detail') — add word boundary \\b or context-aware strip if needed",
+        "Typos that drop the hyphen ('ORD48291') will not match — add r'ORD-?\\d{5}' if this is observed in production logs"
+      ]
+    },
+    {
+      "task_id": "T02",
+      "name": "Parse Billing Amount",
+      "language": "python",
+      "pattern": "\\$\\d{1,6}(?:\\.\\d{2})?",
+      "flags": [],
+      "flags_note": "No flags needed. Dollar sign is an unambiguous anchor. Upper bound of 6 digits before decimal covers amounts up to $999,999.",
+      "usage": {
+        "find_all": "import re\nmatches = re.findall(r'\\$\\d{1,6}(?:\\.\\d{2})?', text)\n# returns: ['$49.99', '$120', '$99.00']",
+        "single_extract_as_float": "import re\nm = re.search(r'\\$\\d{1,6}(?:\\.\\d{2})?', text)\nif m:\n    amount_str = m.group(0).lstrip('$')\n    amount = float(amount_str)  # e.g. 49.99 or 120.0",
+        "javascript_equivalent": "/\\$\\d{1,6}(?:\\.\\d{2})?/g"
+      },
+      "test_cases": {
+        "positive": [
+          {"input": "I was charged $49.99 last Tuesday.", "expected": ["$49.99"]},
+          {"input": "The invoice shows $120 but my contract says $99.00.", "expected": ["$120", "$99.00"]},
+          {"input": "billed $7.50 for a cancelled service", "expected": ["$7.50"]},
+          {"input": "a mysterious $0.99 charge", "expected": ["$0.99"]},
+          {"input": "paid $250 not $312.75", "expected": ["$250", "$312.75"]}
+        ],
+        "negative": [
+          {"input": "No charges mentioned here.", "expected": []},
+          {"input": "The 50% discount was applied.", "expected": [], "note": "Percent sign, not dollar sign"}
+        ]
+      },
+      "edge_cases_handled": [
+        "Amounts without cents ($120 matches as well as $120.00)",
+        "Multiple amounts in one message (findall captures all)",
+        "Zero-dollar amounts ($0.99, $0.00)"
+      ],
+      "known_failures": [
+        "Amounts with thousands separator: '$1,200.00' will only match '$1' — strip commas before applying the pattern if large amounts are expected",
+        "Non-US currencies (€49.99, £7.50) will not match — intentional for this US-only chatbot",
+        "Amounts expressed as words ('fifty dollars') are not captured — LLM fallback needed for prose amounts",
+        "Negative amounts ('-$49.99') will not match the minus sign — use r'-?\\$\\d{1,6}(?:\\.\\d{2})?' if refund amounts appear in data"
+      ]
+    },
+    {
+      "task_id": "T06",
+      "name": "Extract Account Status from CRM JSON",
+      "language": "python",
+      "approach": "json_parse",
+      "pattern": null,
+      "pattern_note": "Do NOT use regex for structured JSON. json.loads() is safer, faster, and self-documenting. Regex on JSON breaks silently when key order changes or whitespace varies.",
+      "usage": {
+        "recommended": "import json\n\ndef extract_account_status(crm_response: str) -> str:\n    \"\"\"\n    Extract account_status from Salesforce CRM API JSON response.\n    Returns one of: 'active', 'suspended', 'pending_cancellation', 'closed'\n    Raises ValueError for unexpected status values.\n    \"\"\"\n    VALID_STATUSES = frozenset({'active', 'suspended', 'pending_cancellation', 'closed'})\n    data = json.loads(crm_response)\n    status = data['account_status']\n    if status not in VALID_STATUSES:\n        raise ValueError(f'Unexpected account_status value: {status!r}')\n    return status",
+        "with_fallback": "import json\n\ndef extract_account_status_safe(crm_response: str) -> str | None:\n    try:\n        data = json.loads(crm_response)\n        return data.get('account_status')\n    except (json.JSONDecodeError, KeyError):\n        return None  # Log and alert; do not silently continue"
+      },
+      "flags": [],
+      "test_cases": {
+        "positive": [
+          {"input": "{\"account_id\": \"ACC-1029384\", \"account_status\": \"active\", \"plan\": \"pro\"}", "expected": "active"},
+          {"input": "{\"account_id\": \"ACC-9988771\", \"account_status\": \"suspended\", \"plan\": \"basic\"}", "expected": "suspended"},
+          {"input": "{\"account_id\": \"ACC-0034521\", \"account_status\": \"pending_cancellation\", \"plan\": \"enterprise\"}", "expected": "pending_cancellation"},
+          {"input": "{\"account_id\": \"ACC-5512309\", \"account_status\": \"closed\", \"plan\": \"basic\"}", "expected": "closed"},
+          {"input": "{\"account_id\": \"ACC-7743001\", \"account_status\": \"active\", \"plan\": \"pro\", \"trial_ends\": \"2026-07-01T00:00:00Z\"}", "expected": "active"}
+        ],
+        "negative": [
+          {"input": "{\"account_id\": \"ACC-0000000\"}", "expected": "KeyError on account_status — catch and alert"},
+          {"input": "not valid json", "expected": "json.JSONDecodeError — catch and alert"}
+        ]
+      },
+      "edge_cases_handled": [
+        "Extra fields in the JSON response (json.loads ignores unknown keys)",
+        "Nested objects in the response (only top-level 'account_status' is accessed)",
+        "Whitespace-heavy or minified JSON (json.loads handles both)"
+      ],
+      "known_failures": [
+        "If Salesforce ever nests account_status under a sub-object (e.g., data['record']['account_status']), the extractor will KeyError — add schema version monitoring",
+        "If the API returns a list instead of an object at the top level, data['account_status'] will TypeError — guard with isinstance(data, dict)"
+      ]
+    },
+    {
+      "task_id": "T08",
+      "name": "Parse and Normalize Phone Number",
+      "language": "python",
+      "pattern": "(?:\\+1[\\s.\\-]?)?(?:\\(?\\d{3}\\)?[\\s.\\-]?)\\d{3}[\\s.\\-]?\\d{4}",
+      "flags": [],
+      "normalization_function": "import re\n\n_PHONE_PATTERN = re.compile(\n    r'(?:\\+1[\\s.\\-]?)?(?:\\(?\\d{3}\\)?[\\s.\\-]?)\\d{3}[\\s.\\-]?\\d{4}'\n)\n\ndef extract_and_normalize_phone(text: str) -> str | None:\n    \"\"\"\n    Extract a US/Canada phone number from text and normalize to E.164 format.\n    Returns '+1XXXXXXXXXX' or None if no valid number found.\n    \"\"\"\n    m = _PHONE_PATTERN.search(text)\n    if not m:\n        return None\n    raw = m.group(0)\n    # Strip everything except digits\n    digits_only = re.sub(r'\\D', '', raw)\n    # Remove leading country code '1' if present (results in 10 digits)\n    if len(digits_only) == 11 and digits_only.startswith('1'):\n        digits_only = digits_only[1:]\n    if len(digits_only) != 10:\n        return None  # Unexpected length — do not silently return garbage\n    return f'+1{digits_only}'",
+      "flags_note": "No re flags needed. The pattern handles optional parentheses, dashes, dots, and spaces as separators.",
+      "usage": {
+        "example": "extract_and_normalize_phone('Call me at (555) 123-4567')  # returns '+15551234567'\nextract_and_normalize_phone('555-123-4567')                # returns '+15551234567'\nextract_and_normalize_phone('+1 555 123 4567')            # returns '+15551234567'\nextract_and_normalize_phone('5551234567')                  # returns '+15551234567'\nextract_and_normalize_phone('+15551234567')               # returns '+15551234567'",
+        "javascript_equivalent": "/(?:\\+1[\\s.\\-]?)?(?:\\(?\\d{3}\\)?[\\s.\\-]?)\\d{3}[\\s.\\-]?\\d{4}/g"
+      },
+      "test_cases": {
+        "positive": [
+          {"input": "Call me back at (555) 123-4567 when you get a chance.", "expected": "+15551234567"},
+          {"input": "My number is 555-123-4567.", "expected": "+15551234567"},
+          {"input": "+1 555 123 4567 — please use this going forward.", "expected": "+15551234567"},
+          {"input": "you can reach me at 5551234567", "expected": "+15551234567"},
+          {"input": "new phone: +15551234567", "expected": "+15551234567"}
+        ],
+        "negative": [
+          {"input": "I don't have a phone.", "expected": null},
+          {"input": "Order ORD-48291 — no phone here.", "expected": null, "note": "5-digit number does not match 10-digit phone pattern"}
+        ]
+      },
+      "edge_cases_handled": [
+        "Parenthesized area code: (555) 123-4567",
+        "Dash-separated: 555-123-4567",
+        "Dot-separated: 555.123.4567",
+        "No separators: 5551234567",
+        "With country code and space: +1 555 123 4567",
+        "With country code no space: +15551234567"
+      ],
+      "known_failures": [
+        "Non-NANP international numbers (+44 20 7946 0958) will not normalize correctly — the country code stripping logic assumes US/Canada +1",
+        "Extensions (555-123-4567 ext. 89) — the pattern captures the base number but silently drops the extension; store the raw match too if extensions are needed",
+        "Toll-free numbers (800, 888, 877, 866, 855, 844, 833) are captured but not validated as toll-free — add area code check downstream if needed",
+        "Numbers with formatting inconsistencies across NANP (e.g., 555.123-4567 mixing dots and dashes) are captured correctly because \\D is stripped in normalization"
+      ]
+    }
+  ]
+}

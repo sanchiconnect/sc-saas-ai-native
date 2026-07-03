@@ -1,0 +1,193 @@
+{
+  "_meta": {
+    "description": "SemanticCache invalidation event log — recent 30 days",
+    "log_start": "2026-05-04T00:00:00Z",
+    "log_end": "2026-06-03T10:00:00Z",
+    "deployment_id": "cs-cache-prod-01",
+    "total_invalidation_events": 7,
+    "total_entries_invalidated": 89,
+    "generated_at": "2026-06-03T10:00:00Z"
+  },
+  "events": [
+    {
+      "event_id": "inv_001",
+      "timestamp": "2026-05-09T14:22:00Z",
+      "trigger": "source_document_change",
+      "trigger_detail": "billing_policy.pdf re-uploaded to content management system with updated refund window language",
+      "invalidation_type": "tag_based",
+      "tag_invalidated": "billing_policy",
+      "entries_invalidated": [
+        "cke_001", "cke_003", "cke_005", "cke_009", "cke_013",
+        "cke_015", "cke_016", "cke_021", "cke_023", "cke_025"
+      ],
+      "entries_invalidated_count": 10,
+      "initiated_by": "content-ops-webhook",
+      "initiated_by_detail": "CMS webhook fired on document version bump (v2.1 → v2.2)",
+      "old_source_hash": "sha256:3c4f9e2a1b8d70561234567890abcdef12345678901234567890abcdef123456aa",
+      "new_source_hash": "sha256:3c4f9e2a1b8d70561234567890abcdef12345678901234567890abcdef123456ab",
+      "change_summary": "Refund window for digital products updated from 14 days to 30 days. Standard refund processing time updated from 5–7 to 3–5 business days. Late refund exception clause added for platform-caused billing errors.",
+      "downstream_effect": {
+        "misses_generated": 10,
+        "entries_re-seeded_within_1h": 8,
+        "entries_re-seeded_within_24h": 10,
+        "accuracy_risk_if_not_invalidated": "Customers would have been told the refund window was 14 days when the new policy is 30 days — material customer-facing error.",
+        "correctness_verdict": "invalidation_was_necessary"
+      },
+      "resolution": "All 10 entries re-seeded with updated policy language within 24 hours as customer traffic re-populated the cache."
+    },
+    {
+      "event_id": "inv_002",
+      "timestamp": "2026-05-12T09:45:00Z",
+      "trigger": "explicit_api_call",
+      "trigger_detail": "Manual invalidation triggered by billing team after refund limit policy change",
+      "invalidation_type": "tag_based",
+      "tag_invalidated": "refund_rules",
+      "entries_invalidated": ["cke_001", "cke_005", "cke_009"],
+      "entries_invalidated_count": 3,
+      "initiated_by": "billing-manager@company.com",
+      "initiated_by_detail": "Called POST /cache/invalidate with body {tag: 'refund_rules'} via admin API",
+      "change_summary": "Maximum refund amount for subscription services raised from $200 to $500. Refund eligibility for annual plans updated to include prorated refunds within 30 days (previously no refunds after 14 days). Policy change approved by Legal and Finance on 2026-05-11.",
+      "downstream_effect": {
+        "misses_generated": 3,
+        "entries_re-seeded_within_1h": 3,
+        "accuracy_risk_if_not_invalidated": "Cache would have served the $200 refund limit and 14-day annual plan restriction — both incorrect after the policy update. Customers could have been denied valid refunds up to $500.",
+        "correctness_verdict": "invalidation_was_necessary"
+      },
+      "resolution": "3 entries re-seeded within 47 minutes via normal customer traffic. Billing team pre-seeded one FAQ entry via the warm-cache API to accelerate recovery."
+    },
+    {
+      "event_id": "inv_003",
+      "timestamp": "2026-05-15T11:00:00Z",
+      "trigger": "ttl_expiry",
+      "trigger_detail": "Scheduled TTL sweep purged 18 entries with ttl_hours=24 that exceeded their TTL without refresh",
+      "invalidation_type": "ttl_sweep",
+      "tag_invalidated": null,
+      "entries_invalidated": [
+        "cke_008_v0", "cke_013_v0", "cke_015_v0", "cke_016_v0", "cke_021_v0",
+        "cke_023_v0", "cke_tmp_001", "cke_tmp_002", "cke_tmp_003", "cke_tmp_004",
+        "cke_tmp_005", "cke_tmp_006", "cke_tmp_007", "cke_tmp_008", "cke_tmp_009",
+        "cke_tmp_010", "cke_tmp_011", "cke_tmp_012"
+      ],
+      "entries_invalidated_count": 18,
+      "initiated_by": "ttl_sweep_job",
+      "initiated_by_detail": "Scheduled cron task at 11:00 UTC — runs every 15 minutes, purges entries where (now - created_at) > ttl_hours * 3600",
+      "change_summary": "Routine expiry of billing_policy and refund_rules entries after 24-hour TTL. These entries had not been refreshed by customer traffic within the TTL window (low-traffic overnight period).",
+      "downstream_effect": {
+        "misses_generated": 18,
+        "entries_re-seeded_within_4h": 12,
+        "entries_not_re-seeded_7d": 6,
+        "accuracy_risk_if_not_invalidated": "TTL-based expiry is a preventive measure. In this case no policy had changed, but the TTL acts as a safety net to force refresh in case changes occurred outside the document-change monitoring system.",
+        "correctness_verdict": "preventive_good_practice"
+      },
+      "resolution": "Expected routine behavior. 12 of 18 entries re-seeded within 4 hours. 6 low-traffic entries remain purged — they will be re-seeded on next access."
+    },
+    {
+      "event_id": "inv_004",
+      "timestamp": "2026-05-18T16:30:00Z",
+      "trigger": "explicit_api_call",
+      "trigger_detail": "Security team requested invalidation of all security_policy entries following security policy update",
+      "invalidation_type": "tag_based",
+      "tag_invalidated": "security_policy",
+      "entries_invalidated": ["cke_008", "cke_014"],
+      "entries_invalidated_count": 2,
+      "initiated_by": "security-team@company.com",
+      "initiated_by_detail": "Called POST /cache/invalidate with body {tag: 'security_policy'} via admin API after new 2FA enforcement policy was published",
+      "change_summary": "Two-factor authentication is now mandatory for all accounts (previously optional). Updated unauthorized access response to lead with 2FA enforcement notice rather than 2FA suggestion. Password reset flow updated to require email + SMS verification.",
+      "downstream_effect": {
+        "misses_generated": 2,
+        "entries_re-seeded_within_2h": 2,
+        "accuracy_risk_if_not_invalidated": "Cache would have told customers that 2FA is optional ('Enable two-factor authentication under Settings → Security') when it is now mandatory. This is a compliance risk.",
+        "correctness_verdict": "invalidation_was_necessary"
+      },
+      "resolution": "Both entries re-seeded within 2 hours with updated mandatory 2FA language."
+    },
+    {
+      "event_id": "inv_005",
+      "timestamp": "2026-05-22T08:00:00Z",
+      "trigger": "ttl_expiry",
+      "trigger_detail": "Scheduled TTL sweep — daily run",
+      "invalidation_type": "ttl_sweep",
+      "tag_invalidated": null,
+      "entries_invalidated_count": 21,
+      "entries_invalidated": "21 entries with billing_policy and refund_rules tags that exceeded 24h TTL",
+      "initiated_by": "ttl_sweep_job",
+      "initiated_by_detail": "Scheduled cron task at 08:00 UTC",
+      "change_summary": "Routine daily expiry of short-TTL billing entries. No policy changes had occurred; entries expired per schedule.",
+      "downstream_effect": {
+        "misses_generated": 21,
+        "entries_re-seeded_within_6h": 19,
+        "correctness_verdict": "preventive_good_practice"
+      },
+      "resolution": "Normal sweep. 19 entries re-seeded by customer traffic within 6 hours."
+    },
+    {
+      "event_id": "inv_006",
+      "timestamp": "2026-05-28T13:15:00Z",
+      "trigger": "source_document_change",
+      "trigger_detail": "faq_knowledge_base.json updated with new response for 'support hours' after holiday schedule added",
+      "invalidation_type": "tag_based",
+      "tag_invalidated": "support_hours",
+      "entries_invalidated": ["cke_002"],
+      "entries_invalidated_count": 1,
+      "initiated_by": "content-ops-webhook",
+      "initiated_by_detail": "CMS webhook fired on FAQ knowledge base version bump (v4.7 → v4.8)",
+      "old_source_hash": "sha256:7d8e3f1b2c90a467abc123def456789012345678901234567890abcdef123456aa",
+      "new_source_hash": "sha256:7d8e3f1b2c90a4672345678901234567890abcdef12345678901234567890abcd12",
+      "change_summary": "Support hours FAQ updated to add: 'During U.S. federal holidays, support is available via ticket only with a 48-hour response SLA.' Previous response implied normal hours on holidays.",
+      "downstream_effect": {
+        "misses_generated": 1,
+        "entries_re-seeded_within_1h": 1,
+        "accuracy_risk_if_not_invalidated": "Customers contacting support on Memorial Day would have been told support was available 8AM–8PM when actually only ticket support was available. High volume support hours query would have served wrong answer on a holiday.",
+        "correctness_verdict": "invalidation_was_necessary"
+      },
+      "resolution": "cke_002 re-seeded within 23 minutes via first customer traffic hit. Holiday language now present in cached response."
+    },
+    {
+      "event_id": "inv_007",
+      "timestamp": "2026-06-01T09:00:00Z",
+      "trigger": "ttl_expiry",
+      "trigger_detail": "Scheduled TTL sweep — weekly deep purge including max_entry_age_hours=168 enforcement",
+      "invalidation_type": "ttl_sweep",
+      "tag_invalidated": null,
+      "entries_invalidated_count": 34,
+      "entries_invalidated": "34 entries exceeding max_entry_age_hours=168 across billing_policy, refund_rules, and payment_failure tags regardless of TTL",
+      "initiated_by": "ttl_sweep_job",
+      "initiated_by_detail": "Weekly scheduled cron at 09:00 UTC Sunday — enforces hard maximum age limit",
+      "change_summary": "Hard maximum age enforcement: no cache entry may persist longer than 168 hours (7 days) regardless of configured TTL. This prevents long-lived entries with high-TTL tags (72h faq entries) from going stale due to undetected source changes.",
+      "downstream_effect": {
+        "misses_generated": 34,
+        "entries_re-seeded_within_24h": 28,
+        "correctness_verdict": "preventive_good_practice"
+      },
+      "resolution": "Expected weekly maintenance behavior. 28 of 34 entries re-seeded within 24 hours."
+    }
+  ],
+
+  "summary_by_trigger": {
+    "source_document_change": {
+      "events": 3,
+      "entries_invalidated": 13,
+      "correctness_verdict_all": "invalidation_was_necessary",
+      "lesson": "Every source-document change triggered a cache invalidation that prevented incorrect answers from being served. The source-hash monitoring system is working correctly."
+    },
+    "explicit_api_call": {
+      "events": 2,
+      "entries_invalidated": 5,
+      "correctness_verdict_all": "invalidation_was_necessary",
+      "lesson": "Policy changes not captured by document re-upload (e.g., backend rule changes in Salesforce CRM) require manual invalidation via the admin API. Ensure all policy change workflows include a cache invalidation step."
+    },
+    "ttl_expiry": {
+      "events": 3,
+      "entries_invalidated": 73,
+      "correctness_verdict_all": "preventive_good_practice",
+      "lesson": "TTL expiry is the safety net for undetected changes. The 24-hour TTL on billing and refund entries ensures that even without explicit invalidation, no stale policy answer persists longer than one day."
+    }
+  },
+
+  "key_findings": [
+    "All 5 correctness-critical invalidations (source_document_change + explicit_api_call) were triggered within minutes of the underlying policy change. Cache served correct answers within 2 hours of each policy update.",
+    "The 168-hour hard max age cap caught 6 entries that would have exceeded their tag-based TTL due to high-TTL tag assignments. Recommend reviewing whether those 6 entries' tags had TTLs set too generously.",
+    "Zero incidents of an incorrect policy answer reaching an end user due to a stale cache entry were recorded this period. Invalidation strategy is operating correctly.",
+    "Recommendation: Add Salesforce CRM field-change webhooks as an additional invalidation trigger source. Three of the five necessary invalidations were initiated manually — automating from CRM field changes would reduce the window during which a stale entry could be served."
+  ]
+}

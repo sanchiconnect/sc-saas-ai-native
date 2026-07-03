@@ -1,0 +1,66 @@
+{
+  "sprint_id": "SPRINT-2025-W22",
+  "executed_at": "2025-05-27T14:32:00Z",
+  "summary": {
+    "total": 5,
+    "passed": 4,
+    "failed": 1,
+    "coverage_pct": 80,
+    "untriaged": 0,
+    "release_gate_verdict": "BLOCK",
+    "block_reason": "1 open CODE_ERROR failure on REQ-001"
+  },
+  "results": [
+    {
+      "scenario_id": "SCN-001",
+      "requirement_id": "REQ-001",
+      "component": "upload-service",
+      "builder": "builder-1",
+      "status": "PASS",
+      "triage_category": null,
+      "failure_detail": null,
+      "timestamp": "2025-05-27T14:30:01Z"
+    },
+    {
+      "scenario_id": "SCN-002",
+      "requirement_id": "REQ-001",
+      "component": "upload-service",
+      "builder": "builder-1",
+      "status": "FAIL",
+      "triage_category": "CODE_ERROR",
+      "failure_detail": "Expected HTTP 413 with DOC_TOO_LARGE but received HTTP 400 with VALIDATION_ERROR. The 50MB boundary check uses strict < instead of <=.",
+      "remediation_owner": "builder-1",
+      "timestamp": "2025-05-27T14:30:02Z"
+    },
+    {
+      "scenario_id": "SCN-003",
+      "requirement_id": "REQ-001",
+      "component": "upload-service",
+      "builder": "builder-1",
+      "status": "PASS",
+      "triage_category": null,
+      "failure_detail": null,
+      "timestamp": "2025-05-27T14:30:03Z"
+    },
+    {
+      "scenario_id": "SCN-004",
+      "requirement_id": "REQ-002",
+      "component": "security-service",
+      "builder": "builder-2",
+      "status": "PASS",
+      "triage_category": null,
+      "failure_detail": null,
+      "timestamp": "2025-05-27T14:31:00Z"
+    },
+    {
+      "scenario_id": "SCN-005",
+      "requirement_id": "REQ-002",
+      "component": "security-service",
+      "builder": "builder-2",
+      "status": "PASS",
+      "triage_category": null,
+      "failure_detail": null,
+      "timestamp": "2025-05-27T14:31:30Z"
+    }
+  ]
+}

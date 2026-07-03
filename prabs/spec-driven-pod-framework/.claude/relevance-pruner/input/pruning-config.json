@@ -1,0 +1,43 @@
+{
+  "threshold": 0.35,
+  "max_tokens": 8000,
+  "scoring_weights": {
+    "semantic": 0.6,
+    "recency": 0.2,
+    "authority": 0.2
+  },
+  "protected_patterns": [
+    "customer_id",
+    "ticket_id",
+    "commitment_made"
+  ],
+  "embedding_model": "text-embedding-3-small",
+  "embedding_truncation_chars": 512,
+  "recency_half_life_days": 182,
+  "greedy_packing": {
+    "strategy": "relevance_desc",
+    "protected_chunks_first": true
+  },
+  "source_authority_defaults": {
+    "knowledge_base": 0.90,
+    "product_documentation": 0.85,
+    "faq": 0.75,
+    "crm_case_note": 0.70,
+    "prior_turn": 0.65,
+    "external_article": 0.50,
+    "internal_ops": 0.20,
+    "user_generated": 0.30,
+    "unknown": 0.50
+  },
+  "output": {
+    "pruned_context_file": "output/pruned-context.json",
+    "dropped_chunks_log_file": "output/dropped-chunks-log.json",
+    "pruning_summary_file": "output/pruning-summary.json"
+  },
+  "safety": {
+    "never_drop_protected": true,
+    "budget_exceeded_by_protection_flag": true,
+    "log_every_drop": true,
+    "mutate_chunk_content": false
+  }
+}

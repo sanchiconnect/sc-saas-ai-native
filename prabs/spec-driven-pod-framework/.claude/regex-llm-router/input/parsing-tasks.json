@@ -1,0 +1,98 @@
+[
+  {
+    "task_id": "T01",
+    "name": "Extract Order ID",
+    "description": "Extract one or more order IDs from an inbound customer service message. Order IDs are system-generated in the format ORD- followed by exactly 5 decimal digits.",
+    "sample_inputs": [
+      "Hi, I need help with my order ORD-48291. It hasn't shipped yet.",
+      "Can you check orders ORD-10034 and ORD-10035? Both are late.",
+      "order ORD-99999 was supposed to arrive yesterday",
+      "My order number is ORD-00001 and the tracking hasn't updated.",
+      "I placed order ORD-73812 on Monday but got no confirmation email."
+    ]
+  },
+  {
+    "task_id": "T02",
+    "name": "Parse Billing Amount",
+    "description": "Extract the dollar amount referenced in a customer email or chat message when disputing a charge or asking about a fee. Amount is always US dollars, typically formatted as $XX.XX but may appear as $X or $XXX.",
+    "sample_inputs": [
+      "I was charged $49.99 last Tuesday and I did not authorize this.",
+      "The invoice shows $120 but my contract says $99.00.",
+      "Why was I billed $7.50 for a service I cancelled?",
+      "There's a mysterious charge of $0.99 on my statement.",
+      "I expected to pay $250 not $312.75 — please explain the difference."
+    ]
+  },
+  {
+    "task_id": "T03",
+    "name": "Determine Customer Sentiment",
+    "description": "Classify the overall emotional tone of a customer complaint message: positive, neutral, frustrated, angry, or distressed. Used to prioritize escalation queue.",
+    "sample_inputs": [
+      "I've been waiting THREE WEEKS and no one has helped me. This is absolutely unacceptable.",
+      "Hey, quick question — when does my renewal kick in? No rush.",
+      "I'm really disappointed. I trusted your service and it let me down.",
+      "Fine, whatever, just cancel it. I don't have the energy to deal with this anymore.",
+      "Your support team was great last time, but this issue has me a bit worried."
+    ]
+  },
+  {
+    "task_id": "T04",
+    "name": "Extract Customer Name from Intro",
+    "description": "Extract the full name a customer provides when identifying themselves at the start of a support conversation. Phrasing varies: 'My name is X', 'This is X', 'I'm X', 'It's X here', or the name may appear without any introductory phrase.",
+    "sample_inputs": [
+      "My name is Sarah Johnson and I'm having trouble logging in.",
+      "Hi, this is Marcus Rivera. I'd like to update my billing address.",
+      "I'm Priya Nair. My account number is ACC-4481923.",
+      "Hey — it's Tom. Tom Bruckner. I placed an order last week.",
+      "4421983 — that's my account. The name is Dana Cho."
+    ]
+  },
+  {
+    "task_id": "T05",
+    "name": "Parse Date Range from Natural Language",
+    "description": "Extract a start date and end date from a customer message describing a time period. Dates are expressed in natural language and may be relative ('last month', 'next Tuesday') or anchored ('March 5th') with partial context.",
+    "sample_inputs": [
+      "I need a statement for between March 5th and 10th last month.",
+      "Can you pull my activity from last Tuesday through this Friday?",
+      "Show me everything from the beginning of Q2 to yesterday.",
+      "I want records from 2 weeks ago until now.",
+      "Transactions between January 1st and the end of February please."
+    ]
+  },
+  {
+    "task_id": "T06",
+    "name": "Extract Account Status from CRM JSON",
+    "description": "Extract the 'account_status' field value from a Salesforce CRM API JSON response. The response is machine-generated and always follows the same schema. Possible values: active, suspended, pending_cancellation, closed.",
+    "sample_inputs": [
+      "{\"account_id\": \"ACC-1029384\", \"account_status\": \"active\", \"plan\": \"pro\", \"created_at\": \"2023-04-12T08:00:00Z\"}",
+      "{\"account_id\": \"ACC-9988771\", \"account_status\": \"suspended\", \"plan\": \"basic\", \"created_at\": \"2022-11-01T14:30:00Z\", \"suspended_reason\": \"non_payment\"}",
+      "{\"account_id\": \"ACC-0034521\", \"account_status\": \"pending_cancellation\", \"plan\": \"enterprise\", \"cancellation_date\": \"2026-06-15T00:00:00Z\"}",
+      "{\"account_id\": \"ACC-5512309\", \"account_status\": \"closed\", \"plan\": \"basic\", \"closed_at\": \"2025-12-01T00:00:00Z\"}",
+      "{\"account_id\": \"ACC-7743001\", \"account_status\": \"active\", \"plan\": \"pro\", \"trial_ends\": \"2026-07-01T00:00:00Z\"}"
+    ]
+  },
+  {
+    "task_id": "T07",
+    "name": "Extract Mentioned Products",
+    "description": "Identify all products the customer references in a complaint or inquiry. Products may be cited by their internal code (PROD-XX000), their marketing name, a colloquial nickname, or a misspelling. The product catalog has ~80 items.",
+    "sample_inputs": [
+      "The PROD-PR001 plan doesn't include the analytics dashboard I was promised.",
+      "I bought the Pro subscription and the mobile app but neither are working.",
+      "Your basic tier is fine but I need the enterprise features for my team.",
+      "The PROD-EN010 enterprise package and the PROD-AD005 add-on are both broken.",
+      "I signed up for 'ProMax' or whatever it's called — the one above Pro."
+    ]
+  },
+  {
+    "task_id": "T08",
+    "name": "Parse and Normalize Phone Number",
+    "description": "Extract a phone number from a customer message and normalize it to E.164 format (+1XXXXXXXXXX for US numbers). Customers enter numbers in multiple formats: parenthesized area code, dashes only, dots, spaces, or international prefix.",
+    "sample_inputs": [
+      "Call me back at (555) 123-4567 when you get a chance.",
+      "My number is 555-123-4567. Thanks.",
+      "+1 555 123 4567 — please use this going forward.",
+      "you can reach me at 5551234567 any time after 3pm",
+      "new phone: +15551234567"
+    ]
+  }
+]

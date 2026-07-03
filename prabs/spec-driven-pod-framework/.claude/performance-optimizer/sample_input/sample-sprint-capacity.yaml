@@ -1,0 +1,47 @@
+# sprint-capacity.yaml
+# POD Lead: fill this before sprint start. PerformanceOptimizer uses it to enforce budget.
+
+sprint_id: "SP-007"
+sprint_dates:
+  start: "2025-09-16"
+  build_start: "2025-09-16"  # Tuesday
+  build_end: "2025-09-18"    # Thursday
+
+team:
+  pod_lead: "Lead-1"
+  builders:
+    - id: "Builder-1"
+      focus: "backend"
+    - id: "Builder-2"
+      focus: "frontend"
+
+token_budget:
+  total_tokens: 2000000
+  # Derived from: ~$6.40 at blended Haiku/Sonnet rate
+  # Breakdown allocation (guidance):
+  dev_copilot_pct: 70      # 1,400,000 tokens — primary generation workload
+  review_pilot_pct: 15     # 300,000 tokens — PR review passes
+  knowledge_mesh_pct: 8    # 160,000 tokens — context retrieval
+  other_agents_pct: 7      # 140,000 tokens — ExperienceStudio, TrustFabric, etc.
+
+provider_config:
+  primary: "anthropic"
+  secondary: "openai"
+  anthropic_models_enabled:
+    - "claude-haiku-4-5-20251001"
+    - "claude-sonnet-4-20250514"
+  openai_models_enabled:
+    - "gpt-4o-mini"
+    - "gpt-4o"
+
+nfr_overrides:
+  # Features requiring premium model regardless of task profile
+  - feature_id: "REQ-AI-001"
+    quality_tier: "premium"
+    reason: "Customer-facing AI recommendation engine — quality is product-critical"
+    force_model: "claude-sonnet-4-20250514"
+
+alert_thresholds:
+  warning_pct: 80
+  force_downgrade_pct: 95
+  hard_stop_pct: 100

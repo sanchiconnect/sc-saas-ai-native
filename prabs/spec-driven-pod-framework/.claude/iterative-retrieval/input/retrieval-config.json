@@ -1,0 +1,76 @@
+{
+  "retrieval_policy": {
+    "max_rounds": 5,
+    "confidence_threshold": 0.85,
+    "max_tokens": 12000,
+    "initial_slice_size": 3,
+    "subsequent_slice_size": 2,
+    "stop_on_gap_unresolvable": true,
+    "stop_on_no_gaps": true,
+    "min_confidence_to_skip_supporting_gaps": 0.70
+  },
+  "index": {
+    "index_type": "vector_store",
+    "embedding_model": "text-embedding-3-small",
+    "embedding_dimensions": 1536,
+    "similarity_metric": "cosine",
+    "index_endpoint": "https://api.internal/vector-store/cs-knowledge-base/query",
+    "auth_header": "Authorization",
+    "auth_scheme": "Bearer",
+    "api_version": "2024-10-01"
+  },
+  "query_config": {
+    "top_k_initial": 3,
+    "top_k_subsequent": 2,
+    "score_threshold": 0.60,
+    "include_metadata": true,
+    "deduplicate": true,
+    "category_filter_enabled": true,
+    "rerank_enabled": false
+  },
+  "gap_detection": {
+    "enabled": true,
+    "heuristic_phrases": [
+      "I don't have information about",
+      "unclear what the policy is for",
+      "I cannot determine whether",
+      "I need to verify",
+      "I need to confirm",
+      "the document does not address",
+      "it is not specified",
+      "I'm unsure if",
+      "cannot be determined from"
+    ],
+    "severity_classifier": "rule_based",
+    "blocking_gap_categories": [
+      "eligibility",
+      "policy_scope",
+      "charge_validity"
+    ],
+    "supporting_gap_categories": [
+      "timeline_detail",
+      "alternative_options",
+      "communication_template"
+    ]
+  },
+  "confidence_scoring": {
+    "method": "self_reported",
+    "scale": "0.0_to_1.0",
+    "calibration_note": "Scores are agent-assigned based on completeness of loaded context relative to task requirements. Not probabilistic."
+  },
+  "output": {
+    "write_trace": true,
+    "trace_path": "output/retrieval-trace.json",
+    "write_coverage_report": true,
+    "coverage_report_path": "output/coverage-report.json",
+    "write_answer": true,
+    "answer_path": "output/grounded-answer.md",
+    "include_doc_summaries_in_trace": false
+  },
+  "fallback": {
+    "on_index_unavailable": "use_cached_index_snapshot",
+    "on_budget_exhausted_low_confidence": "flag_for_human_review",
+    "human_review_threshold": 0.70,
+    "escalation_queue": "billing-supervisor"
+  }
+}

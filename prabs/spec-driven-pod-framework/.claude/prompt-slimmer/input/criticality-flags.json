@@ -1,0 +1,69 @@
+{
+  "version": "1.0",
+  "project": "acme-customer-service-chatbot",
+  "criticality_map": {
+    "escalation_procedures": "critical",
+    "compliance_language": "critical",
+    "tool_use_rules": "review",
+    "tone_guidelines": "safe",
+    "formatting_rules": "safe",
+    "response_length": "safe",
+    "identity_verification": "review",
+    "ticket_creation_rules": "review",
+    "data_privacy_policy": "critical",
+    "role_description": "safe",
+    "response_quality_checklist": "safe",
+    "deprecated_feature_notices": "safe"
+  },
+  "protected_phrases": [
+    {
+      "id": "PPH-001",
+      "label": "GDPR/CCPA data deletion response",
+      "text": "I have noted your data deletion request. Our Data Privacy team will contact you within 30 days to verify your identity and complete the deletion process in accordance with applicable law.",
+      "reason": "Legally mandated response language. Any paraphrase may constitute non-compliance with GDPR Article 17 and CCPA Section 1798.105.",
+      "owner": "legal@acmecorp.com"
+    },
+    {
+      "id": "PPH-002",
+      "label": "Crisis response — self-harm/mental health",
+      "text": "National Crisis Hotline: 988 (call or text), Crisis Text Line: text HOME to 741741",
+      "reason": "Required crisis resource language. Must appear verbatim. Abbreviation or paraphrase could delay help to a person in crisis.",
+      "owner": "safety@acmecorp.com"
+    },
+    {
+      "id": "PPH-003",
+      "label": "Chat transcript retention policy",
+      "text": "Acme Corp records and retains chat transcripts for quality assurance and compliance purposes for a period of seven years.",
+      "reason": "Disclosed retention period is a regulatory commitment. Changing the number or qualifier may create legal liability.",
+      "owner": "compliance@acmecorp.com"
+    },
+    {
+      "id": "PPH-004",
+      "label": "Security escalation tag",
+      "text": "[SECURITY-URGENT]",
+      "reason": "Exact tag string used by the SIEM routing system. Misspelling or paraphrase breaks automated alert routing.",
+      "owner": "security@acmecorp.com"
+    },
+    {
+      "id": "PPH-005",
+      "label": "Data deletion ticket category",
+      "text": "[DATA-DELETION-REQUEST]",
+      "reason": "Exact tag string required by the data privacy workflow. Must not be altered.",
+      "owner": "compliance@acmecorp.com"
+    },
+    {
+      "id": "PPH-006",
+      "label": "Crisis escalation queue tag",
+      "text": "[CRISIS]",
+      "reason": "Exact routing tag for Tier 2 human support queue. Required by incident response SOP-007.",
+      "owner": "safety@acmecorp.com"
+    }
+  ],
+  "escalation_thresholds": {
+    "billing_dispute_usd": 500,
+    "max_troubleshooting_attempts_before_escalation": 2,
+    "enterprise_tier_auto_escalate": true
+  },
+  "compliance_frameworks": ["GDPR", "CCPA", "SOC2-Type2"],
+  "notes": "Flags reviewed and approved by Legal (2024-09-01) and Security (2024-09-05). Next review due 2025-03-01."
+}

@@ -1,0 +1,240 @@
+# openspec.yaml — Locked Sprint Specification
+# SpecPod Framework v2.1.0 · Gate-0 Cleared
+# DO NOT MODIFY after lock. Any changes require a new spec version and re-run of SpecImpactAnalyzer.
+
+meta:
+  spec_version: "1.0"
+  sprint_id: SPRINT-001
+  sprint_name: "Phase 1 — Ingestion, Extraction & ERP Spike"
+  program_id: PRG-APIA-001
+  program_name: "Accounts Payable Invoice Automation"
+  phase: "Phase 1 (Weeks 1–4)"
+  sprint_start: "2026-06-10"
+  sprint_end: "2026-06-13"
+  pod_lead: "Michael Torres"
+  locked: true
+  locked_by: "Michael Torres"
+  locked_at: "2026-06-10T08:00:00Z"
+  gate_status: "GATE-0 CLEARED"
+
+# ──────────────────────────────────────────────
+# SPRINT GOALS
+# ──────────────────────────────────────────────
+sprint_goals:
+  - id: SG-001
+    goal: >
+      Stand up the invoice ingestion pipeline: poll the shared mailbox via Microsoft Graph API,
+      classify incoming attachments by document type (PDF, scan, image, other), and queue
+      valid invoices for extraction.
+    success_indicator: >
+      System ingests a test batch of 50 invoices from the shared mailbox within 60 seconds
+      of receipt; all attachments are classified and queued; no messages lost.
+
+  - id: SG-002
+    goal: >
+      Implement the field extraction pipeline: parse vendor name, invoice number, line items,
+      total amounts, PO reference, and invoice date from standard digital PDFs using pdfplumber.
+      Apply configurable confidence thresholds; route low-confidence extractions to the manual
+      entry queue.
+    success_indicator: >
+      Extraction pipeline produces a structured JSON payload per invoice; fields with confidence
+      below the configured threshold are flagged with MANUAL_REVIEW status; confidence scores
+      are logged to the audit trail.
+
+  - id: SG-003
+    goal: >
+      Complete the two-week ERP API investigation spike: document the available PO and GRN
+      endpoints, their response schemas, authentication mechanism, pagination behaviour,
+      rate limits, and any known gaps or blockers. Produce a written findings report.
+    success_indicator: >
+      ERP spike findings report delivered to Michael Torres and Priya Mehta by end of Week 2
+      (2026-06-21); report includes integration scope, confirmed capability, and recommended
+      Phase 3 approach.
+
+# ──────────────────────────────────────────────
+# IN-SCOPE MODULES
+# ──────────────────────────────────────────────
+in_scope:
+
+  - module_id: MOD-ING
+    module_name: "Invoice Ingestion"
+    source_domain: "src/pipeline/ingestion/"
+    description: >
+      Connects to the shared AP mailbox via Microsoft Graph API (Microsoft 365).
+      Polls on a 5-minute Celery beat schedule. Classifies each email attachment as
+      PDF, scan, image, or unsupported. Creates an Invoice record in the database with
+      status RECEIVED. Queues the invoice for extraction via Celery task chain.
+    acceptance_criteria:
+      - "Shared mailbox polling runs every 5 minutes via Celery beat without manual intervention."
+      - "Each invoice attachment is classified into one of: PDF, SCAN, IMAGE, UNSUPPORTED."
+      - "UNSUPPORTED attachments are flagged and logged; they do not enter the extraction queue."
+      - "Each ingested invoice receives a unique invoice_id and a RECEIVED status audit log entry."
+      - "IMAP fallback is scaffolded but not production-tested in this sprint."
+    dependencies:
+      - "Microsoft Graph API credentials provisioned (Priya Mehta — due Day 1)"
+      - "PostgreSQL schema migrations for Invoice table (included in this sprint)"
+      - "Redis broker running (local Docker for dev; staging TBD)"
+    nfr_refs:
+      - "NFR-PERF-001: Ingestion must not block extraction pipeline; async queuing required."
+      - "NFR-AVAIL-001: 99.5% availability during business hours."
+    out_of_scope_notes: >
+      Vendor portal submissions and EDI feeds are out of scope for Phase 1 and all phases.
+
+  - module_id: MOD-EXT
+    module_name: "Document Extraction"
+    source_domain: "src/pipeline/extraction/"
+    description: >
+      Extracts structured fields from ingested invoice documents. Uses pdfplumber for
+      digital PDFs. Calls a configurable OCR provider adapter (Azure Document Intelligence
+      stub for Phase 1) for scanned and image-based invoices. Applies per-field confidence
+      scoring. Routes any field below the configured confidence threshold to a MANUAL_REVIEW
+      queue. Writes a structured ExtractionResult to the database.
+    extraction_fields:
+      - vendor_name
+      - vendor_id_ref
+      - invoice_number
+      - invoice_date
+      - po_reference
+      - line_items      # {description, quantity, unit_price, line_total}
+      - subtotal
+      - tax_amount
+      - total_amount
+      - currency
+      - payment_due_date
+    acceptance_criteria:
+      - "pdfplumber-based extraction produces a structured JSON payload for 100% of test digital PDFs."
+      - "Per-field confidence scores are recorded for every extracted field."
+      - "Fields with confidence below DEFAULT_CONFIDENCE_THRESHOLD (configurable; default 0.80) are flagged MANUAL_REVIEW."
+      - "Low-confidence invoices are routed to the manual entry queue; they do not progress to validation."
+      - "ExtractionResult written atomically with an audit log entry per invoice."
+      - "OCR adapter is stubbed and logs a NOT_AVAILABLE event for non-PDF types in this sprint."
+    confidence_config:
+      default_threshold: 0.80
+      per_field_overrides:
+        po_reference: 0.90    # Higher threshold — PO reference errors propagate downstream
+        vendor_id_ref: 0.90
+        total_amount: 0.85
+    dependencies:
+      - "MOD-ING must be complete and queuing invoices before extraction pipeline is testable end-to-end."
+      - "OCR provider credentials (Azure) — stub only in this sprint; live credentials deferred to Sprint-002."
+    nfr_refs:
+      - "NFR-PERF-001: Standard digital PDF extraction must complete within 60 seconds of receipt."
+
+  - module_id: MOD-ERP-SPIKE
+    module_name: "ERP API Investigation Spike"
+    source_domain: "src/integrations/erp/"
+    description: >
+      Two-week time-boxed investigation to assess the underdocumented ERP API's capability
+      for retrieving Purchase Orders and Goods Receipt Notes. The original development team
+      has departed. Priya Mehta leads the spike. Output is a written findings report, not
+      production code. An ERP adapter scaffold may be produced as a secondary deliverable
+      if the API is confirmed stable.
+    investigation_scope:
+      - "Locate all available ERP API documentation (internal wiki, code comments, API explorer)."
+      - "Identify and test all PO retrieval endpoints: request params, response schema, pagination."
+      - "Identify and test all GRN retrieval endpoints: request params, response schema, pagination."
+      - "Confirm authentication mechanism (API key, OAuth, session token)."
+      - "Measure rate limits and confirm caching strategy viability."
+      - "Identify any known gaps: missing fields, undocumented endpoints, version instability."
+      - "Confirm whether line-item level GRN data is available (required for three-way matching)."
+    acceptance_criteria:
+      - "ERP spike findings report delivered by 2026-06-21."
+      - "Report covers: endpoint list, response schemas (sample payloads), auth mechanism, rate limits, gaps, and recommended Phase 3 integration approach."
+      - "Report includes a go/no-go recommendation on the ERP integration timeline."
+      - "All findings reviewed with Michael Torres and Priya Mehta before Phase 3 scope is confirmed."
+    risk_flag: >
+      HIGH RISK: Original development team has departed; documentation quality is unknown.
+      If the ERP API is found to be too unstable or underdocumented, Phase 3 scope and
+      timeline must be renegotiated with the CFO office. This is a declared risk
+      (program.md Risk Register, Row 1).
+    owner: "Priya Mehta"
+    deadline: "2026-06-21"
+
+  - module_id: MOD-DB-INIT
+    module_name: "Database Schema — Sprint 1 Migrations"
+    source_domain: "src/models/ + alembic/versions/"
+    description: >
+      Initial Alembic migrations for the Invoice, ExtractionResult, AuditLog, and
+      ManualReviewQueue tables. These are the minimum schema required for MOD-ING
+      and MOD-EXT to function.
+    tables_in_sprint:
+      - invoices
+      - extraction_results
+      - manual_review_queue
+      - audit_log_entries
+    acceptance_criteria:
+      - "All four tables created by Alembic migration with correct column types and constraints."
+      - "audit_log_entries table uses append-only design (no UPDATE/DELETE permissions)."
+      - "All migrations reversible (downgrade path tested)."
+      - "indexes created on: invoices.status, invoices.received_at, audit_log_entries.invoice_id."
+
+# ──────────────────────────────────────────────
+# OUT OF SCOPE (this sprint)
+# ──────────────────────────────────────────────
+out_of_scope:
+  - "Vendor master validation (Phase 2)"
+  - "Three-way matching engine (Phase 3)"
+  - "Exception routing and human review interface (Phase 4)"
+  - "ERP API production integration (deferred to Phase 3, after spike findings)"
+  - "OCR provider live credentials (Azure Document Intelligence) — stub only"
+  - "IMAP fallback production testing"
+  - "Role-based access controls (Phase 4)"
+  - "Audit log export (Phase 4)"
+  - "Frontend / human review UI"
+
+# ──────────────────────────────────────────────
+# OPEN DECISIONS AFFECTING THIS SPRINT
+# ──────────────────────────────────────────────
+open_decisions:
+  - id: OD-002
+    description: "Audit log retention period — not yet confirmed with Legal and Audit (Robert Chen)."
+    impact: >
+      AuditLog table structure is scaffolded in this sprint. Retention policy constraints
+      (partitioning, archival triggers) cannot be finalised until OD-002 is resolved.
+    resolution_owner: "Robert Chen / Legal"
+    required_before: "Phase 1 architecture sign-off"
+    sprint_impact: LOW  # Schema can proceed; retention mechanics deferred
+
+  - id: OD-003
+    description: "ERP API capability — output of MOD-ERP-SPIKE."
+    impact: >
+      Phase 3 scope, matching engine design, and overall timeline are contingent on spike findings.
+    resolution_owner: "Priya Mehta"
+    required_before: "Phase 3 scope finalisation"
+    sprint_impact: HIGH  # Spike is the primary deliverable of this sprint
+
+# ──────────────────────────────────────────────
+# POLICY RAILS (compliance guard prompts to inject)
+# ──────────────────────────────────────────────
+policy_rails:
+  - policy_id: POL-AUDIT-001
+    applies_to: [MOD-DB-INIT, MOD-ING, MOD-EXT]
+    description: "Every pipeline stage must write an immutable audit log entry before yielding to the next stage."
+
+  - policy_id: POL-FRAUD-001
+    applies_to: [MOD-EXT]
+    description: "Bank detail fields in extraction output must be flagged HIGH_SENSITIVITY. No bank details written to standard application logs."
+
+  - policy_id: POL-CONF-001
+    applies_to: [MOD-EXT]
+    description: "Confidence thresholds are configurable parameters — never hardcoded. Default values must be documented in config/."
+
+  - policy_id: POL-READONLY-001
+    applies_to: [MOD-ERP-SPIKE]
+    description: "ERP integration is read-only in all phases. Spike must not write to or trigger actions in the ERP."
+
+# ──────────────────────────────────────────────
+# HITL GATE STATE
+# ──────────────────────────────────────────────
+hitl_gates:
+  gate_0:
+    name: "Spec Lock"
+    status: CLEARED
+    cleared_by: "Michael Torres"
+    cleared_at: "2026-06-10T08:00:00Z"
+  gate_0_5:
+    name: "Assumption Clearance"
+    status: PENDING  # AssumptionTracker has not yet run
+  gate_1:
+    name: "Plan Sign-off"
+    status: PENDING  # Requires all Monday planning artifacts
