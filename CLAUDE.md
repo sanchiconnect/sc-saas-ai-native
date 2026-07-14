@@ -77,7 +77,7 @@ Work is driven by specs, not ad-hoc prompts. Two kinds:
 - **Feature specs** — `specs/features/<id>-<slug>.spec.md` (workspace layer; features span repos). Frontmatter routes the work: `repos` (dependency order), `contracts` (api/flags/events), `tenant_scoped`, `depends_on`, `status` (draft→approved→in-progress→in-review→done). A spec with non-empty **Open questions** is NOT approvable.
 - **Module specs** — `<repo>/src/<module>/module.spec.md` (committed; only for real bounded contexts). Declare `owns` / `consumes` (api/flags/events) and the `tenant_scoping` mechanism.
 
-Flow: `/from-linear <id>` or `/spec-new feature <id>` → `spec-author` drafts → you approve → `/spec-implement <id>` → `spec-implementer` builds in dependency order, running `/audit-contract`, `/trace-flag`, `/check-isolation` as gates before `in-review`. Templates: `specs/feature.spec.template.md`, `specs/module.spec.template.md`.
+Flow: `/from-linear <id>` or `/spec-new feature <id>` → `spec-author` drafts (and creates a Linear Project + one Todo issue per affected repo) → you approve → `/spec-implement <id>` → `spec-implementer` builds in dependency order, running `/audit-contract`, `/trace-flag`, `/check-isolation` as gates before `in-review`, moving each repo's Linear issue Todo → In Progress → In Review → Done as work actually happens. Templates: `specs/feature.spec.template.md`, `specs/module.spec.template.md`. For a narrowly-scoped bug fix or small enhancement that doesn't need a spec, use `/bug-fix` instead — flat Linear issue in the team backlog, no project. See `specs/spec-authoring-practices.md` for the underlying practices (check code before proposing new entities, evidence-tag claims, name cross-repo contract impact, Linear tracking).
 
 ## Global guardrails
 
