@@ -77,6 +77,10 @@ similar but not code-shared. `[Source: ai-startups-analyzer/CLAUDE.md §Conventi
 
 ## Change Log
 
+- 2026-07-16 | Independently re-confirmed rows 9 and 11 of the real call graph directly against current code
+  (exact function names, line numbers, and endpoint paths all matched) and propagated the corrections into
+  the actual `sc-saas-3rdparty-webservices` and `sanchiconnect-saas-tenants-admin` `CLAUDE.md` files, which
+  hadn't been updated despite this index already stating both corrections on 2026-07-14.
 - 2026-07-14 | Initial workspace-level API index. Built from the four API-owning repos' own `api.md` section
   headers plus each of the seven repos' `knowledge.md` "who calls whom" findings. Assembled the 16-row real
   call graph, flagging rows 9–11 as confirmed contradictions of the workspace `CLAUDE.md`'s documented

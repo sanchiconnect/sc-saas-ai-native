@@ -315,6 +315,22 @@ What the graph gets **stale/wrong**, per §3 above:
 
 ## Change Log
 
+- 2026-07-16 | Independent re-verification pass: spot-checked 6 of this document's most load-bearing claims
+  directly against current code (not re-trusted from the 2026-07-14 synthesis alone) — all 6 confirmed exactly
+  as stated: `sc-saas-admin`'s two direct `sc-saas-3rdparty-webservices` call sites (§3.1), the
+  `easebuzz_callback.php` direct call into `sanchiconnect-saas-tenants` (§3.1), `sanchiconnect-saas-tenants-admin`'s
+  two direct `sc-saas-backend` calls (§3.2), the bundled Adminer console with the plaintext DB-password link
+  (§6), the 5-of-6 AJAX-handlers-skip-login finding (§6), and the hardcoded live-looking API keys in
+  `global.repository.ts` (§6). **One correction**: the ai-credits Easebuzz webhooks are gated by
+  `InternalApiKeyGuard` *and* HMAC signature verification — not unauthenticated as `sanchiconnect-saas-tenants`'s
+  own `CLAUDE.md` stated until this pass (now fixed there). Also fixed 5 other confirmed-stale numbers this
+  pass surfaced across per-repo `CLAUDE.md` files that this July 14 synthesis had already flagged internally
+  but which hadn't propagated to the actual `CLAUDE.md` files themselves: `sc-saas-backend` module count
+  (51→58), `sc-saas-frontend` NgRx store count (~38→34), `sc-saas-3rdparty-webservices`'s Swagger-gate
+  condition and "called only by backend" framing, and `sanchiconnect-saas-tenants-admin`'s standalone/JWT/SendGrid
+  claims (§(a) above already refuted these on 2026-07-14; the `CLAUDE.md` files themselves weren't corrected
+  until now). Added `sanchiconnect-saas-tenants-admin`'s new Tenant Data Export feature (built this session,
+  see that repo's own `knowledge.md` §h) as a new architectural data point.
 - 2026-07-14 | Initial workspace-level synthesis pass. Read all seven repos' `knowledge.md` in full, plus
   spot-checked `design.md` (tenants, frontend — the two `verify_tenant`/`tenant-settings` breakage traces)
   and `database.md`/`api.md` section headers across all seven repos to confirm structure before citing.
