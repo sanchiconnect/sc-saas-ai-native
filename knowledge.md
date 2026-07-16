@@ -315,6 +315,20 @@ What the graph gets **stale/wrong**, per §3 above:
 
 ## Change Log
 
+- 2026-07-16 (later same day) | Full re-verification pass across all 7 repos' own `knowledge.md`/`design.md`/
+  `database.md`/`api.md` (28 files), not just this workspace-level synthesis — one dedicated agent per repo,
+  each re-checking every specific claim against current code and fixing confirmed drift directly. Net effect:
+  dozens of precise counts/line-citations corrected (mostly drift from same-day commits shifting line numbers,
+  not conceptual errors), and two genuinely new findings worth surfacing at this level: (1) `sc-saas-admin`
+  shipped a **Bulk Email Attachments** feature (2026-07-15, after the original 2026-07-14 pass) with S3
+  upload/inline-vs-link delivery but **no malware-scanning provider wired up** — every attachment is
+  permanently `PENDING` scan status and sends proceed anyway, an accepted product decision, not a bug, but
+  worth knowing platform-wide; (2) `sc-saas-3rdparty-webservices` actually exposes **34 routes, not 20** as
+  every doc previously stated, and has a real, confirmed config-wiring bug — `OTP_EXPIRATION_TIME_IN_MINUTES`
+  is required at boot (Joi) but `configuration.ts` never maps it to the key `AppConfigService.otpExpirationTime`
+  reads, so the env var silently has zero effect and `sms.service.ts` always uses its hardcoded 10-minute
+  fallback. See each repo's own docs for full detail; not deep-diving either into this synthesis since both are
+  single-repo findings without a second-repo consumer.
 - 2026-07-16 | Independent re-verification pass: spot-checked 6 of this document's most load-bearing claims
   directly against current code (not re-trusted from the 2026-07-14 synthesis alone) — all 6 confirmed exactly
   as stated: `sc-saas-admin`'s two direct `sc-saas-3rdparty-webservices` call sites (§3.1), the
