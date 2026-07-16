@@ -313,8 +313,72 @@ What the graph gets **stale/wrong**, per §3 above:
 
 ---
 
+## 9. The workspace boundary — SanchiPowerpitch is a sibling poly-repo, not part of this one
+
+`CLAUDE.md` invariant #6 documents the one contract that crosses into SanchiPowerpitch
+(`power-pitch-sanchiconnect-api`'s `/v1/externals/*`, called from `sc-saas-backend`'s
+`PowerPitchExternalService`), but neither `CLAUDE.md` nor this document previously named the sibling
+workspace's other repos or confirmed it actually exists on disk. Verified directly, 2026-07-16:
+
+- SanchiPowerpitch is a separate poly-repo workspace, cloned at `/Users/mac/Desktop/Work/SanchiPowerpitch`
+  (a sibling of this `SanchiSaaS` folder, not nested inside it) — its own `CLAUDE.md`/`README.md`/
+  `AI-NATIVE-SETUP.md`/`specs/` exist there, mirroring this workspace's own root-level structure.
+- It contains **four** repos, each with its own `.git`: `power-pitch-sanchiconnect-api`,
+  `power-pitch-sanchiconnect-frontend`, `power-pitch-sanchiconnect-admin`, `power-pitch-partners`.
+- **Exactly one** contract crosses the boundary in either direction: `sc-saas-backend` → `power-pitch-
+  sanchiconnect-api`'s `/v1/externals/*` (invariant #6, unchanged). PowerPitch never calls back into
+  SanchiSaaS. No other SanchiPowerpitch repo (frontend, admin, partners) has any confirmed contract with
+  any SanchiSaaS repo.
+- **Correction to a claim in this workspace's own repo-map reference (dated 2026-07-15):** that document
+  states `power-pitch-sanchiconnect-admin` "had no meaningful commits yet." Checked directly via `git log`
+  — this is wrong, not just stale: the repo has 12 commits total, including real feature work ("plans
+  management", "add partner user", email-template changes) dated 2022-12-21 through 2023-04-21, then a
+  three-year gap before a single docs-only commit (CLAUDE.md + module specs) landed 2026-06-19. So the repo
+  has genuine historical business logic, just no active development in over three years as of this check —
+  a materially different situation from "no meaningful commits."
+- `prabs/` (the evaluated-and-rejected SpecPod framework) lives in this `SanchiSaaS` folder, not
+  SanchiPowerpitch's — already covered by this workspace's own memory/decision record, not a SanchiPowerpitch
+  concern.
+
+---
+
 ## Change Log
 
+- 2026-07-16 (later same day) | Added §9 — enumerated the SanchiPowerpitch sibling workspace's four repos by
+  name (previously only `power-pitch-sanchiconnect-api` was named anywhere in this workspace's docs), confirmed
+  its location on disk, and corrected a wrong claim from this workspace's repo-map reference doc (2026-07-15)
+  that `power-pitch-sanchiconnect-admin` had no meaningful commits — it has 12, dated 2022-2023, just no
+  activity since then until a docs-only commit in 2026-06.
+- 2026-07-16 (later same day) | Full re-verification pass across all 7 repos' own `knowledge.md`/`design.md`/
+  `database.md`/`api.md` (28 files), not just this workspace-level synthesis — one dedicated agent per repo,
+  each re-checking every specific claim against current code and fixing confirmed drift directly. Net effect:
+  dozens of precise counts/line-citations corrected (mostly drift from same-day commits shifting line numbers,
+  not conceptual errors), and two genuinely new findings worth surfacing at this level: (1) `sc-saas-admin`
+  shipped a **Bulk Email Attachments** feature (2026-07-15, after the original 2026-07-14 pass) with S3
+  upload/inline-vs-link delivery but **no malware-scanning provider wired up** — every attachment is
+  permanently `PENDING` scan status and sends proceed anyway, an accepted product decision, not a bug, but
+  worth knowing platform-wide; (2) `sc-saas-3rdparty-webservices` actually exposes **34 routes, not 20** as
+  every doc previously stated, and has a real, confirmed config-wiring bug — `OTP_EXPIRATION_TIME_IN_MINUTES`
+  is required at boot (Joi) but `configuration.ts` never maps it to the key `AppConfigService.otpExpirationTime`
+  reads, so the env var silently has zero effect and `sms.service.ts` always uses its hardcoded 10-minute
+  fallback. See each repo's own docs for full detail; not deep-diving either into this synthesis since both are
+  single-repo findings without a second-repo consumer.
+- 2026-07-16 | Independent re-verification pass: spot-checked 6 of this document's most load-bearing claims
+  directly against current code (not re-trusted from the 2026-07-14 synthesis alone) — all 6 confirmed exactly
+  as stated: `sc-saas-admin`'s two direct `sc-saas-3rdparty-webservices` call sites (§3.1), the
+  `easebuzz_callback.php` direct call into `sanchiconnect-saas-tenants` (§3.1), `sanchiconnect-saas-tenants-admin`'s
+  two direct `sc-saas-backend` calls (§3.2), the bundled Adminer console with the plaintext DB-password link
+  (§6), the 5-of-6 AJAX-handlers-skip-login finding (§6), and the hardcoded live-looking API keys in
+  `global.repository.ts` (§6). **One correction**: the ai-credits Easebuzz webhooks are gated by
+  `InternalApiKeyGuard` *and* HMAC signature verification — not unauthenticated as `sanchiconnect-saas-tenants`'s
+  own `CLAUDE.md` stated until this pass (now fixed there). Also fixed 5 other confirmed-stale numbers this
+  pass surfaced across per-repo `CLAUDE.md` files that this July 14 synthesis had already flagged internally
+  but which hadn't propagated to the actual `CLAUDE.md` files themselves: `sc-saas-backend` module count
+  (51→58), `sc-saas-frontend` NgRx store count (~38→34), `sc-saas-3rdparty-webservices`'s Swagger-gate
+  condition and "called only by backend" framing, and `sanchiconnect-saas-tenants-admin`'s standalone/JWT/SendGrid
+  claims (§(a) above already refuted these on 2026-07-14; the `CLAUDE.md` files themselves weren't corrected
+  until now). Added `sanchiconnect-saas-tenants-admin`'s new Tenant Data Export feature (built this session,
+  see that repo's own `knowledge.md` §h) as a new architectural data point.
 - 2026-07-14 | Initial workspace-level synthesis pass. Read all seven repos' `knowledge.md` in full, plus
   spot-checked `design.md` (tenants, frontend — the two `verify_tenant`/`tenant-settings` breakage traces)
   and `database.md`/`api.md` section headers across all seven repos to confirm structure before citing.

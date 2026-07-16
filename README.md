@@ -1,20 +1,20 @@
 # SanchiSaaS
 
-Multi-tenant SaaS platform for startup incubators and accelerators. Built as a **poly-repo** — five independently-versioned, independently-deployed repositories that together form a single product.
+Multi-tenant SaaS platform for startup incubators and accelerators. Built as a **poly-repo** — seven independently-versioned, independently-deployed repositories that together form a single product.
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  sanchiconnect-saas-tenants  (Control Plane / Cockpit)          │
-│  Source of truth for feature flags + tenant provisioning        │
-│  NestJS 9 · TypeORM · MySQL (shared, row-per-tenant)            │
-└────────────┬────────────────────────────┬───────────────────────┘
-             │ verify_tenant / settings   │ bootstrap config
-             ▼                            ▼
-┌────────────────────────┐   ┌────────────────────────────────────┐
+┌─────────────────────────────────────────────────────────────────┐  ┌────────────────────────────────┐
+│  sanchiconnect-saas-tenants  (Control Plane / Cockpit)          │◄─┤  sanchiconnect-saas-tenants-   │
+│  Source of truth for feature flags + tenant provisioning        │  │  admin (Platform Operator UI)  │
+│  NestJS 9 · TypeORM · MySQL (shared, row-per-tenant)            │  │  PHP · Medoo — reads/writes    │
+└────────────┬────────────────────────────┬───────────────────────┘  │  the cockpit DB directly       │
+             │ verify_tenant / settings   │ bootstrap config         └────────────────────────────────┘
+             ▼                            ▼                            (shares the cockpit DB directly,
+┌────────────────────────┐   ┌────────────────────────────────────┐    no API calls between them)
 │  sc-saas-frontend      │   │  sc-saas-backend                   │
 │  End-user PWA          │◄──│  Business API (REST)               │
 │  Angular 13 · NgRx     │   │  NestJS 8 · TypeORM · MySQL        │
@@ -35,7 +35,7 @@ Multi-tenant SaaS platform for startup incubators and accelerators. Built as a *
                     └────────────────────┘
 ```
 
-**Blast radius:** `tenants → backend → {frontend, admin}`. The AI analyzer and the 3rdparty webservices gateway are both leaf nodes — neither calls back into any other SanchiSaaS repo.
+**Blast radius:** `tenants → backend → {frontend, admin}`. `sanchiconnect-saas-tenants-admin` shares the cockpit MySQL DB directly with `sanchiconnect-saas-tenants` — a schema change in one can break both simultaneously — but makes no API calls in either direction. The AI analyzer and the 3rdparty webservices gateway are both leaf nodes — neither calls back into any other SanchiSaaS repo.
 
 ---
 
@@ -185,9 +185,32 @@ A stateless microservice that centralises every third-party API integration in o
 
 ---
 
+### 7. `sanchiconnect-saas-tenants-admin` — Tenants Control-Plane Admin UI
+
+**Stack:** PHP · Medoo ORM · sparkAdminTpl (QUCod framework)
+
+The platform-operator-facing admin panel over the **cockpit** (tenants) database — used by SanchiConnect staff to provision tenants, manage platform operator roles, configure global settings, and manage AI-credits packages/orders. Not to be confused with `sc-saas-admin`, which is the tenant-facing ops panel over each tenant's own business DB.
+
+**Single database connection** — unlike `sc-saas-admin`'s dual-DB setup, this repo only ever talks to the cockpit DB (no per-tenant `$database` connection, since it has no tenant-scoping concept of its own).
+
+**Key responsibilities:**
+- Tenant provisioning and settings (`tenant_users`, `organizations` tables — owned by `sanchiconnect-saas-tenants` but edited here via a generic dynamic CRUD engine)
+- Platform operator accounts and roles (`spa_admin_users`, `spa_admin_roles`)
+- Global settings, email/API configuration (`spa_settings`, `spa_email_settings`, `spa_api_core_management`)
+- AI-Credits management (packages, orders, grants, task rates)
+- Tenant data export/backup (CSV/Excel/ZIP, per-category)
+
+**Connects to:**
+- `sanchiconnect-saas-tenants` — shares its MySQL database directly (not via API); a TypeORM migration there can break Medoo queries here and vice versa.
+- `sc-saas-backend` — makes direct, unconditional calls: editing a `tenant_users` record fires `PATCH api/v1/public/global/saas/settings` against that tenant's own live backend deployment.
+
+> Leaf node from the outbound-API perspective (nothing else calls it), but tightly coupled at the database layer to `sanchiconnect-saas-tenants` — treat schema changes there as breaking changes here too.
+
+---
+
 ## Repository Access
 
-All five repositories are private and hosted under the [sanchiconnect](https://github.com/sanchiconnect) GitHub organization. You need collaborator access to each repo you intend to work on.
+All seven repositories are private and hosted under the [sanchiconnect](https://github.com/sanchiconnect) GitHub organization. You need collaborator access to each repo you intend to work on.
 
 ### Requesting access
 
@@ -202,6 +225,7 @@ All five repositories are private and hosted under the [sanchiconnect](https://g
    | `sc-saas-admin` | github.com/sanchiconnect/sc-saas-admin |
    | `ai-startups-analyzer` | github.com/sanchiconnect/ai-startups-analyzer |
    | `sc-saas-3rdparty-webservices` | github.com/sanchiconnect/sc-saas-3rdparty-webservices |
+   | `sanchiconnect-saas-tenants-admin` | github.com/sanchiconnect/sanchiconnect-saas-tenants-admin |
 
 3. Share your GitHub username with an existing organization owner and ask them to send you a collaborator invite from **Settings → Collaborators and teams** on each repo you need.
 4. Accept the invite from your GitHub notifications or the email GitHub sends you.
@@ -218,9 +242,10 @@ git clone https://github.com/sanchiconnect/sc-saas-frontend
 git clone https://github.com/sanchiconnect/sc-saas-admin
 git clone https://github.com/sanchiconnect/ai-startups-analyzer
 git clone https://github.com/sanchiconnect/sc-saas-3rdparty-webservices
+git clone https://github.com/sanchiconnect/sanchiconnect-saas-tenants-admin
 ```
 
-> You do not need access to all five repos to contribute. Request only the repos relevant to your work. The blast-radius order (tenants → backend → frontend / admin) is a good guide — start with the repos furthest downstream from your change.
+> You do not need access to all seven repos to contribute. Request only the repos relevant to your work. The blast-radius order (tenants → backend → frontend / admin) is a good guide — start with the repos furthest downstream from your change. `sanchiconnect-saas-tenants-admin` also depends on the cockpit's DB schema, so treat it as living alongside `sanchiconnect-saas-tenants` when requesting access.
 
 ---
 
@@ -368,6 +393,18 @@ uvicorn app.main:app --reload   # → http://localhost:8000
 ./start.sh                      # starts analyzer + Next.js frontend together
 ```
 
+### sanchiconnect-saas-tenants-admin (Tenants Control-Plane Admin UI)
+
+PHP application — shares the same cockpit MySQL database as `sanchiconnect-saas-tenants`, so point it at the same local DB you created for the cockpit above.
+
+```bash
+cd sanchiconnect-saas-tenants-admin
+php composer.phar install   # vendor/ is not committed
+cp .env.example .env        # fill DB creds (same DB as the cockpit), JWT key, AWS keys, role IDs
+```
+
+Serve via your local PHP server (Apache/Nginx + PHP); `.htaccess` rewrites every URL to `index.php?action=…`.
+
 ---
 
 ## Key Concepts
@@ -377,6 +414,7 @@ uvicorn app.main:app --reload   # → http://localhost:8000
 - **Cockpit** (`sanchiconnect-saas-tenants`): single shared MySQL database, one row per tenant keyed by `domain`.
 - **Backend** (`sc-saas-backend`): one deployment per tenant. Tenant config and feature flags are loaded once at bootstrap from the cockpit and held in memory — there is no tenant column on entities.
 - **Admin** (`sc-saas-admin`): uses `$mainDatabase` (cockpit DB) for tenant lookup and `$database` (per-tenant client DB) for business data.
+- **Tenants Admin** (`sanchiconnect-saas-tenants-admin`): single connection, straight to the cockpit DB — no per-tenant concept of its own. It's a platform-operator tool operating on global cockpit data (tenant rows themselves), not per-tenant business data.
 
 ### Feature flags
 
@@ -415,5 +453,6 @@ Each repo is versioned and deployed independently. Never assume an atomic cross-
 1. **Flag names are owned by `tenants`.** Any add/rename/remove must propagate to backend, frontend, and admin.
 2. **The API contract is owned by `sc-saas-backend`.** Controller and DTO changes must be verified against frontend services and admin cURL callers.
 3. **The tenant-verification shape is owned by `tenants`** (`verify_tenant` / `tenant-settings` response, including `apiUrl`). Both the backend bootstrap and `brand.model.ts` depend on it.
-4. **Every new query in a tenant-scoped repo must enforce the tenant scoping rule.** Cockpit: filter by `domain`. Admin: select per-tenant DB via `admin_domain`. Backend: rely on bootstrap-loaded config — never hardcode another tenant's host.
+4. **Every new query in a tenant-scoped repo must enforce the tenant scoping rule.** Cockpit: filter by `domain`. Admin: select per-tenant DB via `admin_domain`. Backend: rely on bootstrap-loaded config — never hardcode another tenant's host. (`sanchiconnect-saas-tenants-admin` has no scoping rule of its own — it's a platform-level tool over global cockpit data, not per-tenant data.)
 5. **Never commit secrets.** `.env`, key material, and credentials stay out of git. Exception: `sc-saas-backend/cloudfront-*.pem` is intentional and required.
+6. **`sanchiconnect-saas-tenants-admin` shares the cockpit MySQL DB directly with `sanchiconnect-saas-tenants`.** A schema change (migration, column rename) in one must be validated against the other — there's no API boundary between them to catch drift.

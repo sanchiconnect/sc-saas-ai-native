@@ -146,6 +146,14 @@ document's own synthesis; each underlying fact is a direct restatement of the ci
 
 ## Change Log
 
+- 2026-07-16 | Independently re-verified §2's three call-graph contradictions (rows 9-11) directly against
+  current code — all three confirmed exactly as stated, plus one additional confirmed edge not previously
+  itemized here: `sc-saas-3rdparty-webservices`'s Swagger docs are gated on `env !== 'PRODUCTION'`, not
+  `=== 'LOCAL'` as that repo's own `CLAUDE.md` stated (now fixed there). Propagated all of §1/§2's
+  already-correct findings into the actual per-repo `CLAUDE.md` files, several of which hadn't been updated
+  despite this document already stating the correction on 2026-07-14 (`sanchiconnect-saas-tenants-admin`'s
+  "fully standalone" claim, `sc-saas-backend`'s module count, `sc-saas-frontend`'s NgRx store count). See
+  `knowledge.md`'s 2026-07-16 entry for the full list.
 - 2026-07-14 | Initial workspace-level architecture synthesis. Built from all seven repos' `design.md` and
   `knowledge.md`, with the two `verify_tenant`/`tenant-settings` and REST-API-contract breakage traces
   pulled directly from `sanchiconnect-saas-tenants/design.md` and `sc-saas-frontend/design.md` rather than

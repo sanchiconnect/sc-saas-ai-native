@@ -115,6 +115,13 @@ codebases, no schema contract" pattern as §2/§3, worth tracking alongside it.
 
 ## Change Log
 
+- 2026-07-16 | Confirmed the hardcoded live-looking API keys (`currency_api_key`, `factacy_api_key` in
+  `sanchiconnect-saas-tenants/src/modules/global/repositories/global.repository.ts`'s `installDefault()`) are
+  still present in source — added as a guardrail to that repo's `CLAUDE.md` with a rotation recommendation,
+  since this is a genuine live-secret-in-git-history risk, not just a documentation gap. Corrected one stale
+  claim propagated from this document's own §3: the ai-credits Easebuzz webhooks are gated by
+  `InternalApiKeyGuard` + HMAC signature verification, not unauthenticated (the underlying finding this
+  document cites was accurate as a data-ownership fact but the auth characterization needed updating).
 - 2026-07-14 | Initial workspace-level data-ownership index. Built from all seven repos' `database.md`
   (section-header survey) plus the AI-Credits and shared-DB findings already fully traced in each repo's own
   `knowledge.md`. Assembled the three-way AI-Credits mutator finding and the tenants-DB three-reader finding
