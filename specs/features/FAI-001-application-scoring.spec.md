@@ -13,12 +13,12 @@ contracts:
     - GET /api/v1/status-summary/{run_id} — poll batch completion counts + overall % complete
     - POST /api/v1/finalize-analysis/ — merge all batch results into final JSON/CSV; roll up costs
   env:
-    - DEFAULT_PROVIDER — active LLM provider (gemini | openai | anthropic)
+    - DEFAULT_PROVIDER — active LLM provider (openai | anthropic | gemini; default openai)
     - BATCH_SIZE — number of applicants per LLM call (default 5)
     - MAX_BATCH_RETRIES — retry attempts on rate-limit or timeout (default 3)
     - BATCH_TIMEOUT_S — hard per-batch time ceiling in seconds (default 600)
-    - ANALYZER_GLOBAL_CONCURRENCY — total in-flight LLM calls across all runs/tenants (default 16)
-    - ANALYZER_PER_RUN_CONCURRENCY — max concurrent batches per single run (default 5)
+    - ANALYZER_GLOBAL_CONCURRENCY — total in-flight LLM calls across all runs/tenants (default 10)
+    - ANALYZER_PER_RUN_CONCURRENCY — max concurrent batches per single run (default 3)
     - CLOUD_API_KEY — LLM provider API key shared across all tenants
 analyzer_modules:
   - ai-startups-analyzer/api/app/api/v1/scoring_engine_spec.md
@@ -53,7 +53,7 @@ The application scoring flow is the primary purpose of the `ai-startups-analyzer
 3. **Admin: start background analysis**
    - Admin sends `POST /api/v1/start-all-background/` with `run_id`.
    - Analyzer enqueues all batches as async background tasks (FastAPI `BackgroundTasks` or equivalent task queue).
-   - Concurrency is controlled by two semaphores: `ANALYZER_GLOBAL_CONCURRENCY` (default 16) and `ANALYZER_PER_RUN_CONCURRENCY` (default 5).
+   - Concurrency is controlled by two semaphores: `ANALYZER_GLOBAL_CONCURRENCY` (default 10) and `ANALYZER_PER_RUN_CONCURRENCY` (default 3).
    - Returns immediately; processing happens out-of-band.
 
 4. **Batch processing (per batch)**
@@ -108,20 +108,21 @@ The analyzer works on a **0–500 raw model scale** and always delivers a **1–
 
 | Variable | Default | Effect |
 |---|---|---|
-| `DEFAULT_PROVIDER` | `gemini` | Selects the LLM backend. Options: `gemini`, `openai`, `anthropic`. |
+| `DEFAULT_PROVIDER` | `openai` | Selects the LLM backend. Options: `openai`, `anthropic`, `gemini`. (Corrected 2026-07-13 via code-extraction cross-check — `ai_provider.py` and this repo's own `CLAUDE.md` both confirm `openai` is the actual default; this table previously said `gemini`.) |
 | `BATCH_SIZE` | `5` | Applicants per LLM call. Larger values reduce call count but increase per-call token load and timeout risk. |
 | `MAX_BATCH_RETRIES` | `3` | Retry attempts on rate-limit (429) or timeout before marking the batch as error. |
 | `BATCH_TIMEOUT_S` | `600` | Hard ceiling in seconds per batch LLM call. Enforced via `asyncio.wait_for`. |
-| `ANALYZER_GLOBAL_CONCURRENCY` | `16` | Semaphore cap on total in-flight LLM calls across all active runs and tenants. |
-| `ANALYZER_PER_RUN_CONCURRENCY` | `5` | Semaphore cap on concurrent batches within a single run. |
+| `ANALYZER_GLOBAL_CONCURRENCY` | `10` | Semaphore cap on total in-flight LLM calls across all active runs and tenants. (Corrected 2026-07-13 — code default in `routes.py` is `10`, tuned down from an earlier `16`; this table was never updated.) |
+| `ANALYZER_PER_RUN_CONCURRENCY` | `3` | Semaphore cap on concurrent batches within a single run. (Corrected 2026-07-13 — code default is `3`, tuned down from an earlier `5`.) |
 | `CLOUD_API_KEY` | (required) | LLM provider API key. Single value shared across all tenants. |
 | `ENABLE_ENRICHMENT` | `0` | Master switch for pre-scoring applicant enrichment (see FAI-002). |
 
 ## Auth & access
 
-- All admin → analyzer calls use **Bearer token authentication**.
+- All admin → analyzer calls use **Bearer token authentication** — **except** `GET /status-summary/{run_id}` (see carve-out below).
 - The token is validated by the analyzer via `bcrypt.checkpw()` against hashed keys stored in the `api_keys` table.
 - The `matched_key.domain` field is extracted from the validated key record and used downstream in `pricing.py` to apply per-domain cost overrides (different tenants may have different billing rates).
+- **Carve-out — `GET /status-summary/{run_id}` is intentionally unauthenticated.** `sc-saas-admin`'s progress-polling modal (`themes/default/html/application_management/analysis_result.php`, `pollUntilDone()`) calls this endpoint directly from browser JS via `$.ajax`, with no auth header and no server-side PHP proxy — unlike every other call in this flow. Adding the API-key dependency here (tried and reverted 2026-07-13) breaks that poll on every tick. The endpoint only returns aggregate batch counts + active model/provider name, scoped by an unguessable UUID `run_id` — acceptable exposure, but flagged for a deliberate product/security decision rather than a silent gap.
 - No per-endpoint ACL beyond the API key check — any valid key can call any endpoint.
 - The admin panel stores its analyzer API key in its `.env` / `config.php`; it is never sent to `sc-saas-backend` or `sc-saas-frontend`.
 
@@ -146,6 +147,6 @@ The analyzer works on a **0–500 raw model scale** and always delivers a **1–
 
 4. **No test suite on scoring logic.** `_coerce_rating()`, `_weighted_rating()`, `_salvage_objects()`, and `_merge_with_fallback()` have no automated tests. Changes to any of these functions (e.g. clamping bounds, weight normalization) cannot be validated before deploy and carry direct correctness risk for stored application scores.
 
-5. **Worst-case serial runtime.** With `BATCH_SIZE=5`, a 100-applicant CSV produces 20 batches. At `BATCH_TIMEOUT_S=600` per batch and `ANALYZER_PER_RUN_CONCURRENCY=5`, the worst case (all batches time out) is 2,400 seconds (~40 minutes) of retried work per run. A single large tenant run (e.g. 200 applicants) can hold all 16 global concurrency slots for an extended period and starve other tenants.
+5. **Worst-case serial runtime.** With `BATCH_SIZE=5`, a 100-applicant CSV produces 20 batches. At `BATCH_TIMEOUT_S=600` per batch and `ANALYZER_PER_RUN_CONCURRENCY=3`, the worst case (all batches time out) is 7 waves × 600s ≈ 4,200 seconds (~70 minutes) of retried work per run — worse than this section previously stated, since the actual per-run concurrency is lower than the `5` this doc assumed. A single large tenant run (e.g. 200 applicants) can hold all 10 global concurrency slots for an extended period and starve other tenants.
 
 6. **Finalize is not idempotent with error batches.** Calling `POST /api/v1/finalize-analysis/` when some batches are in `error` state produces a final CSV that silently omits those applicants. There is no warning in the `CostSummary` response or the admin UI that the output is incomplete.

@@ -5,8 +5,11 @@
 # Machine-specific Claude Code overrides
 .claude/settings.local.json
 
-# The four product repos are independently cloned and versioned — never nest them here.
+# The seven product repos are independently cloned and versioned — never nest them here.
 /sanchiconnect-saas-tenants/
 /sc-saas-backend/
 /sc-saas-frontend/
 /sc-saas-admin/
+/ai-startups-analyzer/
+/sc-saas-3rdparty-webservices/
+/sanchiconnect-saas-tenants-admin/
