@@ -4,100 +4,76 @@
 
 ---
 
-## Q1. Is the framework installed and verified in the SanchiSaaS repository?
+## Q1. Is the framework installed and verified?
 
-> Hint: `.claude/`, `CLAUDE.md`, `AGENTS.md` committed; orchestrator check from the README passing (41 tests, example sprint completes). Has `AGENTS.md` been rewritten for SanchiSaaS, or is it still the accounts-payable example?
+**No.** We use our own `.claude/` setup (agents + commands), not the SpecPod framework itself.
 
-**Response:**
+- `CLAUDE.md` and `AGENTS.md` are committed in all 7 repos, fully rewritten for SanchiSaaS.
+- SpecPod's actual skills (`axiom-test-gen`, `skill-orchestrator`, etc.) are untouched — sitting only as reference material in `prabs/spec-driven-pod-framework/`. Never installed, orchestrator check never run.
+- We took 4 ideas from it (Linear automation, test generation, rollout gating, secrets scan) and built them into our own setup instead.
 
-Not as delivered. `CLAUDE.md` and `AGENTS.md` are committed in the workspace root and all 7 product repos (`sc-saas-admin`, `sanchiconnect-saas-tenants`, `sc-saas-backend`, `sc-saas-frontend`, `ai-startups-analyzer`, `sc-saas-3rdparty-webservices`, `sanchiconnect-saas-tenants-admin`), completed as of today. All `AGENTS.md` files have been fully rewritten and grounded in real code for this codebase — none are the generic accounts-payable placeholder.
-
-However, this is a **separate, custom-built `.claude/` system**, not the SpecPod framework itself. The workspace root's `.claude/` contains its own agents and commands (`spec-new`, `spec-implement`, `trace-flag`, `flag-impact`, `check-isolation`, `cross-repo-review`, `audit-contract`, `from-linear`, `onboard`, `catchup`) built specifically around SanchiSaaS's cross-repo invariants. The SpecPod framework as delivered (`axiom-test-gen`, `budget-governor`, `eval-checkpoint`, `skill-orchestrator`, `performance-optimizer`, `value-tracker`, etc.) exists **only as reference material** under `prabs/spec-driven-pod-framework/` — it has not been installed into any of the 7 repos, and its orchestrator check (41 tests, example sprint) has never been run against this codebase.
-
-**Status: Not done.** Expected date: _______________
+**Status:** Not done — deliberate choice, pending sign-off (see Q6). Expected date: ______________
 
 ---
 
-## Q2. Which coding agent and model configuration is the team using?
+## Q2. Which coding agent and model?
 
-> Hint: The agent (Claude Code or Cursor) and version, the model provider and plan, and whether the pinned model IDs shipped in the skills were updated, centrally or per-skill.
+- **Claude Code**, running **Sonnet 5**.
+- No model IDs are hardcoded anywhere in our commands/agents — nothing to update per-skill.
+- Plan/tier (Pro/Team/Enterprise) — team to confirm.
 
-**Response:**
-
-Claude Code. This session ran on Sonnet 5 (`claude-sonnet-5`).
-
-- Plan/provider tier (Pro / Team / Enterprise) and whether it's standardized across the team or per-engineer: **to be filled in by the team** — not visible from this session.
-- No hardcoded model ID was found in the actually-installed `.claude/commands/` or `.claude/agents/` — none of them pin a model. SpecPod's own reference skills under `prabs/` do reference specific model IDs, but since that framework isn't installed, "updated centrally or per-skill" doesn't yet apply in practice.
-
-**Status: Partially answered — needs team input.** Expected date: _______________
+**Status:** Mostly answered, needs plan/tier confirmation. Expected date: ______________
 
 ---
 
-## Q3. What does CI run on every pull request, and which security controls are in place?
+## Q3. CI and security controls?
 
-> Hint: Name the CI system and confirm each of: test suite, lint, secret scan (which tool, and whether it also runs pre-commit). Note any repository not yet covered.
+**None.** Zero CI across all 7 repos — no GitHub Actions, no test/lint/secret-scan gate on any PR.
 
-**Response:**
+- Only safeguard: a local Claude Code hook that stops the AI agent itself from touching `.env`/key files during a session. Not a real scanner, doesn't run pre-commit, doesn't cover git history.
 
-No CI system exists in any of the 7 repos — confirmed directly (searched for GitHub Actions, GitLab CI, CircleCI, and Jenkinsfile configs across every repo; none found anywhere). No automated test suite, lint, or secret scan runs on any pull request today.
+**Repos covered by CI: 0 of 7.**
 
-The one safeguard currently in place is a Claude Code session-level hook (`guard-sensitive-files.sh`) that blocks the AI agent itself from reading or writing `.env`/key files during a session. This is not a repository-wide secret scanner, does not run pre-commit for human contributors, and does not cover git history.
-
-**Repositories covered by CI: none (0 of 7).**
-
-**Status: Not done.** Expected date: _______________
+**Status:** Not done. Expected date: ______________
 
 ---
 
-## Q4. Which test frameworks and issue tracker are in use?
+## Q4. Test frameworks and issue tracker?
 
-> Hint: Unit and end-to-end frameworks matched to the stack, the generated tests have to land somewhere the team actually runs, plus the tracker and whether it is agent-driven or manual.
+| Repo | Tests |
+|---|---|
+| `sc-saas-backend` | Jest — real tests exist |
+| `sanchiconnect-saas-tenants` | Jest — configured, no tests written |
+| `sc-saas-3rdparty-webservices` | Jest — configured, no tests written |
+| `sc-saas-frontend` | Karma/Jasmine — default boilerplate only, no lint |
+| `sc-saas-admin`, `sanchiconnect-saas-tenants-admin`, `ai-startups-analyzer` | None |
 
-**Response:**
+**Tracker: Linear**, and it's agent-driven — our agents create and move issues themselves as work happens (proven this week, see Q5). Test auto-generation is built but hasn't produced a committed test yet.
 
-| Repo | Test framework | Status |
-|---|---|---|
-| `sc-saas-backend` | Jest (unit + e2e) | Configured, real tests exist |
-| `sanchiconnect-saas-tenants` | Jest | Configured, **no test specs written yet** |
-| `sc-saas-frontend` | Karma + Jasmine | Configured; **no lint configured** |
-| `sc-saas-admin` | None (`php -l` syntax check only) | No test suite |
-| `sanchiconnect-saas-tenants-admin` | None (`php -l` only) | No test suite |
-| `ai-startups-analyzer` | None | No test suite, by explicit design note in its own CLAUDE.md |
-| `sc-saas-3rdparty-webservices` | Jest | Configured; the one e2e test present is stale and would fail if run |
-
-**Issue tracker:** Linear — confirmed by the installed `/from-linear` command, which pulls a Linear issue into a spec. Whether day-to-day issue creation is agent-driven or manual is a workflow question for the team to confirm; this session can only confirm the tooling exists, not usage patterns.
-
-**Status: Partially done — needs team input on tracker usage pattern.** Expected date: _______________
+**Status:** Tracker working. Test generation not yet exercised. Expected date: ______________
 
 ---
 
-## Q5. How do requirements become issues and a backlog, and where does that backlog live?
+## Q5. How do requirements become tracked work?
 
-> Hint: Walk the path end to end. What is the source of a requirement (BRD, meeting, ticket), which skill or step turns it into specs and then into tasks, and who creates the issues in the tracker, a person or the agent? Name the tool and the board or project the backlog sits in, and say how a task in `task-breakdown.yaml` maps to an issue, one to one or otherwise.
+1. Requirement → spec (`/spec-new` or `/from-linear`).
+2. Agent drafts the spec **and** creates a Linear Project + one issue per repo automatically.
+3. Once approved, implementation moves each issue Todo → In Progress → In Review → Done as work happens.
+4. Small bug fixes skip the spec/project — just one flat issue (`/bug-fix`).
 
-**Response:**
+**Proven this week:** Bulk Email Attachments — issues SAN-5 to SAN-15 on Linear, tracked start to finish this way.
 
-Current, working path: a requirement (from a Linear issue or a rough idea) becomes a spec via `/from-linear <id>` or `/spec-new feature <id>` — feature specs land at `specs/features/<id>-<slug>.spec.md`, module specs at `<repo>/src/<module>/module.spec.md`. Once approved, `/spec-implement <id>` builds directly from the spec, running cross-repo gates (`/audit-contract`, `/trace-flag`, `/check-isolation`) before moving a spec to `in-review`.
+No `task-breakdown.yaml` step exists — one Linear issue per repo, not per task.
 
-There is **no step today that explodes a spec into a `task-breakdown.yaml` or auto-generates a batch of tracker issues.** The only `task-breakdown.yaml` anywhere in the workspace is a sample input file inside the uninstalled SpecPod reference copy (`prabs/spec-driven-pod-framework/.claude/axiom-test-gen/sample_input/task-breakdown.yaml`) — it is not a live artifact and has no mapping to real Linear issues.
-
-So: spec → implementation is direct today; there isn't yet a formal spec → generated-backlog → Linear-issues pipeline as SpecPod describes it. **Team should confirm this matches actual day-to-day practice**, including any manual workarounds not visible in the tooling itself.
-
-**Status: Not done as described in the framework.** Expected date: _______________
+**Status:** Done and working.
 
 ---
 
-## Q6. What are your top blockers, and what do you need from Prabhakar or the business?
+## Q6. Top blockers?
 
-> Hint: Rank up to three. For each, name who owns the resolution.
-
-**Response:**
-
-_This is a team/business call, not a technical one — the three below are candidates surfaced by the technical review above. Rank, edit, and assign owners before sending:_
-
-1. **SpecPod itself was received but never installed/integrated** — only sitting as reference material in `prabs/spec-driven-pod-framework/`. Needs a decision: adopt it wholesale, cherry-pick pieces into the existing custom `.claude/` setup, or formally decline. Owner: _______________
-2. **Zero CI / secret-scanning across all 7 repos.** Owner: _______________
-3. **Inconsistent test coverage** — 2 of 7 repos have no test suite by design, `sc-saas-frontend` has no lint configured at all. Owner: _______________
+1. **Decision needed:** keep cherry-picking SpecPod ideas into our own setup, or adopt the framework wholesale? Owner: ______________
+2. **No CI or secret-scanning anywhere** — root cause behind most of the gaps above. Owner: ______________
+3. **Uneven test coverage** — 3 of 7 repos have no test framework at all. Owner: ______________
 
 ---
 
