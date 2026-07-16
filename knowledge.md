@@ -313,8 +313,42 @@ What the graph gets **stale/wrong**, per §3 above:
 
 ---
 
+## 9. The workspace boundary — SanchiPowerpitch is a sibling poly-repo, not part of this one
+
+`CLAUDE.md` invariant #6 documents the one contract that crosses into SanchiPowerpitch
+(`power-pitch-sanchiconnect-api`'s `/v1/externals/*`, called from `sc-saas-backend`'s
+`PowerPitchExternalService`), but neither `CLAUDE.md` nor this document previously named the sibling
+workspace's other repos or confirmed it actually exists on disk. Verified directly, 2026-07-16:
+
+- SanchiPowerpitch is a separate poly-repo workspace, cloned at `/Users/mac/Desktop/Work/SanchiPowerpitch`
+  (a sibling of this `SanchiSaaS` folder, not nested inside it) — its own `CLAUDE.md`/`README.md`/
+  `AI-NATIVE-SETUP.md`/`specs/` exist there, mirroring this workspace's own root-level structure.
+- It contains **four** repos, each with its own `.git`: `power-pitch-sanchiconnect-api`,
+  `power-pitch-sanchiconnect-frontend`, `power-pitch-sanchiconnect-admin`, `power-pitch-partners`.
+- **Exactly one** contract crosses the boundary in either direction: `sc-saas-backend` → `power-pitch-
+  sanchiconnect-api`'s `/v1/externals/*` (invariant #6, unchanged). PowerPitch never calls back into
+  SanchiSaaS. No other SanchiPowerpitch repo (frontend, admin, partners) has any confirmed contract with
+  any SanchiSaaS repo.
+- **Correction to a claim in this workspace's own repo-map reference (dated 2026-07-15):** that document
+  states `power-pitch-sanchiconnect-admin` "had no meaningful commits yet." Checked directly via `git log`
+  — this is wrong, not just stale: the repo has 12 commits total, including real feature work ("plans
+  management", "add partner user", email-template changes) dated 2022-12-21 through 2023-04-21, then a
+  three-year gap before a single docs-only commit (CLAUDE.md + module specs) landed 2026-06-19. So the repo
+  has genuine historical business logic, just no active development in over three years as of this check —
+  a materially different situation from "no meaningful commits."
+- `prabs/` (the evaluated-and-rejected SpecPod framework) lives in this `SanchiSaaS` folder, not
+  SanchiPowerpitch's — already covered by this workspace's own memory/decision record, not a SanchiPowerpitch
+  concern.
+
+---
+
 ## Change Log
 
+- 2026-07-16 (later same day) | Added §9 — enumerated the SanchiPowerpitch sibling workspace's four repos by
+  name (previously only `power-pitch-sanchiconnect-api` was named anywhere in this workspace's docs), confirmed
+  its location on disk, and corrected a wrong claim from this workspace's repo-map reference doc (2026-07-15)
+  that `power-pitch-sanchiconnect-admin` had no meaningful commits — it has 12, dated 2022-2023, just no
+  activity since then until a docs-only commit in 2026-06.
 - 2026-07-16 (later same day) | Full re-verification pass across all 7 repos' own `knowledge.md`/`design.md`/
   `database.md`/`api.md` (28 files), not just this workspace-level synthesis — one dedicated agent per repo,
   each re-checking every specific claim against current code and fixing confirmed drift directly. Net effect:
