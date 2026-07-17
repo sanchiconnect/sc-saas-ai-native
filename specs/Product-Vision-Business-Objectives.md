@@ -39,6 +39,47 @@ This document tries to answer a question that **cannot be derived from source co
 
 ---
 
+## KPI Framework (Draft) `[INFERRED — metrics only, no targets]`
+
+Closes external gaps-register item **P-2** ("No success metrics or KPIs"). For each objective above, this defines a **measurable metric/formula** and states whether the underlying data already exists to compute it today. It deliberately does **not** invent a target number (an SLA percentage, a revenue figure, an adoption rate) — a fabricated number reads as a real commitment, which this document cannot responsibly make. Every `Target` row is `[TBD — product owner]`.
+
+### Objective 1 — Consolidated platform / land-and-expand
+- **Metric:** Feature-flag adoption breadth per tenant — the % of the ~218 boolean feature flags on `tenant_users` actually enabled for a given tenant, tracked over time.
+- **Formula:** `count(enabled flags for tenant) / 218`, sampled per tenant per month.
+- **Data available:** Yes — `tenant_users` table, `sanchiconnect-saas-tenants`. No dashboard currently reads this in aggregate; the query itself is trivial.
+- **Target:** [TBD — product owner]
+
+### Objective 2 — AI scoring as flagship differentiator + monetization
+- **Metric A (evaluation SLA):** Time from application-analysis upload to finalized score, per run.
+- **Formula:** `finalize_time - analyses.created_at`, per `run_id`, aggregated (median/p95) per tenant per cycle.
+- **Data available:** Yes — `ai-startups-analyzer`'s `analyses`/`batches` tables have `created_at`/`updated_at`; `sc-saas-backend`'s `application_program_analysis.cost_computed_at` marks finalize time. No SLA dashboard exists today, but the timestamps needed are already persisted.
+- **Metric B (credit-revenue):** AI-credit purchase revenue per tenant per month.
+- **Formula:** `sum(ai_credit_orders.amount)` where `status = 'paid'`, grouped by domain/month.
+- **Data available:** Yes — `ai_credit_orders`/`ai_credit_transactions`/`ai_credit_ledger` (`sanchiconnect-saas-tenants`), populated on every real Easebuzz-confirmed purchase.
+- **Target:** [TBD — product owner] (both SLA and revenue)
+
+### Objective 3 — Recurring revenue growth beyond base program fee
+- **Metric:** Combined monthly recurring value across all three independent monetization surfaces.
+- **Formula:** `sum(active subscriptions.plan_users-implied value) + sum(active memberships value) + sum(LMS course-sales revenue)`, per tenant per month.
+- **Data available:** Partial — `subscriptions` table exists (`sanchiconnect-saas-tenants`) but has no price/value column of its own (only `plan_name`/`plan_users`/dates), so revenue must be reconstructed from the actual Easebuzz/payment records, not read directly off the subscription row. Memberships and LMS course-sale revenue are more directly queryable from their own payment records.
+- **Target:** [TBD — product owner]
+
+### Objective 4 — Reduce per-tenant operational cost (onboarding efficiency)
+- **Metric:** Time (operator-hours or wall-clock) to provision a new tenant, start to first-login-ready.
+- **Formula:** No formula can be given yet — **no measurement infrastructure exists today.** The Tenant Onboarding feature itself (clone-from-existing-tenant + sectioned flag UI) is still at the planning stage in `sanchiconnect-saas-tenants-admin`, not shipped, so there is no timestamp anywhere marking "onboarding started" vs. "onboarding complete." This metric cannot be measured until that feature (or an equivalent instrumentation) ships.
+- **Data available:** No.
+- **Target:** [TBD — product owner, and contingent on the Tenant Onboarding feature actually shipping]
+
+### Objective 5 — Adjacent market expansion (SanchiPowerpitch)
+- **Metric:** Cross-product adoption — number/% of tenants whose users create at least one SanchiPowerpitch session via `PowerPitchExternalService` per month.
+- **Formula:** Count of `POST /v1/externals/create-session` calls (or resulting sessions), grouped by tenant, per month.
+- **Data available:** Unconfirmed — `sc-saas-backend` calls this endpoint, but whether call outcomes are logged/persisted anywhere queryable (vs. just proxied through) was not verified in this pass; would need a direct read of `PowerPitchExternalService` and the PowerPitch-side session store to confirm.
+- **Target:** [TBD — product owner]
+
+**What this framework does not attempt:** application-throughput (raw submission volume) is deliberately not listed as its own objective-level KPI here — it's more naturally a sub-metric of Objective 1's adoption tracking (via `Form Submission`/`Application Program Submission Progress` counts, both real, queryable entities per the DDD) than a standalone business objective. If the product owner wants raw throughput tracked as a headline number in its own right, it should be added explicitly rather than assumed.
+
+---
+
 ## Open Questions for the Product Owner
 
 These cannot be resolved by reading code — they require an actual answer from whoever owns product strategy:
@@ -48,9 +89,12 @@ These cannot be resolved by reading code — they require an actual answer from 
 3. Is there a target market-segment focus (e.g., university/government-linked incubators specifically, given the IP/Technology-Transfer-Office-shaped module, vs. corporate accelerators, vs. both) that should be stated explicitly?
 4. Is the SanchiPowerpitch integration a strategic bet on an adjacent product line, or an opportunistic/one-off integration with no larger strategic weight? This materially changes how much future engineering investment that integration should receive.
 5. Are there business objectives entirely absent from this inference because no corresponding engineering investment exists yet (e.g., a stated growth/market-expansion target, a profitability target, a specific customer-acquisition-cost or retention goal)? Code-reading can only surface intent that's already been built toward — it cannot surface a goal nobody has started building for yet.
+6. For each KPI Framework metric above: is the proposed metric/formula the right one to track, and what is the actual target number? None were invented — every `Target` field is intentionally blank.
+7. Objective 4's KPI cannot be measured at all until the Tenant Onboarding feature ships (or equivalent instrumentation is added) — should measurement infrastructure (an "onboarding started"/"onboarding complete" timestamp pair) be added as an explicit acceptance criterion when that feature is implemented, so this KPI isn't permanently unmeasurable?
 
 ---
 
 ## Change Log
 
 - 2026-07-17 | Initial draft, closing external gaps-register item P-1. Grounded entirely in observable engineering investment patterns across all 7 repos plus the SanchiPowerpitch cross-workspace contract — no vision/objective content invented without a cited piece of evidence. Every statement flagged `[INFERRED]` pending product-owner review.
+- 2026-07-17 | Added the KPI Framework section, closing external gaps-register item P-2. Defined a measurable metric/formula per objective and stated data availability for each (confirmed available for Objectives 1-3, confirmed unavailable today for Objective 4 pending the Tenant Onboarding feature shipping, unconfirmed for Objective 5 pending a direct read of PowerPitch's session store). Deliberately left every target number `[TBD — product owner]` rather than inventing one — a fabricated number would read as a real commitment.
