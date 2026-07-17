@@ -379,6 +379,8 @@ The following describe the platform's design targets for system quality attribut
 - **SR-6.9.2** The platform shall maintain a documented recovery process for restoring service following an infrastructure failure, with recovery time and recovery point objectives defined under the service agreement.
 - **SR-6.9.3** Backup data shall be subject to the same access controls and encryption standards as production data.
 
+**Gap confirmed, 2026-07-17:** no RPO/RTO figures or backup regime are defined anywhere in this document set, and none are derivable from the codebase — this is a genuine business/infrastructure decision, not a documentation omission this pass can resolve. Traced directly: the only backup-adjacent capability actually built anywhere in the platform is `sanchiconnect-saas-tenants-admin`'s "Download Backup Data" feature (`specs/features/SAN-16-tenant-data-export.spec.md`), a manual, on-demand, per-tenant export tool for platform operators (typically used when offboarding a departing tenant) — its own Out of Scope section explicitly excludes "Automated/scheduled/recurring backups." No cron job, database-snapshot script, or infrastructure-as-code implementing SR-6.9.1's "regular, automated schedule" exists in any of the seven repos. If automated backups are occurring today, they are configured entirely at the hosting/infrastructure layer (e.g. a managed database provider's snapshot retention policy), outside any of these git repositories and outside what a code-level review can confirm. RPO/RTO targets and the backup regime itself must come from Sanchi (whoever owns the hosting account and any service agreement) — do not treat a future absence of this section's resolution as an application-layer defect.
+
 ---
 
 ## 7. Data Requirements
