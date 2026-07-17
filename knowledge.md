@@ -270,6 +270,23 @@ Engine]`
   metadata, S3 objects, and — via the generic CRUD handler — arbitrary rows in any table this admin panel
   manages, including `tenant_users` itself. `[Source: sanchiconnect-saas-tenants-admin/knowledge.md §(g)
   Other Architecturally Significant Findings]`
+- **Arbitrary raw SQL execution with no login/role gate, confirmed in *two* separate admin repos** (found
+  2026-07-16/17, module-spec-level review — see §10): `sc-saas-admin/modules/ajax/crud_actions.php` and
+  `sanchiconnect-saas-tenants-admin/modules/ajax/crud_actions.php` each expose a `sql_query` action that
+  passes `$_POST['sql']` directly to `$database->query()` with zero allowlist — and the entire file in both
+  repos has no `checkLoggedIn()`/`checkRole()` call at all, only `verifyCSRFToken()`. In `sc-saas-admin`,
+  the same ungated file is also where `system-admin`'s destructive DDL (CREATE/DROP/ALTER/TRUNCATE/RENAME
+  TABLE) actually runs, despite being documented as gated behind `is_dev` — any logged-in admin of any role
+  can execute it. `[Source: sc-saas-admin/module.spec.md (ajax), sanchiconnect-saas-tenants-admin/module.spec.md (ajax)]`
+- **`facility_management`'s authenticated routes are not actually feature-gated** — three of five
+  controllers (`FacilityManagementController`, `BookingFacilityController`, `EcosystemFacilityManagementController`)
+  only apply `JwtAuthGuard`; `FeatureGuard` (the guard that reads `@Features` metadata) is never imported or
+  applied there. Disabling the `facility_management` flag for a tenant currently does nothing to these
+  routes — only the two `Public*` controllers actually enforce the flag. `[Source: sc-saas-backend/module.spec.md (facility_management)]`
+- **Two "guard decorator present but not wired" gaps in `sc-saas-backend`**: `startup-kit`'s
+  `@Roles(Role.STARTUP)` and `verifications`' `@RateLimit` on the WhatsApp OTP send route are both dead
+  metadata — `RolesGuard`/`RateLimiterGuard` are never actually applied on those specific routes, so the
+  restriction/rate-limit each decorator implies is not enforced. `[Source: sc-saas-backend/module.spec.md (startup-kit, verifications)]`
 
 ---
 
@@ -342,8 +359,62 @@ workspace's other repos or confirmed it actually exists on disk. Verified direct
 
 ---
 
+## 10. Module-level re-verification (2026-07-16/17) — real bugs found beyond doc drift, at a much higher rate than expected
+
+Following the repo-level re-verification in §8/Change Log, every committed `module.spec.md` in all 7 repos
+(139 files total) was individually re-checked against current source code. Most modules were already
+accurate — this was a targeted fix pass. The severe security findings from this pass are folded into §6
+above; this section covers the broader methodology and the non-security bugs found.
+
+**Real bugs confirmed (not just doc drift), beyond the §6 security items:**
+- `sc-saas-3rdparty-webservices`'s `shortIo.service.ts`: `getShortAcceptUrl()` builds the identical
+  `/connection-request/reject` URL as `getShortRejectUrl()` — accepting a connection request currently
+  generates a reject link. `[Source: sc-saas-3rdparty-webservices/module.spec.md (shortIo)]`
+- `sanchiconnect-saas-tenants`'s `ecosystem-facilities.service.ts`: `getTenantUserByDomain()` selects only
+  `['facility_module_allowed_domains', 'domain']` from `TenantUsersEntity`, omitting `facility_module_type`
+  — every `=== FacilityModuleType.EXTERNAL` check compares against `undefined` and always evaluates false.
+  The External Facilities Hub feature is silently non-functional for every tenant, no error surfaced
+  anywhere. `[Source: sanchiconnect-saas-tenants/module.spec.md (ip-management + ecosystem-facilities)]`
+- `sanchiconnect-saas-tenants`'s `organizations` table was misattributed: the prior spec claimed
+  `sc-saas-admin` writes `organizations`/`invoices`/`payments`/`contacts`/`contracts` directly — grepped
+  `sc-saas-admin` and found zero references to any of these tables. The actual writer is
+  `sanchiconnect-saas-tenants-admin` (registers `organizations` as "Clients" in its generic CRUD engine).
+  `[Source: sanchiconnect-saas-tenants/module.spec.md (organizations)]`
+- `sc-saas-admin`'s `tickets` module: the documented "closed state" model was wrong — `reopen_ticket` sets
+  separate `reopened_at`/`reopened_by_id` columns rather than clearing the closed pair, and there is no
+  `tickets.token` column at all (the `{token}` path segment on backend email endpoints is a one-time admin
+  backdoor token, not a ticket identifier). `[Source: sc-saas-admin/module.spec.md (tickets)]`
+- `sc-saas-frontend`: `dashboard-v2`'s `/market-insights/news/hot-topics` route wires to
+  `InnovationsDashboardComponent`, not the declared `HotTopicsComponent` (which is dead code, never
+  referenced by any route) — a genuine routing bug, not a doc issue. Separately, `pitch-deck-recorder` is
+  confirmed dead code end-to-end (unrouted; its one embed site is itself unreachable), and the `payment`
+  module's `/payment-gateways` route has no `loadChildren` anywhere, making it fully unreachable.
+  `[Source: sc-saas-frontend/module.spec.md (dashboard-v2, pitch-deck-recorder, payment)]`
+
+**Methodology finding — trust a single verification pass's "no changes" claims with caution:** after this
+pass, an adversarial second round sampled 18 modules the first pass had explicitly marked "no changes —
+verified accurate" and re-ran them with agents instructed to assume the prior verdict was wrong and try to
+disprove it. **16 of 18 (89%) had real, previously-missed gaps** — only 2 modules held up cleanly under
+genuine adversarial pressure. A "verify this doc against the code" instruction without adversarial framing
+produces confirmation-biased results; agents tend to skim-and-agree rather than genuinely try to break each
+claim. Only 18 of the ~125 modules originally marked "no changes" across this workspace have been
+adversarially re-checked so far — the remaining ~107 are still resting on the original, now-demonstrated-to-
+be-unreliable pass, and would very likely surface more real issues at a similar hit rate if swept.
+
+---
+
 ## Change Log
 
+- 2026-07-17 | Added §10 and new §6 security bullets — synced this root synthesis with the module-level
+  (`module.spec.md`, all 139 files across 7 repos) re-verification and adversarial re-verification passes
+  done in the individual product repos (committed to their own `ai_native_setup` branches). Most
+  consequential: two separate repos (`sc-saas-admin`, `sanchiconnect-saas-tenants-admin`) each have an
+  ungated `sql_query` arbitrary-SQL-execution action; `facility_management`'s authenticated routes aren't
+  actually feature-gated; `ecosystem-facilities` silently can't do External Hub lookups; a real
+  `shortIo` accept/reject URL swap bug; and the methodology finding that an adversarial re-check of modules
+  previously marked "verified accurate" found real gaps in 16 of 18 (89%) sampled — meaning most of the
+  ~125 originally "no changes" modules workspace-wide are still unverified beyond a demonstrated-unreliable
+  single pass.
 - 2026-07-16 (later same day) | Added §9 — enumerated the SanchiPowerpitch sibling workspace's four repos by
   name (previously only `power-pitch-sanchiconnect-api` was named anywhere in this workspace's docs), confirmed
   its location on disk, and corrected a wrong claim from this workspace's repo-map reference doc (2026-07-15)

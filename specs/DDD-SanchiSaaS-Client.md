@@ -297,6 +297,9 @@ Attribute lists below focus on business-meaningful fields; the common convention
 | **Application Program Jury Call Request** | A scheduling record for a live jury evaluation call. | Scheduling status & timestamps, jury message | Plain reference columns to submission/program/round/jury member |
 | **Form** | A dynamic form definition (field schema) attachable to programs, rounds, or challenges. | Title, code, target account type, field schema, form usage type, visibility, default/mandatory flags | 1..N Form Submission |
 | **Form Submission** | An applicant's answers to a Form — the core application record. | Applicant identity fields, answer data, submission/re-submission state, pitch document, acquisition-source attribution | N..1 Form, User; 1..N Ratings, Jury Answers |
+| **Analysis Record** | An AI-assisted scoring run against a set of applicants within an Application Program — submitted to the AI analyzer service and tracked through cost and AI-credit settlement. | Folder reference, application/completion status, thesis text, model & provider used, aggregate input/output token counts, aggregate cost (USD), batches-priced vs. batches-total counters, cost-computed timestamp, AI-credit charge amount & ledger reference, archive (soft-delete) timestamp | N..1 Application Program; 1..N Analysis Rating, Analysis Rescore |
+| **Analysis Rating** | The AI analyzer's per-applicant score and justification for a given Analysis Record. | Submission reference, round reference, numeric rating (0.000–5.000 scale), justification text, enrichment source citations | N..1 Analysis Record; N..1 Form Submission |
+| **Analysis Rescore** | A supplementary scoring sub-job that scores applicants who joined an Analysis Record's scope after its initial run, then merges results back into the parent run. | Status (uploaded/running/finalized/failed), submitted applicant count, merged applicant count, error message, finalized timestamp | N..1 Analysis Record |
 
 ### 4.4 Business Challenges
 
@@ -472,7 +475,7 @@ Attribute lists below focus on business-meaningful fields; the common convention
 |---|---|
 | Control Plane | 2 |
 | Identity & Stakeholder Profiles | 10 |
-| Programs & Applications | 15 |
+| Programs & Applications | 18 |
 | Business Challenges | 2 |
 | Connections | 3 |
 | Community Wall | 8 |
@@ -483,7 +486,7 @@ Attribute lists below focus on business-meaningful fields; the common convention
 | Content | 4 |
 | Administrative & Platform Services | 16 |
 | Facilities | 12 |
-| **Total** | **~106** |
+| **Total** | **~109** |
 
 ### Appendix B — Glossary
 

@@ -362,6 +362,8 @@ The following describe the platform's design targets for system quality attribut
 - **SR-6.6.3** Error messages presented to users shall be clear, actionable, and free of internal technical detail.
 - **SR-6.6.4** The platform shall support keyboard navigation and follow generally accepted web accessibility practices for its primary user workflows.
 
+**Gap confirmed, 2026-07-17 (external gaps-register item U-2):** SR-6.6.4 states no target conformance level (e.g. a WCAG level), no component-level accessibility specification (focus order, ARIA usage patterns, contrast ratios beyond the colour palette), and no acceptance criteria — this is a genuine business/compliance decision, not a documentation omission this pass can resolve, and is not derivable from the codebase the way an implemented CSS spacing scale is (see §6.8's breakpoint gap, resolved differently for that reason). What can be confirmed as current-state fact rather than a target: both primary frontends already contain **some** accessibility markup — `aria-label`/`role` attributes appear 234 times across `sc-saas-frontend`'s templates and 285 times across `sc-saas-admin`'s templates — but this reads as ad-hoc, component-by-component effort accumulated over time, not evidence of a deliberate conformance target being tracked or met. No WCAG level, audit, or acceptance-criteria document exists anywhere in this workspace. Sanchi must decide the target conformance level (if any) and its acceptance criteria; this document does not propose one.
+
 ### 6.7 Maintainability & Extensibility
 
 - **SR-6.7.1** New tenant-specific configuration (branding, enabled features, custom forms) shall be applicable without requiring a code change or redeployment.
@@ -378,6 +380,8 @@ The following describe the platform's design targets for system quality attribut
 - **SR-6.9.1** Tenant data shall be backed up on a regular, automated schedule.
 - **SR-6.9.2** The platform shall maintain a documented recovery process for restoring service following an infrastructure failure, with recovery time and recovery point objectives defined under the service agreement.
 - **SR-6.9.3** Backup data shall be subject to the same access controls and encryption standards as production data.
+
+**Gap confirmed, 2026-07-17:** no RPO/RTO figures or backup regime are defined anywhere in this document set, and none are derivable from the codebase — this is a genuine business/infrastructure decision, not a documentation omission this pass can resolve. Traced directly: the only backup-adjacent capability actually built anywhere in the platform is `sanchiconnect-saas-tenants-admin`'s "Download Backup Data" feature (`specs/features/SAN-16-tenant-data-export.spec.md`), a manual, on-demand, per-tenant export tool for platform operators (typically used when offboarding a departing tenant) — its own Out of Scope section explicitly excludes "Automated/scheduled/recurring backups." No cron job, database-snapshot script, or infrastructure-as-code implementing SR-6.9.1's "regular, automated schedule" exists in any of the seven repos. If automated backups are occurring today, they are configured entirely at the hosting/infrastructure layer (e.g. a managed database provider's snapshot retention policy), outside any of these git repositories and outside what a code-level review can confirm. RPO/RTO targets and the backup regime itself must come from Sanchi (whoever owns the hosting account and any service agreement) — do not treat a future absence of this section's resolution as an application-layer defect.
 
 ---
 
@@ -397,6 +401,7 @@ At a system level, the platform's data model is organized around the following c
 | Commercial Records | Orders, transactions, invoices, memberships, and coupons. |
 | Content & Learning | Courses, lessons, enrollments, news, and resource library items. |
 | Administrative Records | Audit logs, support tickets, and configuration metadata. |
+| AI Credits & Billing | A prepaid credit wallet, purchase orders, consumption ledger, promotional grants, and a package/rate catalogue, funding AI-assisted evaluation (see FRS §4.21). Added 2026-07-17, closing external gaps-register item P-5 — previously undocumented in this SRS despite being fully built. Unlike every other entity group above, this data is **not** isolated to a single tenant's own database — it lives in the shared platform control-plane database (domain-filtered, not physically separate), because it is a platform-operator-managed commercial subsystem rather than tenant-owned business data. Whether this system's intended commercial model is metered billing, a soft usage cap, or a pilot has not been formally specified — see `specs/features/FT-005-ai-credits-system.spec.md`'s Open Questions. |
 
 ### 7.2 Data Ownership & Isolation
 
