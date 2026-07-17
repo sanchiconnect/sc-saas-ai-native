@@ -362,6 +362,8 @@ The following describe the platform's design targets for system quality attribut
 - **SR-6.6.3** Error messages presented to users shall be clear, actionable, and free of internal technical detail.
 - **SR-6.6.4** The platform shall support keyboard navigation and follow generally accepted web accessibility practices for its primary user workflows.
 
+**Gap confirmed, 2026-07-17 (external gaps-register item U-2):** SR-6.6.4 states no target conformance level (e.g. a WCAG level), no component-level accessibility specification (focus order, ARIA usage patterns, contrast ratios beyond the colour palette), and no acceptance criteria — this is a genuine business/compliance decision, not a documentation omission this pass can resolve, and is not derivable from the codebase the way an implemented CSS spacing scale is (see §6.8's breakpoint gap, resolved differently for that reason). What can be confirmed as current-state fact rather than a target: both primary frontends already contain **some** accessibility markup — `aria-label`/`role` attributes appear 234 times across `sc-saas-frontend`'s templates and 285 times across `sc-saas-admin`'s templates — but this reads as ad-hoc, component-by-component effort accumulated over time, not evidence of a deliberate conformance target being tracked or met. No WCAG level, audit, or acceptance-criteria document exists anywhere in this workspace. Sanchi must decide the target conformance level (if any) and its acceptance criteria; this document does not propose one.
+
 ### 6.7 Maintainability & Extensibility
 
 - **SR-6.7.1** New tenant-specific configuration (branding, enabled features, custom forms) shall be applicable without requiring a code change or redeployment.
