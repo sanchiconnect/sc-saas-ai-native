@@ -110,6 +110,8 @@ This document is intended for client stakeholders, product owners, and program t
 
 SanchiSaaS is a multi-tenant Software-as-a-Service platform purpose-built for startup incubators and accelerators. It provides program operators with the tools to run application cycles, evaluate and progress startups through structured rounds, and manage an ongoing ecosystem of startups, investors, mentors, corporates, and partners — while giving those stakeholders a self-service portal to manage their own profiles, apply to programs, and engage with one another.
 
+*This section describes platform capability, not business intent. A draft product vision and business objectives (confirmed gap, 2026-07-17 — no such statement existed anywhere in this document set) are inferred from observable engineering investment in `specs/Product-Vision-Business-Objectives.md`, pending product-owner review — do not treat that document as confirmed strategy.*
+
 Each client organization ("tenant") operates on the platform with its own branding, domain, and independently configurable feature set, while sharing the same underlying application.
 
 ### 2.2 System Components
