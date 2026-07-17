@@ -1,0 +1,112 @@
+---
+id: FT-005
+title: AI Credits System — Cross-Repo Wallet, Purchase & Consumption
+type: feature
+status: draft                   # draft → approved → in-progress → in-review → done
+linear: https://linear.app/sanchiconnect/project/ai-credits-system-cross-repo-wallet-purchase-and-consumption-835ee16681d3
+owner: aman.k@sanchiconnect.com
+repos:
+  - sanchiconnect-saas-tenants
+  - sc-saas-admin
+  - sanchiconnect-saas-tenants-admin
+contracts:
+  api:
+    - GET api/v1/ai-credits/packages — public, active package catalog (sanchiconnect-saas-tenants owns)
+    - GET api/v1/ai-credits/task-rates — public, per-task credit rates (sanchiconnect-saas-tenants owns)
+    - POST api/v1/ai-credits/purchase — initiates an Easebuzz purchase order; InternalApiKeyGuard, fail-open if AI_CREDITS_INTERNAL_API_KEY unset (sanchiconnect-saas-tenants owns)
+    - POST api/v1/ai-credits/webhooks/easebuzz/success — Easebuzz success callback; InternalApiKeyGuard + mandatory HMAC-SHA512 signature check (sanchiconnect-saas-tenants owns)
+    - POST api/v1/ai-credits/webhooks/easebuzz/failure — Easebuzz failure callback; same guard shape (sanchiconnect-saas-tenants owns)
+    - GET api/v1/ai-credits/invoices — InternalApiKeyGuard (sanchiconnect-saas-tenants owns)
+    - GET api/v1/ai-credits/invoices/:id — InternalApiKeyGuard, requires ?domain= (sanchiconnect-saas-tenants owns)
+  flags:
+    - ai_credits_enabled (TenantUsersEntity boolean, tenants-owned) — gates the sc-saas-admin `ai_credits/*` UI and every reserve/settle/debit call site in `modules/application_management/*`. Also declared (inertly — never read) in sc-saas-backend's `Feature` enum (`AI_CREDITS_ENABLED = 'ai_credits_enabled'`, `core/constants/enum.ts:1086`) for invariant #1 naming-consistency only; backend has no functional AI-Credits code.
+  events: []
+tenant_scoped: true
+depends_on: []
+created: 2026-07-17
+---
+
+# AI Credits System — Cross-Repo Wallet, Purchase & Consumption
+
+## Problem
+
+The AI Credits system — a prepaid, per-tenant credit wallet that bills tenants for AI-analyzer usage (scoring, re-score, thesis generation) and lets them top up via Easebuzz — is fully built and in active use across three repos, but has **zero spec documentation anywhere**: no `module.spec.md` exists in `sanchiconnect-saas-tenants/src/modules/ai-credits/`, `sc-saas-admin/modules/ai_credits/`, or `sanchiconnect-saas-tenants-admin/modules/ai_credits/` (confirmed by direct inspection of all three directories), and no workspace-level feature spec exists in `specs/features/` (confirmed against all 25 existing entries prior to this one). `sc-saas-admin/knowledge.md` already contains an accurate, code-verified account of the reserve→settle→refund lifecycle, but it isn't a spec and isn't cross-linked from the other two repos.
+
+This matters beyond documentation hygiene because the as-built architecture is riskier than it looks: `sanchiconnect-saas-tenants` (NestJS/TypeORM) owns the schema for `ai_credit_wallets`, `ai_credit_ledger`, `ai_credit_packages`, `ai_credit_orders`, `ai_credit_transactions`, `ai_credit_invoices`, `ai_credit_grants`, and `ai_credit_task_rates` — but it only ever mutates these tables on the **purchase** path (Easebuzz webhook → `handleEasebuzzCallback()`, `ai-credits.service.ts:267-631`). Every other mutation — reserve, settle, refund, instant-debit (billing), and grant issuance — happens via **direct Medoo/raw-PDO writes from two independently-deployed PHP repos** (`sc-saas-admin`'s `includes/ai_credits_functions.php` and `sanchiconnect-saas-tenants-admin`'s `modules/ai_credits/{grants,packages,task_rates}.php`) against the same shared tenants MySQL database, entirely bypassing TypeORM validation. This is the same dual-writer shape already flagged as a known-issue pattern in `FT-004` (IP & Facility Hub), except with **three** writers instead of two, and it has never been named as a cross-repo contract anywhere.
+
+This spec documents the as-built system as the canonical source of truth (closing the module-spec gap in all three repos), names the 3-writer contract explicitly, prescribes one concrete, uncontroversial hardening fix (a silent Easebuzz-hash failure mode), and surfaces the genuinely open commercial/architecture decisions that must be resolved — not guessed at — before this spec can be approved.
+
+**Evidence-strength key used below:** Evidenced = cited to a real `file:line`. `[INFERRED]` = reasonable extrapolation, not directly stated in source. `[NOT SPECIFIED IN SOURCE]` = a real gap. `[DESIGN DECISION PENDING]` = a new decision with no precedent.
+
+## Acceptance criteria
+
+- [ ] A `module.spec.md` exists at `sanchiconnect-saas-tenants/src/modules/ai-credits/module.spec.md` declaring `owns` (the 8 entities, the 7 controller routes listed in `contracts.api` above, the Easebuzz purchase-initiation + webhook-verification logic) and `consumes` (the platform-level Easebuzz gateway via `PLATFORM_EASEBUZZ_KEY`/`PLATFORM_EASEBUZZ_SALT`/`PLATFORM_EASEBUZZ_ENV`, the `AI_CREDITS_INTERNAL_API_KEY` shared secret), and states the `tenant_scoping` mechanism precisely: a `domain` varchar column on every table (not a per-tenant database — this data physically lives in the shared tenants DB alongside `tenant_users`, evidenced at `ai-credit-wallet.entity.ts:15-21` etc.).
+- [ ] A `module.spec.md` exists at `sc-saas-admin/modules/ai_credits/module.spec.md` covering both the wallet UI (`overview.php`, `buy.php`, `history.php`, `orders.php`, `invoice_print.php`) **and** `includes/ai_credits_functions.php`'s seven functions (`getAiCreditBalance`, `getAiCreditAvailableBalance`, `getAiCreditTaskRate`, `estimateAiCredits`, `reserveAiCredits`, `settleAiCredits`, `debitAiCreditsInstant`, `refundAiCreditReservation`) even though the latter's real call sites are in `modules/application_management/{analysis_form,analysis_list,analysis_result}.php`, not in `modules/ai_credits/` itself — the spec must say this explicitly and cross-link to `application_management/module.spec.md` rather than duplicate its content.
+- [ ] `sc-saas-admin/modules/application_management/module.spec.md` (stale since `2026-06-19`, confirmed to have zero mentions of `ai_credit` despite 25+ commits since, per its own `knowledge.md:410-416` finding) gets a cross-link to the new `ai_credits/module.spec.md` added, rather than being left as the sole undocumented reference to the reserve/settle/refund call sites it actually contains.
+- [ ] A `module.spec.md` exists at `sanchiconnect-saas-tenants-admin/modules/ai_credits/module.spec.md` covering `grants.php`, `packages.php`, `task_rates.php`, `orders.php` (read-only) — documenting that this repo writes directly to the same shared tenants DB tables via Medoo, with **no tenant-scoping mechanism** by design (matching this repo's stated platform-operator-tool architecture), and calling out that `grants.php` is the one handler here with an explicit safeguard (validates submitted domains against real `tenant_users` rows before crediting a wallet, `grants.php:83-104`) that `packages.php`/`task_rates.php` don't need (global catalog rows, not domain-keyed).
+- [ ] All three new module specs name the **3-writer architecture** as the single load-bearing cross-repo fact for this system: NestJS/TypeORM is the nominal schema owner but only mutates on the purchase path; `sc-saas-admin` and `sanchiconnect-saas-tenants-admin` both write directly via Medoo/raw PDO for every other mutation, with no shared validation layer between the three codebases.
+- [ ] `sanchiconnect-saas-tenants`'s `initiatePurchase()`/`calculateEasebuzzHash()` (`ai-credits.service.ts:224-227`, `669-691`) explicitly check that `easebuzzKey`/`easebuzzSalt` are non-empty and throw a clear config error before calling Easebuzz, instead of silently computing a hash with an empty string in that position when `PLATFORM_EASEBUZZ_KEY`/`PLATFORM_EASEBUZZ_SALT` are unset (both `Joi.string().optional()` today, `validation-schema.ts:20-21`) — this is a pure fail-fast hardening fix, not a behavior change for any environment where these are already configured.
+- [ ] The new tenants module spec documents `InternalApiKeyGuard`'s fail-open behavior (`internal-api-key.guard.ts:23-27`: returns `true` unconditionally when `AI_CREDITS_INTERNAL_API_KEY` is unset) as a known, self-documented, deliberate rollout choice — cross-referenced against the workspace `CLAUDE.md`'s "Unauthenticated-endpoint pattern" guardrail — and distinguishes it from the Easebuzz webhook routes' HMAC-SHA512 signature check (`verifyEasebuzzCallbackHash()`, always enforced, not gateable), since these are two independent auth layers with different strength guarantees.
+- [ ] The new `sc-saas-admin` module spec documents the "stuck reservation" limitation as a known, named gap: an analysis run whose credits are reserved (`analysis_list.php:171-211`) but that is never finalized (`analysis_result.php`'s first-view settle path) nor archived (`analysis_list.php`'s `deleteAnalysis` refund path) leaves `reserved_balance` outstanding indefinitely, since no scheduled sweep/TTL exists to reclaim it.
+
+## Per-repo plan
+
+### sanchiconnect-saas-tenants
+
+1. Author `src/modules/ai-credits/module.spec.md` per the acceptance criteria above.
+2. Add a fail-fast guard in `ai-credits.service.ts` (`initiatePurchase()` / `calculateEasebuzzHash()`) so a purchase attempt with unset `PLATFORM_EASEBUZZ_KEY`/`PLATFORM_EASEBUZZ_SALT` throws a clear, actionable error instead of silently producing a hash with an empty key/salt segment.
+3. No code change to `sc-saas-backend`'s `Feature.AI_CREDITS_ENABLED` enum entry — confirm in the new module spec that it is declared for invariant #1 naming consistency only and has no functional backend consumer (`enum.ts:1086`, no other reference found in `sc-saas-backend/src`).
+
+### sc-saas-admin
+
+1. Author `modules/ai_credits/module.spec.md` per the acceptance criteria above, explicitly cross-linking to `modules/application_management/module.spec.md` for the reserve/settle/refund call sites rather than duplicating them.
+2. Add a cross-link (and, if the implementer judges it warranted, a short "AI Credits" subsection) to `modules/application_management/module.spec.md`, since that file currently has zero mentions of the integration it actually contains.
+3. Document the stale-reservation limitation as a named follow-up in the new module spec — do not build a sweep job in this spec (see Out of scope).
+
+### sanchiconnect-saas-tenants-admin
+
+1. Author `modules/ai_credits/module.spec.md` per the acceptance criteria above.
+2. No functional changes prescribed — this repo's direct-DB-write pattern against the shared tenants DB is an established, accepted precedent in this workspace (see `FT-004`'s IP/Facility Hub finding and this repo's own `CLAUDE.md`), not something this spec re-architects.
+
+_No other repo has work items in this spec. `sc-saas-backend` and `sc-saas-frontend` were checked and have no functional AI-Credits code (backend only declares the flag name; frontend has zero references). `ai-startups-analyzer` was checked and has zero AI-Credits awareness — billing is driven entirely by `sc-saas-admin` polling the analyzer's existing scoring endpoints, not by any analyzer-side credit logic._
+
+## Contracts & invariants
+
+- **Flags:** `ai_credits_enabled` (tenants-owned, `TenantUsersEntity`) is the only flag this system introduces. It gates access to the `sc-saas-admin` `ai_credits/*` UI and every reserve/settle/debit call site in `application_management/*` (`$brandSettings['ai_credits_enabled']`, `config.php:278-279`). It is correctly declared (invariant #1) in `sc-saas-backend`'s `Feature` enum even though backend never reads it — not a violation, just an unused-but-correctly-named entry.
+- **API:** All 7 routes listed in `contracts.api` are owned by `sanchiconnect-saas-tenants`. `sc-saas-admin` calls exactly one of them over HTTP (`POST api/v1/ai-credits/purchase`, from `modules/ai_credits/buy.php:127-147`, via cURL with `X-Internal-Api-Key`); every other interaction `sc-saas-admin` and `sanchiconnect-saas-tenants-admin` have with this system's data is a direct Medoo/PDO query against the shared tenants DB, not an API call. Any future NestJS controller/DTO change to the purchase route must be checked against `sc-saas-admin/modules/ai_credits/buy.php`'s cURL payload (invariant #2 applies to this one route only).
+- **Events:** None.
+- **Invariants at risk:**
+  - **#5 (tenant scoping)** — every ai-credits table is scoped by a `domain` string column, the same pattern `tenants` itself uses (not a per-tenant separate DB). NestJS queries are correctly domain-filtered. The risk is that `sc-saas-admin` and `sanchiconnect-saas-tenants-admin` each independently re-implement that same domain filter in raw SQL with no shared enforcement layer — `grants.php` was deliberately hardened to validate submitted domains against real `tenant_users` rows before crediting a wallet (`grants.php:83-104`), but this is a per-file discipline, not a structural guarantee.
+  - **Auth model** — two independent layers guard the purchase/webhook/invoice routes: `InternalApiKeyGuard` (opt-in, fail-open when `AI_CREDITS_INTERNAL_API_KEY` is unset, `internal-api-key.guard.ts:23-27`) and, for the two webhook routes only, a mandatory Easebuzz HMAC-SHA512 signature check (`verifyEasebuzzCallbackHash()`) that always runs regardless of the guard's configuration. Changing either layer without understanding the other risks either weakening a real cryptographic check or assuming a shared-secret check is enforced when it silently isn't.
+  - **Not one of the 6 numbered invariants, but the same shape as invariant #2/#3's "single owner" principle** — the **3-writer architecture**: `sanchiconnect-saas-tenants` (TypeORM) is the nominal schema owner, but `sc-saas-admin` and `sanchiconnect-saas-tenants-admin` both mutate the same rows directly. A TypeORM column rename/type change in `sanchiconnect-saas-tenants` can silently break both PHP repos' raw SQL simultaneously, with no compile-time or CI signal in either PHP repo (mirrors the `FT-004` dual-writer finding for patents/facilities, but with a third writer).
+
+## Test plan
+
+- **sanchiconnect-saas-tenants:** no automated jest specs exist yet for this module (repo-wide: `npm test` has none present). Manually verify: attempting a purchase with `PLATFORM_EASEBUZZ_KEY`/`PLATFORM_EASEBUZZ_SALT` unset now fails fast with a clear error instead of silently returning a payment URL that will fail at Easebuzz.
+- **sc-saas-admin:** `php -l` on any edited file. This spec is documentation-only for this repo (module spec authorship); confirm `overview.php`/`buy.php`/`history.php`/`orders.php` and `application_management/{analysis_form,analysis_list,analysis_result}.php` render and behave identically before/after (no functional diff expected).
+- **sanchiconnect-saas-tenants-admin:** `php -l` on any edited file. Documentation-only; confirm `grants.php`/`packages.php`/`task_rates.php`/`orders.php` behave identically before/after.
+- **Cross-repo:** manually trace one full lifecycle end-to-end in a staging tenant — purchase a package (`sc-saas-admin` → `POST /ai-credits/purchase` → Easebuzz → `POST /webhooks/easebuzz/success` credits the wallet in the tenants DB) → trigger an analysis run in `sc-saas-admin` (reserves credits) → view the results page (settles credits) → confirm `sanchiconnect-saas-tenants-admin`'s `orders.php` and `grants.php` list pages reflect the same underlying `ai_credit_orders`/`ai_credit_wallets`/`ai_credit_ledger` rows — to confirm the new module specs' `owns`/`consumes` claims match observed behavior, not just static code reading.
+
+## Rollout
+
+Documentation-only changes (the three `module.spec.md` files) ship independently per repo with no coordination needed and no flag. The one code change prescribed (the Easebuzz fail-fast guard in `sanchiconnect-saas-tenants`) is a backward-compatible tightening — it only changes behavior in an environment where `PLATFORM_EASEBUZZ_KEY`/`PLATFORM_EASEBUZZ_SALT` are already unset, which is already a broken purchase path today. No schema migration, no new flag, no new tenant-facing behavior in this spec.
+
+## Out of scope
+
+- Consolidating the 3-writer architecture behind new NestJS endpoints (e.g., `/reserve`, `/settle`, `/refund`, `/grant`) that `sc-saas-admin`/`sanchiconnect-saas-tenants-admin` would call instead of raw SQL — a real option this spec's findings surface, but a significant architectural change needing its own decision and its own spec (see Open questions).
+- A stale-reservation sweep/TTL job for abandoned analysis runs — named as a known limitation, not built here.
+- Making `AI_CREDITS_INTERNAL_API_KEY` mandatory (removing `InternalApiKeyGuard`'s fail-open branch) — named as a known risk, not changed here.
+- Any change to the commercial model, package pricing, task-rate defaults, or currency/localization policy.
+- `ai-startups-analyzer`, `sc-saas-backend`, `sc-saas-frontend` — confirmed to have no functional AI-Credits code; no work items.
+
+## Open questions
+
+**Must-resolve before this spec is approvable:**
+- Is the 3-writer architecture (NestJS as schema owner, two PHP repos writing directly via raw SQL) the accepted permanent design, or should reserve/settle/refund/grant be consolidated behind new NestJS endpoints? This determines whether the per-repo plan above is this spec's final shape or only its documentation phase. `[DESIGN DECISION PENDING]`
+- Is there a canonical commercial/pricing model to adopt? Today packages and task-rates are entirely operator-discretion via `sanchiconnect-saas-tenants-admin` CRUD, with no approved price list, margin target, or currency policy — `ai_credit_packages.price_usd` exists on the entity but `sc-saas-admin/modules/ai_credits/buy.php` only ever charges in INR via Easebuzz, so it's unclear whether USD billing is a real near-term requirement or a dormant column. `[DESIGN DECISION PENDING]`
+- Should `AI_CREDITS_INTERNAL_API_KEY`'s fail-open default be tightened to fail-closed now that both `sanchiconnect-saas-tenants` and `sc-saas-admin` are live in production, or is the opt-in rollout window still needed in some environment? `[NOT SPECIFIED IN SOURCE]`
+
+**Deferrable (tracked, do not block approval):**
+- Should a stale-reservation sweep/TTL job be built for analysis runs that reserve credits but are never finalized or archived?
+- `estimateAiCredits()` in `sc-saas-admin/includes/ai_credits_functions.php` is dead code (defined, never called — every real call site inlines the same multiplication) — clean up or leave as documented-but-unused?
+- Confirm whether `ai_credit_packages.price_usd` is a real near-term requirement (tied to the pricing-model question above) or should be dropped from the schema/UI if genuinely dormant.
