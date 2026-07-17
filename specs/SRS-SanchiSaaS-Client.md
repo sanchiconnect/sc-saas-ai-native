@@ -399,6 +399,7 @@ At a system level, the platform's data model is organized around the following c
 | Commercial Records | Orders, transactions, invoices, memberships, and coupons. |
 | Content & Learning | Courses, lessons, enrollments, news, and resource library items. |
 | Administrative Records | Audit logs, support tickets, and configuration metadata. |
+| AI Credits & Billing | A prepaid credit wallet, purchase orders, consumption ledger, promotional grants, and a package/rate catalogue, funding AI-assisted evaluation (see FRS §4.21). Added 2026-07-17, closing external gaps-register item P-5 — previously undocumented in this SRS despite being fully built. Unlike every other entity group above, this data is **not** isolated to a single tenant's own database — it lives in the shared platform control-plane database (domain-filtered, not physically separate), because it is a platform-operator-managed commercial subsystem rather than tenant-owned business data. Whether this system's intended commercial model is metered billing, a soft usage cap, or a pilot has not been formally specified — see `specs/features/FT-005-ai-credits-system.spec.md`'s Open Questions. |
 
 ### 7.2 Data Ownership & Isolation
 

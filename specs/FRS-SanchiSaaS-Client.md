@@ -63,6 +63,7 @@
    4.18 Custom Form Builder
    4.19 Third-Party Integrations
    4.20 System Configuration
+   4.21 AI Credits & Billing
 5. Cross-Cutting Platform Capabilities
    5.1 Multi-Tenancy & Branding
    5.2 Feature Configuration
@@ -787,6 +788,30 @@ Administrators can review a complete history of administrative actions and profi
 
 **FR-4.20.5 — Internal Task Tracking**
 Administrators maintain an internal task list for their own team's operational work.
+
+### 4.21 AI Credits & Billing
+
+*Added 2026-07-17, closing external gaps-register item P-5 — this capability was previously undocumented in this FRS despite being fully built and in active use. See `specs/features/FT-005-ai-credits-system.spec.md` for the full technical architecture; this section covers only the functional requirements as observed in the as-built system.*
+
+**FR-4.21.1 — Prepaid Credit Wallet**
+Each tenant holds a prepaid credit balance ("AI Credits") that is debited to pay for AI-assisted evaluation (FR-4.3.8) and related AI features.
+
+**FR-4.21.2 — Credit Purchase**
+Administrators can purchase additional AI Credits from a package catalogue via an online payment gateway.
+
+**FR-4.21.3 — Credit Reservation & Settlement**
+When an AI-assisted evaluation run is started, its estimated credit cost is reserved against the tenant's balance; the reservation is settled to the actual cost once the run completes, or released if the run is cancelled or abandoned.
+
+**FR-4.21.4 — Promotional Grants**
+A platform operator can issue a one-off credit grant to a tenant (e.g. an onboarding bonus or a promotional credit), optionally with an expiry date.
+
+**FR-4.21.5 — Purchase & Consumption History**
+Administrators can view their tenant's credit balance, purchase history, and per-analysis consumption history.
+
+**FR-4.21.6 — Catalogue & Rate Management**
+A platform operator manages the credit package catalogue (what a tenant can buy) and the per-task credit rates (how many credits a given AI operation costs).
+
+**Not yet defined — commercial model requirements pass pending (see Open Questions below):** whether this system is intended as metered billing (real revenue with a margin target), a soft usage cap (no revenue intent, purely a cost-control mechanism), or a time-boxed pilot has not been stated anywhere in the platform's formal documentation or team specs. The functional requirements above describe **what the system does today**, not a confirmed commercial intent.
 
 ---
 
