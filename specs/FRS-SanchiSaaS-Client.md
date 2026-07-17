@@ -841,6 +841,17 @@ Across both the member application and the administration panel, key actions (ap
 | Kanban Board | A visual, column-based board used to track applications as they move through evaluation rounds. |
 | Checkout | The unified payment flow used across all paid actions on the platform. |
 | Feature Flag | A per-tenant configuration switch that enables or disables a platform module or capability. |
+| AI Credit Wallet | A tenant's prepaid balance of AI Credits, used to pay for AI-assisted evaluation (FR-4.3.8) and related AI features (see §4.21). |
+| AI Credit Ledger | The transaction history recording every credit, debit, reservation, and refund movement against a tenant's AI Credit wallet. |
+| Reserve (AI Credits) | To provisionally hold a portion of a tenant's AI Credit balance against an in-progress AI operation, before its final cost is known. |
+| Settle (AI Credits) | To convert a reservation into a final charge once an AI operation completes, adjusting the reserved amount to the operation's actual cost. |
+| Task Rate | The configured number of AI Credits charged per unit of a given AI operation (e.g. per applicant scored in an AI-assisted evaluation run). |
+| Grant (AI Credits) | A one-off AI Credit allocation issued to a tenant by a platform operator — for example an onboarding bonus or a promotional credit — independent of a purchase. |
+| Package (AI Credits) | A pre-defined bundle of AI Credits that a tenant can purchase at a set price via the platform's payment gateway. |
+| Order (AI Credits) | A record of a tenant's attempt to purchase an AI Credit package, tracked from initiation through payment-gateway confirmation. |
+| Delivery Mode | Whether an outbound email's attachments are sent as true inline attachments or as secure download links, determined automatically by the combined attachment size (see Bulk Email Attachments, `sc-saas-admin/specs/features/bulk-email-attachments/`). |
+
+*AI Credits terms added 2026-07-17, closing external gaps-register item P-7 — canonical definitions cross-referenced from `specs/features/FT-005-ai-credits-system.spec.md`. Delivery Mode added from the same pass, cross-referenced from `sc-saas-admin/specs/features/bulk-email-attachments/`.*
 
 ---
 
