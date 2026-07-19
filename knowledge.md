@@ -287,6 +287,39 @@ Engine]`
   `@Roles(Role.STARTUP)` and `verifications`' `@RateLimit` on the WhatsApp OTP send route are both dead
   metadata — `RolesGuard`/`RateLimiterGuard` are never actually applied on those specific routes, so the
   restriction/rate-limit each decorator implies is not enforced. `[Source: sc-saas-backend/module.spec.md (startup-kit, verifications)]`
+- **Worst finding of the entire module-spec sweep (2026-07-19): `sanchiconnect-saas-tenants-admin`'s
+  `modules/csv/export.php`/`import.php` have no authentication of any kind** — not even the CSRF-token-
+  equality check every other unguarded endpoint in that repo at least has. Traced end-to-end
+  (`index.php`'s router → `common.php` → the handler itself: no `checkLoggedIn()`, no `verifyCSRFToken()`
+  anywhere in the chain) against the single shared tenants MySQL DB, with the table name taken raw from the
+  query string and no allow-list. Any anonymous caller can dump `tenant_users` (plaintext per-tenant DB
+  credentials) or `spa_admin_users` (operator password hashes) with one GET request, or insert arbitrary
+  rows via `import.php`. Tracked as **Linear SAN-42 (Urgent)** — not yet fixed. `[Source:
+  sanchiconnect-saas-tenants-admin/modules/csv/module.spec.md]`
+- **The same unauthenticated `filemanager`/`aws` endpoint pattern exists in *both* PHP admin repos** —
+  `sc-saas-admin` and `sanchiconnect-saas-tenants-admin` each have a `filemanager/download.php` with zero
+  auth (readfile() of any path) and an `ajax.php` whose one `cleanPath()` path-traversal sanitizer is
+  defined but never called anywhere in either codebase; both also have an `aws/ajax.php` gated only by a
+  CSRF token that `index.php` mints for any anonymous visitor. Tracked as SAN-22/31 (`sc-saas-admin`) and
+  SAN-43/46 (`sanchiconnect-saas-tenants-admin`) — same code lineage, same bug, two repos, none fixed yet.
+  `[Source: sc-saas-admin/modules/{filemanager,aws}/module.spec.md, sanchiconnect-saas-tenants-admin/modules/{filemanager,aws}/module.spec.md]`
+- **`sc-saas-backend`'s WebSocket gateway (`core/sockets/FetchCountGateway`) is fully unauthenticated** — no
+  `@UseGuards`, no JWT/handshake identity check anywhere. Its `joinRoom` handler joins any connected client
+  to any arbitrary room string with zero validation, so knowing/guessing a `conversation_<uuid>` (or a bare
+  numeric user-id room) lets a client eavesdrop on someone else's chat typing indicators, messages, and
+  notifications. Confirmed real, actively-used consumers (`chat.service.ts`, `connections.service.ts`,
+  `conversations.service.ts`), not dead code. Tracked as **SAN-45**. `[Source: sc-saas-backend/src/core/sockets/module.spec.md]`
+- **`sc-saas-frontend`'s `admin-actions` module calls a backend impersonation endpoint
+  (`/backdoor-login/:userId/:adminMd5`) that takes a real admin auth token as a raw URL path segment** —
+  exposed to browser history/server logs/`Referer` headers by construction — with no per-target-user
+  validation and no route guard beyond a no-op `FeatureGuard` (no `@Features()` decorator on that specific
+  handler). A leaked link grants permanent impersonation of any user by id. Tracked as **NIR-5**.
+  `[Source: sc-saas-frontend/src/app/modules/admin-actions/module.spec.md]`
+- **`global.controller.ts`'s zero-auth-guard finding (bullet 1 above) has a new confirmed refinement**:
+  `getTenantSettings()`'s query has no `active = true` filter at all in its `where` clause (unlike
+  `verifyTenant()`, which does filter on it) — so a **deactivated** tenant's plaintext SMTP password and
+  other settings remain fetchable by hostname alone, not just active tenants'. Tracked as **SAN-44**.
+  `[Source: sanchiconnect-saas-tenants/src/modules/global/module.spec.md]`
 
 ---
 
@@ -403,8 +436,57 @@ be-unreliable pass, and would very likely surface more real issues at a similar 
 
 ---
 
+## 11. Module-spec coverage is now complete across all 7 repos (2026-07-17 → 2026-07-20)
+
+Following on from §10, every module directory in every repo in this workspace now has its own
+`module.spec.md` — a workspace-wide gap-closing effort spanning four sessions. **101 new module specs were
+authored** on top of the pre-existing ones, bringing every repo to full coverage:
+
+| Repo | Module specs | New this pass | Index |
+|---|---|---|---|
+| `sc-saas-admin` | 68 | 38 | [admin-module-specs-index.md](specs/admin-module-specs-index.md) |
+| `sc-saas-backend` | 61 (58 `src/modules` + 3 real bounded contexts in `src/core`) | 3 | [backend-module-specs-index.md](specs/backend-module-specs-index.md) |
+| `sc-saas-frontend` | 82 | 52 | [frontend-module-specs-index.md](specs/frontend-module-specs-index.md) |
+| `sanchiconnect-saas-tenants` | 8 | 2 | [tenants-module-specs-index.md](specs/tenants-module-specs-index.md) |
+| `sanchiconnect-saas-tenants-admin` | 10 (9 modules + root/foundation spec) | 6 | [tenants-admin-module-specs-index.md](specs/tenants-admin-module-specs-index.md) *(new index — this repo had none before)* |
+| `sc-saas-3rdparty-webservices` | 7 | 0 (already complete; index refreshed, several stale route paths corrected) | [3rdparty-webservices-module-specs-index.md](specs/3rdparty-webservices-module-specs-index.md) |
+| `ai-startups-analyzer` | 1 consolidated spec + `scoring_engine_spec.md` (FastAPI's structure doesn't map to one-spec-per-directory) | 0 (index refreshed; found the scoring-engine spec's rounding-precision text hadn't caught up to a 2026-07-17 code fix) | [ai-analyzer-module-specs-index.md](specs/ai-analyzer-module-specs-index.md) |
+
+**How to use these indexes:** each is the fastest way to find a module's spec, its owned/consumed
+contracts, and any known bugs/security findings without grepping the repo directly — start here before
+reading a module's code cold. Every index was regenerated (or, for `sanchiconnect-saas-tenants-admin`,
+created for the first time) by re-deriving its contents directly from the actual `module.spec.md` files and
+directory listings on disk, not by trusting the previous index's claims — each repo's coverage was also
+independently re-verified with a fresh directory scan as part of this pass (all showed 0 gaps).
+
+**Naming-collision pattern found repeatedly across repos**: several directories in `sc-saas-admin`,
+`sc-saas-frontend`, and the workspace generally contain *only* a `module.spec.md` and no code — older,
+broader "combined" docs (e.g. `sc-saas-admin/modules/integrations/`, `content-management/`,
+`growth-metrics/`, `finance-memberships/`, `partners-recruitment/`; `sc-saas-frontend/modules/utilities/`
+and ~13 other umbrella specs) that predate this workspace's one-spec-per-directory convention and document
+several real code directories jointly. These are kept as supplementary/legacy references, cross-linked from
+the newer per-directory specs that now supersede them for anything code-specific — not deleted, since they
+sometimes contain cross-cutting context (e.g. shared DB-write patterns) the narrower specs don't repeat.
+
+**New security/correctness findings surfaced by this final sweep are folded into §6 above** rather than
+repeated here — see the bullets covering `sanchiconnect-saas-tenants-admin`'s unauthenticated `csv`
+export/import (the single worst finding across the whole multi-session effort), the repeated
+`filemanager`/`aws` unauthenticated-endpoint pattern across both PHP admin repos, `sc-saas-backend`'s
+unauthenticated WebSocket gateway, and `sc-saas-frontend`'s `admin-actions` impersonation-endpoint risk.
+
+---
+
 ## Change Log
 
+- 2026-07-20 | Added §11 — closed the last remaining module-spec gaps workspace-wide (101 new
+  `module.spec.md` files across 4 sessions: 38 in `sc-saas-admin`, 3 in `sc-saas-backend`, 52 in
+  `sc-saas-frontend`, 2 in `sanchiconnect-saas-tenants`, 6 in `sanchiconnect-saas-tenants-admin`), and
+  regenerated (or, for `sanchiconnect-saas-tenants-admin`, created for the first time) all 7 repos'
+  module-specs-index files, independently re-verifying 0-gap coverage in every repo along the way. Added 6
+  new §6 security bullets from findings surfaced during this final sweep, the most severe being
+  `sanchiconnect-saas-tenants-admin`'s completely unauthenticated `csv/export.php`/`import.php` (full DB
+  dump/insert on the shared platform DB, tracked as Linear SAN-42, still unfixed) — arguably the single
+  worst finding across this entire multi-session audit effort.
 - 2026-07-17 | Added §10 and new §6 security bullets — synced this root synthesis with the module-level
   (`module.spec.md`, all 139 files across 7 repos) re-verification and adversarial re-verification passes
   done in the individual product repos (committed to their own `ai_native_setup` branches). Most
