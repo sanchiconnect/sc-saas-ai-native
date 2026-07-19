@@ -1,12 +1,12 @@
 ---
 type: index
 repo: backend
-updated: 2026-06-17
+updated: 2026-07-19
 ---
 
 # Backend Module Specs — Index
 
-All 58 `sc-saas-backend` modules have a `module.spec.md`. This index maps each module to its spec, summarises its role, and flags security/quality notes surfaced during spec authoring.
+All 58 `sc-saas-backend` modules under `src/modules/` have a `module.spec.md`, plus 3 real bounded-context directories under `src/core/` (`zoho`, `upload-module`, `sockets` — the rest of `core/` is cross-cutting infra like `config`/`guards`/`entities`/`decorators`/`utils` and deliberately has no spec) — **61 specs total**. This index maps each to its spec, summarises its role, and flags security/quality notes surfaced during spec authoring.
 
 > **How to use:** When working on a module, read its spec first — it records owned routes, consumed flags, tenant-scoping mechanism, invariants, and known footguns. When adding a route or flag gate, update the spec's `owns` / `consumes` frontmatter and `updated` date.
 
@@ -165,6 +165,18 @@ All 58 `sc-saas-backend` modules have a `module.spec.md`. This index maps each m
 |---|---|---|
 | `factacy` | [spec](../sc-saas-backend/src/modules/factacy/module.spec.md) | Proxies Factacy AI-news API. Errors swallowed silently (returns HTTP 200 with `data: undefined`). |
 | `power-pitch-module` | [spec](../sc-saas-backend/src/modules/power-pitch-module/module.spec.md) | Power Pitch video platform bridge. CFA + transcript routes have no JWT. |
+| `zoho` (`core/`) | [spec](../sc-saas-backend/src/core/zoho/module.spec.md) | One-way outbound sync of stakeholders + mentorship/meeting/startup-kit-submission activity into Zoho CRM (Leads→Accounts/Contacts, "Connects" custom module). **All 6 routes have zero guards** — no `@UseGuards`/`@Roles`/`@Features` anywhere in the controller; corrects a prior "5 routes" count (it's 6 — `update-meeting-data` was previously missed). `updateStakeholdersAccounts()`'s `INVESTOR` branch has a dead early `return` — investor account syncs are a silent no-op. |
+
+---
+
+## Core Infrastructure (cross-cutting, `src/core/`)
+
+Most of `core/` is deliberately un-specced infra (config, guards, entities, decorators, utils, etc.). These two subdirectories are real bounded contexts and have their own `module.spec.md`.
+
+| Module | Spec | Notes |
+|---|---|---|
+| `upload-module` (`core/`) | [spec](../sc-saas-backend/src/core/upload-module/module.spec.md) | Shared internal provider (no controller) centralising all S3 file I/O (`AmazonS3Service`, `UploadService`) plus an HTML→PDF renderer (`PdfRenderHtmlService`) used for invoice generation. Consumed by ~25 feature modules — the one shared upload path for the whole backend. Content-type derivation is inconsistent: fixed maps for documents/images but raw-extension-derived for video, despite an in-file comment saying that's unsafe. |
+| `sockets` (`core/`) | [spec](../sc-saas-backend/src/core/sockets/module.spec.md) | Single Socket.IO gateway (`FetchCountGateway`) — the only real-time push channel (unread counts, typing indicators, presence, connection/chat notifications). **No auth guard of any kind** on the WS gateway; rooms are named by raw numeric user id with no membership check, so a guessed/enumerated room id can receive another user's `fetch-count`/notification events. Presence map is in-process only (no Redis) — inconsistent across multi-instance deployments. |
 
 ---
 
@@ -198,6 +210,8 @@ These findings were captured in module `Watch out for` sections. They are **not 
 | 🟠 High | `partner` | `premium-module/request` is open and can trigger SES to arbitrary addresses |
 | 🟠 High | `user` | `update/notification` and `profile-views/increment` are unauthenticated |
 | 🟠 High | `auth-external` | `default` branch passes `undefined` as userId → crash on unsupported user types |
+| 🟠 High | `zoho` (`core/`) | All 6 CRM-sync routes have zero auth guards — anyone reachable can trigger a full Zoho push/sync pass |
+| 🟡 Medium | `sockets` (`core/`) | WS gateway has no auth guard; rooms keyed by raw user id let a guessed id receive another user's notifications |
 | 🟡 Medium | `cron` | `COMMUNITY_WALL_POSTS_WEEKLY_REMINDER` callback missing `()` — scheduled job is a no-op |
 | 🟡 Medium | `job` | `@Roles(JOB_SEEKER)` applied but `RolesGuard` missing from `@UseGuards` — role check ignored |
 | 🟡 Medium | `notifications` | 6 cron-trigger POST endpoints are completely open |

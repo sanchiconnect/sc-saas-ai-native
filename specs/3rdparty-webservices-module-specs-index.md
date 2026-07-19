@@ -1,7 +1,7 @@
 ---
 type: index
 repo: sc-saas-3rdparty-webservices
-updated: 2026-06-19
+updated: 2026-07-19
 ---
 
 # 3rd-Party Webservices Module Specs — Index
@@ -18,11 +18,11 @@ All 7 `sc-saas-3rdparty-webservices` modules have a `module.spec.md`. This servi
 |---|---|---|---|---|
 | `sms` | [spec](../sc-saas-3rdparty-webservices/src/modules/sms/module.spec.md) | `POST api/v1/sms/send-otp` | Auth.key.io | `sc-saas-backend/src/core/services/sms.service.ts` |
 | `sendGrid` | [spec](../sc-saas-3rdparty-webservices/src/modules/sendGrid/module.spec.md) | `POST api/v1/sendgrid/send-email`, `POST api/v1/sendgrid/template/send-email` | SendGrid | `sc-saas-backend/src/core/services/ses-email.service.ts` |
-| `ses` | [spec](../sc-saas-3rdparty-webservices/src/modules/ses/module.spec.md) | `POST api/v1/ses/send-email` | AWS SES | `sc-saas-backend/src/core/services/ses-email.service.ts` |
-| `cometChat` | [spec](../sc-saas-3rdparty-webservices/src/modules/cometChat/module.spec.md) | `POST api/v1/comet-chat/...` | CometChat | `sc-saas-backend/src/core/services/comet-chat.service.ts` |
-| `videoSDK` | [spec](../sc-saas-3rdparty-webservices/src/modules/videoSDK/module.spec.md) | `POST api/v1/video-sdk/...`, `POST api/v1/video-sdk/v2/...` | VideoSDK | `sc-saas-backend/src/core/services/video-sdk.service.ts` |
-| `shortIo` | [spec](../sc-saas-3rdparty-webservices/src/modules/shortIo/module.spec.md) | `POST api/v1/short-io/shorten` | short.io | `sc-saas-backend/src/core/services/url.service.ts` |
-| `convertKit` | [spec](../sc-saas-3rdparty-webservices/src/modules/convertKit/module.spec.md) | `POST api/v1/convert-kit/...` | ConvertAPI | `sc-saas-backend/src/core/services/convertapi.service.ts` |
+| `ses` | [spec](../sc-saas-3rdparty-webservices/src/modules/ses/module.spec.md) | `POST api/v1/email/ses/send-email` | AWS SES | `sc-saas-backend/src/core/services/ses-email.service.ts` |
+| `cometChat` | [spec](../sc-saas-3rdparty-webservices/src/modules/cometChat/module.spec.md) | `POST/GET api/v1/comet-chat/...` (users, friends, blocked-users, messages, conversation, groups) | CometChat | `sc-saas-backend/src/core/services/comet-chat.service.ts` |
+| `videoSDK` | [spec](../sc-saas-3rdparty-webservices/src/modules/videoSDK/module.spec.md) | `POST/GET api/v1/video-sdk/meetings/...` (create, fetch, sessions), `GET api/v2/video-sdk/meetings/:meetingId/sessions` | VideoSDK | `sc-saas-backend/src/core/services/video-sdk.service.ts` |
+| `shortIo` | [spec](../sc-saas-3rdparty-webservices/src/modules/shortIo/module.spec.md) | `POST api/v1/short-io/short-url`, `.../accept-url`, `.../reject-url`, `GET .../short-action-url`, `.../action-url`, `.../authenticated/...` | short.io | `sc-saas-backend/src/core/services/url.service.ts` |
+| `convertKit` | [spec](../sc-saas-3rdparty-webservices/src/modules/convertKit/module.spec.md) | `POST api/v1/convert-kit/ppt-to-png` | ConvertAPI | `sc-saas-backend/src/core/services/convertapi.service.ts` |
 
 ---
 
@@ -42,3 +42,12 @@ All 7 `sc-saas-3rdparty-webservices` modules have a `module.spec.md`. This servi
 | 🟠 High | all | No auth on any endpoint — relies entirely on network isolation. If this service is exposed to the public internet (misconfigured firewall/proxy), any caller can invoke third-party APIs billed to the platform. |
 | 🟠 High | all | CORS `origin: true` — all origins allowed. Combined with no auth, a browser exploit on any same-network host could reach these endpoints. |
 | 🟡 Medium | `convertKit` | Large body limit (250 MB) on all content types including JSON — potential DoS vector if not network-isolated. |
+
+---
+
+## Known functional bugs (non-security)
+
+- **`shortIo` accept/reject URL swap** — `shortio.service.ts`'s `getShortAcceptUrl()` builds the identical `/connection-request/reject` URL as `getShortRejectUrl()` (confirmed copy-paste bug). Accepting a connection request currently generates a reject link. See `shortIo/module.spec.md`.
+- **Dead-but-required env vars** — `AUTHKEYIO_SENDERID` (sms) and `CONVERTAPI_APIKEY` (convertKit) are Joi-validated as required at startup but never actually read by any code path.
+- **`videoSDK`** — the documented `GET /sessions/:sessionId` route composes under the `/meetings` base (`/video-sdk/meetings/sessions/:sessionId`, not a top-level path); `createMeeting()` always throws `InternalServerErrorException` regardless of the upstream VideoSDK status code; a `console.log` in `getMeeting()` leaks a signed JWT.
+- **`sendGrid`** — bulk sends go through one `this.email.send()` call with the whole recipient array, not a per-item loop; `from`/`EMAIL_SENDER` is mandatory on every call, not an overridable default (`AppConfigService.emailSender` is dead code).
