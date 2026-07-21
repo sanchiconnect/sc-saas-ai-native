@@ -69,6 +69,25 @@ Every bug fix, requirement implementation, and enhancement should have a corresp
 
 **States (Sanchiconnect team's real workflow, confirmed via `list_issue_statuses`):** `Backlog` → `Todo` → `In Progress` → `In Review` → `Done` (plus `Canceled` / `Duplicate` as needed). Move the issue as work actually progresses — don't create it and leave it stale in `Todo` while work is really `In Progress`.
 
+**Severity, repo badge, and assignee (added 2026-07-21) — set on every issue at creation, never left blank:**
+
+- **Severity → Linear's native `priority` field** (not a separate label), mapped from this workspace's existing 🔴 Critical / 🟠 High / 🟡 Medium / 🟢 Low convention already used in every `module.spec.md` security-findings table: 1=Urgent (🔴 — touches a cross-repo invariant, security, data loss, or is otherwise blast-radius-critical), 2=High (🟠 — broken/blocked workflow or a significant scoped feature), 3=Medium (🟡 — the default when genuinely unsure), 4=Low (🟢 — cosmetic/minor/polish). Never `0`/No priority.
+- **Repo badge → a grouped label**, parent group `Repo` with one child per repo (confirmed created in Linear 2026-07-21): `Repo: Tenants`, `Repo: Backend`, `Repo: Frontend`, `Repo: Admin`, `Repo: AI Analyzer`, `Repo: 3rdparty Webservices`, `Repo: Tenants-Admin`. Applied alongside the existing type label (`Bug`/`Feature`/`Improvement`) — both go in the same `labels` array, since `save_issue`'s `labels` param replaces the full set on every call.
+- **Assignee → a fixed repo→developer mapping:**
+
+  | Repo | Assignee |
+  |---|---|
+  | `sc-saas-backend` | Aman Kabra |
+  | `sc-saas-admin` | Sandeep |
+  | `sc-saas-frontend` | Vishali Kashyap |
+  | `sanchiconnect-saas-tenants` | Nirmal Singh |
+  | `ai-startups-analyzer` | Nirmal Singh |
+  | `sc-saas-3rdparty-webservices` | Nirmal Singh |
+  | `sanchiconnect-saas-tenants-admin` | Nirmal Singh |
+
+- **One-repo-per-task guardrail:** the repo label is more than a visual tag — `spec-implementer` and `/bug-fix` must never edit files outside the one repo an issue is labeled for. If implementation reveals a genuine need to touch another repo, stop, leave that repo untouched, and create a new, separately labeled/prioritized/assigned issue there instead (linked via `relatedTo`/`blockedBy` if useful) — never fold unplanned cross-repo work into the current issue.
+- **Don't clobber these fields on state-only updates:** any `save_issue` call that only moves an issue between states (`Todo`→`In Progress`→`In Review`→`Done`) must omit `labels`, `priority`, and `assignee` entirely — passing `labels` replaces the full set and would silently wipe the repo badge and type label set at creation.
+
 **When to create the issue:** at the point work is confirmed to start (not necessarily at the first mention of an idea) — mirrors the existing `/from-linear` command's direction (pulling work *from* Linear into a spec); this is the reverse flow, pushing tracked work *back into* Linear as it happens.
 
 ---

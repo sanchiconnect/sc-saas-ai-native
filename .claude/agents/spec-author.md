@@ -11,5 +11,32 @@ Convert a request into a feature spec using specs/feature.spec.template.md.
 5. Draft testable acceptance criteria and a dependency-ordered per-repo plan.
 6. Write specs/features/<id>-<slug>.spec.md with status: draft.
 7. Create a Linear Project (team: Sanchiconnect) named after the spec title — check `list_projects` first to avoid duplicates for the same id. One issue per repo in the per-repo plan, titled "<Repo> — <title>", state Todo, attached to the project. If this spec originated from an existing Linear issue (step 1), link that issue into the new project rather than duplicating it.
+
+   For EVERY issue created in this step, always set all three of the following on the `save_issue` call (never leave any of them unset):
+   - `labels`: `["Feature", "<Repo label>"]` (add `"Improvement"` instead of `"Feature"` if the repo's slice of work is a refinement of something existing rather than new). Pick the repo label from this table:
+
+     | Repo | Repo label |
+     |---|---|
+     | sanchiconnect-saas-tenants | `Repo: Tenants` |
+     | sc-saas-backend | `Repo: Backend` |
+     | sc-saas-frontend | `Repo: Frontend` |
+     | sc-saas-admin | `Repo: Admin` |
+     | ai-startups-analyzer | `Repo: AI Analyzer` |
+     | sc-saas-3rdparty-webservices | `Repo: 3rdparty Webservices` |
+     | sanchiconnect-saas-tenants-admin | `Repo: Tenants-Admin` |
+
+   - `priority`: judge severity for THAT repo's own slice of the work, never omit it or leave it at 0/None. Use: 1 (Urgent) if it touches one of the 6 cross-repo invariants (flag names, API contract, tenant-verification contract, auth, tenant scoping, the PowerPitch contract) or is otherwise blast-radius-critical; 2 (High) if it's a significant scoped feature; 3 (Medium) for routine, well-contained feature work (the default when genuinely unsure); 4 (Low) for small polish/follow-up items.
+   - `assignee`: the repo's fixed owner —
+
+     | Repo | Assignee |
+     |---|---|
+     | sc-saas-backend | Aman Kabra |
+     | sc-saas-admin | Sandeep |
+     | sc-saas-frontend | Vishali Kashyap |
+     | sanchiconnect-saas-tenants | Nirmal Singh |
+     | ai-startups-analyzer | Nirmal Singh |
+     | sc-saas-3rdparty-webservices | Nirmal Singh |
+     | sanchiconnect-saas-tenants-admin | Nirmal Singh |
+
 8. Set the spec's `linear:` frontmatter field to the resulting Linear Project URL.
 Do NOT write application code. List ambiguities under Open questions and stop rather than guessing.
