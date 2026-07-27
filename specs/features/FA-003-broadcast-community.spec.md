@@ -15,20 +15,20 @@ admin_modules:
 backend_modules:
   - sc-saas-backend/src/modules/community-wall/module.spec.md
   - sc-saas-backend/src/modules/notifications/module.spec.md
-updated: 2026-06-18
+updated: 2026-07-27
 ---
 
 # FA-003: Broadcast & Community
 
 ## Summary
 
-The broadcast and community flow covers two distinct but related admin responsibilities: sending bulk outreach messages to segmented audiences (via email and optionally WhatsApp), and moderating the tenant's community wall (posts and comments). Both flows bypass the backend API entirely — audience resolution uses direct PDO queries against the client DB, message delivery uses PHPMailer (email) or the WATI REST API (WhatsApp) called directly from the admin PHP process, and community moderation deletes rows directly from the client DB. Access to the broadcast feature is controlled by a session variable rather than a `tenant_users` feature flag column.
+The broadcast and community flow covers two distinct but related admin responsibilities: sending bulk outreach messages to segmented audiences (via email, in-app chat, or a community wall post), and moderating the tenant's community wall (posts and comments). Audience resolution uses direct PDO queries against the client DB; community moderation deletes rows directly from the client DB, bypassing the backend API entirely. **Broadcast email delivery does not bypass the backend API** — corrected 2026-07-27, see below — the admin process calls `sc-saas-backend`'s `admin-actions/broadcast-ceo-message` route, which queues the send and dispatches it via `sc-saas-backend`'s own SES pipeline, not PHPMailer called directly from admin. Access to the broadcast feature is controlled by a session variable rather than a `tenant_users` feature flag column.
+
+> **Correction (2026-07-27, Linear SAN-57):** this document previously claimed WhatsApp was a broadcast delivery channel ("email and optionally WhatsApp," "up to 12 cURL calls to the WATI REST API for template-based WhatsApp delivery"). That was never true of the as-built code and has been removed throughout this document. `modules/broadcast_messages/create.php`'s delivery-channel checkboxes are Email/Chat Tool/Community Wall only (`value="email"|"chat"|"community_wall"`, confirmed `create.php:363-378`); its POST handler never branches on a `whatsapp` value, and `broadcast_messages.delivery_methods` has never stored one. The real WATI/`wati_functions.php` cURL code is genuinely live — but it powers a separate, unrelated feature: WhatsApp *template* management on the Developer settings screen (`modules/developer/whatsapp_management.php`, gated by `wa_enable`), not Broadcast Messaging's send flow. `sc-saas-admin/modules/outreach-communications/module.spec.md` already carries this correction (2026-07-17); this document was the one still out of date.
 
 ## Admin entry points
 
-**Broadcast creation — `modules/broadcast_messages/create.php`:** The admin user composes a message (subject, body, optional attachments), selects a delivery channel (email only, WhatsApp only, or both), and defines the audience. Audience can be segmented by industry, technology stack, program membership, or individual user selection. On submission, the message is stored in the client DB and delivery begins synchronously within the same request.
-
-**WhatsApp configuration — `modules/ajax/whatsapp_actions.php`:** Admin manages WATI integration credentials and template message names. This AJAX endpoint handles both reading and writing WATI settings to the `spa_settings` table in the client DB.
+**Broadcast creation — `modules/broadcast_messages/create.php`:** The admin user composes a message (subject, body, optional attachments), selects one or more delivery channels (Email, Chat Tool, Community Wall — no WhatsApp option exists), and defines the audience. Audience can be segmented by industry, technology stack, program membership, or individual user selection. On submission, the message is stored in the client DB and delivery begins synchronously within the same request.
 
 **Community wall posts — `modules/community_wall/feeds.php`:** Admin sees all posts across the tenant in a time-sorted feed. No audience filter is applied — the admin always sees the full wall. Each post row has a delete action.
 
@@ -38,11 +38,10 @@ The broadcast and community flow covers two distinct but related admin responsib
 
 **Broadcast flow:**
 
-1. **Client DB (read) — audience resolution:** Direct PDO query (not Medoo) using `JSON_CONTAINS()` against JSON columns in `tenant_users` (e.g., `industries`, `technologies`). For program-based segmentation, joins against `program_members`. The query is constructed dynamically based on the admin's filter selections. Results are a list of `user_id` + email + WhatsApp number tuples.
+1. **Client DB (read) — audience resolution:** Direct PDO query (not Medoo) using `JSON_CONTAINS()` against JSON columns in `tenant_users` (e.g., `industries`, `technologies`). For program-based segmentation, joins against `program_members`. The query is constructed dynamically based on the admin's filter selections. Results are a list of `user_id` + email tuples.
 2. **Client DB (write) — broadcast record:** Inserts a row into `broadcast_messages` with the message content, selected channels, audience parameters, and delivery status.
-3. **Client DB (write) — delivery log:** Inserts one row per recipient into a delivery log table (`broadcast_message_recipients` or equivalent) recording email/WhatsApp address and delivery status (pending → sent/failed).
-4. **External delivery — PHPMailer (email):** Admin PHP process calls PHPMailer for each recipient. SMTP credentials from `spa_settings`. Each email delivery updates the recipient's delivery log row.
-5. **External delivery — WATI API (WhatsApp):** `includes/wati_functions.php` fires up to 12 cURL calls to the WATI REST API for template-based WhatsApp delivery. WATI access token read from `spa_settings` unencrypted.
+3. **Client DB (write) — delivery log:** Inserts one row per recipient into `ses_email_queue` (email channel only) recording delivery status (pending → sent/failed).
+4. **External delivery — via `sc-saas-backend`, not PHPMailer direct-from-admin (corrected 2026-07-27):** `sendBroadcastEmail()` (`includes/core_functions.php:4127`) cURL-POSTs to `sc-saas-backend`'s `POST admin-actions/broadcast-ceo-message/:adminToken` (`create.php:1081`), passing the filtered recipient list and message content. The backend queues the send into `ses_email_queue` (keyed by `broadcast_message_id`) and a backend cron later drains it, calling out to `sc-saas-3rdparty-webservices`'s SES module (nodemailer SMTP) — not PHPMailer, and not synchronous within the admin request.
 
 **Community moderation flow:**
 
@@ -55,7 +54,7 @@ The broadcast and community flow covers two distinct but related admin responsib
 
 ## Backend API calls
 
-This flow makes no backend API calls. Broadcast delivery (email and WhatsApp) is handled entirely within the admin PHP process. Community moderation writes directly to the client DB. The backend's `community-wall` and `notifications` modules read from the same client DB, so admin-direct writes are immediately reflected in backend-served responses to frontend clients — but there is no API handshake and no event emitted to the backend on admin actions.
+**Corrected 2026-07-27:** broadcast email delivery *does* call the backend API — `POST admin-actions/broadcast-ceo-message` (see DB flow step 4 above) — contrary to this document's earlier claim of "no backend API calls." That route now also enforces a permission check (`canBroadcastMessages`, added 2026-07-27, Linear SAN-52) that didn't exist when this document was last updated. Community moderation is the flow that genuinely bypasses the backend API, writing directly to the client DB. The backend's `community-wall` and `notifications` modules read from the same client DB, so admin-direct writes are immediately reflected in backend-served responses to frontend clients — but there is no API handshake and no event emitted to the backend on moderation actions specifically.
 
 ## Feature flags
 
@@ -64,8 +63,7 @@ No `tenant_users` feature flag column governs access to broadcast or community m
 ## Auth & access
 
 - Admin must have an active PHP session.
-- **Broadcast:** Requires `$_SESSION['canbroadCastMessage']` to be truthy. This is a session-level permission, not a per-request role check. It is set at login time and persists for the session lifetime. A role change during an active session does not revoke broadcast access until the next login.
-- **WhatsApp configuration:** Requires role level 1 (super-admin). Writing WATI credentials via `whatsapp_actions.php` is gated on the role level check within the AJAX handler.
+- **Broadcast (admin UI):** Requires `$_SESSION['canbroadCastMessage']` to be truthy. This is a session-level permission, not a per-request role check. It is set at login time and persists for the session lifetime. A role change during an active session does not revoke broadcast access **from the admin UI's own page-level checks** until the next login — but see Known Issue 3, corrected 2026-07-27: the backend route itself now independently re-checks this permission on every request.
 - **Community moderation:** Requires role level 1 or 2. Post and comment deletion do not require a separate permission beyond the role level gate.
 
 ## Cross-repo impact
@@ -78,6 +76,6 @@ No `tenant_users` feature flag column governs access to broadcast or community m
 
 1. **`program_office` account type missing from comment author resolution:** In `modules/community_wall/comments.php`, comment author names are resolved by constructing a join table name as `account_type . "_id"` (e.g., `startup_id` → join `startups` table). The `program_office` account type does not follow this naming convention and has no corresponding entity table in the join map. When a `program_office` user has posted a comment, the author name resolves to null, and the comment displays with a blank or null author name in the admin view. There is no fallback and no error — the resolution fails silently.
 
-2. **WATI access token stored unencrypted in `spa_settings`:** The WATI API access token used for WhatsApp delivery is written to and read from the `spa_settings` table in plain text. Any admin user with direct client DB read access (via a MySQL client, a DB management tool, or any SQL injection in the admin panel itself) can extract the WATI access token and use it to send WhatsApp messages on behalf of the tenant's WATI account, access WATI contact lists, or exhaust the tenant's WATI message quota.
+2. ~~WATI access token stored unencrypted in `spa_settings`~~ — **out of scope for this spec, moved 2026-07-27.** This bug is real, but belongs to a separate, unrelated feature: WhatsApp *template* management on the Developer settings screen (`modules/developer/whatsapp_management.php` + `modules/ajax/whatsapp_actions.php`, gated by `wa_enable`), not Broadcast Messaging. WhatsApp is not, and has never been, a broadcast delivery channel — see the Summary correction above. Tracked wherever that feature's own module spec lives, not here.
 
-3. **Broadcast access persists across role changes within an active session:** The `canbroadCastMessage` session variable is set once at login and never re-evaluated during the session. If an admin user's role is downgraded (broadcast permission revoked) while they have an active session, they retain broadcast access until they log out. There is no session invalidation hook on role update.
+3. **Broadcast access persists across role changes within an active session — partially fixed 2026-07-27 (Linear SAN-52).** The `canbroadCastMessage` session variable is still set once at login and never re-evaluated during the session, so the admin UI itself may still show/hide the Broadcast button based on a stale permission. However, `sc-saas-backend`'s `admin-actions/broadcast-ceo-message` route (the actual send endpoint, see DB flow step 4) now independently checks `AdminUsersEntity.canBroadcastMessages` fresh on every request — a downgraded admin can no longer actually send, even if the UI hasn't caught up yet. The remaining gap is UI staleness only, not a real authorization bypass.
