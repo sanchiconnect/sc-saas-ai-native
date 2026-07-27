@@ -99,7 +99,7 @@ Branding is **per-tenant** — logos, colours, login/register customisation, pol
 
 Responsive layouts are required; the member frontend uses Bootstrap 5's responsive grid. Accessibility is present but ad-hoc: `aria-label`/`role` attributes appear ~234 times in the member frontend and ~285 times in the tenant admin — component-by-component effort, not a tracked conformance target. No WCAG level, audit, or acceptance criteria exists.
 
-> **GAP · U-2 — No accessibility standard.** There is no target conformance level, no component-level a11y specification, and no acceptance criteria. *Product + design to provide:* the accessibility target (if any) and its acceptance criteria.
+> **GAP · U-2 — decided 2026-07-27 (Linear SAN-59): explicitly deferred, not a current priority.** Product owner confirmed no WCAG conformance target is being set right now — the existing ad-hoc, component-by-component `aria-label`/`role` coverage stands as-is, with no tracked target or acceptance criteria. This is a stated decision, not an oversight; revisit if/when accessibility compliance becomes a real product priority.
 
 ## 10. Source Traceability
 
@@ -117,5 +117,7 @@ Consolidates **UI/UX v6** (philosophy, reference tokens, navigation, patterns, t
 **Note (resolved):** the frontend spacing/grid is documented (Bootstrap 5.1.3), and the net-new AI-Credits UI is fully specced (nine screens); the Bulk Email attachment UI is specced with its as-shipped control gaps tracked in `design.md` D-4.
 
 **Note (U-1, resolved 2026-07-27 — Linear SAN-58):** BS5-vs-BS4 and the CRUD-engine's inline styling are accepted as permanent (see §4). Only the `aic-` system's lack of shared stylesheet/breakpoints is being fixed, tracked separately as Linear SAN-68.
+
+**Note (U-2, resolved 2026-07-27 — Linear SAN-59):** explicitly deferred by product owner decision, not a current priority (see §9).
 
 *This completes the six-document canonical specification set: `program`, `design`, `knowledge`, `database`, `api`, `ui-ux`.*
