@@ -137,7 +137,7 @@ Solid edges are live runtime calls. `tenants ↔ tenants-admin` and `admin → t
 | Module | Purpose / Goal / Description |
 |---|---|
 | `auth` | Every entry point into/out of the platform — OTP login, registration variants, email verification, admin-backdoor mount. |
-| `admin-actions` | "Backdoor login" impersonation tool (`/backdoorlogin/:id/:uuid`). |
+| `admin-actions` | "Backdoor login" impersonation tool (`/backdoor-login/:id/:uuid`). |
 | `connection-request-action-email` | Generic "magic link" landing page for 8 different email-notification action types. |
 | `connection-approve-reject-page` | Public, token-less accept/reject landing page from an email link. |
 | `account` | Generic "Account Settings" area reused across every stakeholder type. |
