@@ -4,7 +4,7 @@
 **Consolidates:** the team's `contracts.api` declarations across the 26 feature specs (307 declared routes), `FT-005` (the as-built AI-credit routes), the tenant-verification contract (FT-002), the AI-analyzer service contract (FAI-001/002), and the `sc-saas-backend` steering file.
 **Positioning:** the endpoint, authentication, and contract layer — assembled from the team's feature specs (the authoritative route source).
 
-> Gaps are marked inline as **GAP · A-N** and collected in **§99** (forward-only). Route paths are the declared contract; field-level DTO schemas live in the code and the feature specs (A-1).
+> Gaps are marked inline as **GAP · A-N** and collected in **§99** (forward-only). Route paths are the declared contract; field-level DTO schemas live in the code and the feature specs — confirmed as the final scope decision, not an open gap (A-1, §99).
 
 ---
 
@@ -124,5 +124,9 @@ Consolidates the **team's `contracts.api` declarations** across the 26 feature s
 | A-2 | §7 | Bulk Email send action (`broadcast-ceo-message`) is ungated | A shipped write action with no permission gate | Product + team |
 
 **Note (resolved):** the AI-credit API is now documented (the seven as-built routes above), correcting the sprint-plan-guessed endpoints. **Note (architecture):** the credit subsystem's non-purchase operations have no API contract by design — the shared schema is the contract (`design.md` D-1 governs whether to change that).
+
+**Note (A-1, decided 2026-07-27 — Linear SAN-63):** full field-level DTO consolidation across all 307 routes is **formally deferred, not scheduled.** Neither repo's Swagger decoration is complete enough today for a clean OpenAPI export to be worth generating as-is — `sc-saas-backend` has zero `@ApiResponse` usage anywhere (response shapes entirely undocumented) and its single largest controller, `admin-actions.controller.ts` (50 route handlers), has zero `@ApiOperation`; `sanchiconnect-saas-tenants`'s `ai-credits` DTOs and controller are similarly undecorated. Hand-authoring the ~259 DTO classes across both repos into markdown was also considered and rejected: unlike a generated export, it would start drifting from the actual code the moment any DTO changes, with no automated way to catch it. Given Low/documentation-completeness priority, the cost of either path was judged to outweigh the benefit right now. This document's existing route-level-only scope (Section 1's "field-level DTO schemas live in the code and the feature specs") is confirmed as the final decision, not an interim gap awaiting closure.
+
+**Note (A-2, resolved 2026-07-27 — Linear SAN-52):** `sc-saas-backend`'s `admin-actions.service.ts` now enforces `AdminUsersEntity.canBroadcastMessages` on `broadcast-ceo-message` before sending, re-checked on every request rather than trusting a session flag set at login. The admin-side Bulk Email button is also now hidden client-side for admins without this permission, across all 6 places it appears.
 
 *Next: `ui-ux.md` — the design system(s), tokens, components, and screen catalogue.*
