@@ -36,6 +36,7 @@
    3.8 Content
    3.9 Administrative & Platform Services
    3.10 Facilities
+   3.11 AI Credits
 4. Data Dictionary
    4.1 Control Plane
    4.2 Identity & Stakeholder Profiles
@@ -50,6 +51,7 @@
    4.11 Content
    4.12 Administrative & Platform Services
    4.13 Facilities
+   4.14 AI Credits
 5. Referential Integrity & Relationship Summary
 6. Indexing & Performance Design
 7. Data Isolation (Multi-Tenancy)
@@ -94,6 +96,7 @@ As described in the TAD, the platform uses a **database-per-tenant** isolation m
 
 - The **control-plane schema** (Section 4.1) — shared across all tenants.
 - The **per-tenant business schema** (Sections 4.2–4.13) — structurally identical across every tenant, with each tenant holding its own independent set of rows in its own database instance.
+- **AI Credits (Section 4.14)** — also shared across all tenants like the control-plane schema, but scoped by a `domain` column rather than sharing the same two entities described in Section 4.1; see Section 7 for how its isolation model differs from both of the above.
 
 ### 2.3 Common Entity Conventions
 
@@ -246,6 +249,25 @@ The platform supports two parallel program models sharing the same underlying ev
                                        |
                                        v
                               Booking Add-ons
+```
+
+### 3.11 AI Credits
+
+Lives in the shared Control Plane database (like Section 4.1), not in a per-tenant business database — see Section 7 for how its isolation model differs from every other domain in this section.
+
+```
+   AI Credit Package (catalog) ----> AI Credit Order ----> AI Credit Transaction
+                                           |
+                                           v
+                                  AI Credit Invoice (GST)
+
+   AI Credit Wallet (one per tenant domain) <---- credited by ----- AI Credit Order (on payment success)
+        |                                  <---- credited by ----- AI Credit Grant (promo/support/referral)
+        |                                  <---- debited by  ----- AI Credit Ledger (RESERVE -> DEBIT/REFUND entries)
+        v
+   AI Credit Ledger (full transaction history, one row per credit/debit/reserve/refund)
+
+   AI Credit Task Rate (catalog: credits charged per analyzer task type)
 ```
 
 ---
@@ -431,6 +453,21 @@ Attribute lists below focus on business-meaningful fields; the common convention
 | **Facility Meta Answer** | A facility's answer to a facility-type meta question. | Answer value | N..1 Facility, Meta Question |
 | **Facility Rating Criteria** | Rating criteria applicable to a facility type. | Name, description, active flag | N..1 Facility Type |
 
+### 4.14 AI Credits
+
+Lives in the shared Control Plane database, scoped by a `domain` column rather than a per-tenant database (see Section 7) — the platform's prepaid credit system for billing `ai-startups-analyzer` usage. Full cross-repo detail (the three independent writers, the purchase/reserve/settle/refund lifecycle, open commercial-model questions): `specs/features/FT-005-ai-credits-system.spec.md`.
+
+| Entity | Purpose | Key Attributes | Related Entities |
+|---|---|---|---|
+| **AI Credit Wallet** | One row per tenant domain — the current balance and reservation state. | Domain (unique), balance, reserved balance, total purchased, total granted, total consumed | 1..N AI Credit Ledger entries; credited by AI Credit Order, AI Credit Grant |
+| **AI Credit Ledger** | Full transaction history — one row per credit/debit/reserve/refund event against a wallet. | Domain, credit type (CREDIT/DEBIT/RESERVE/REFUND), source type (PURCHASE/ANALYSIS/GRANT/RESERVE/REFUND), source reference, credits amount, balance after, LLM cost metadata (model, provider, token counts, USD cost), task type, applicant count, package snapshot | N..1 AI Credit Wallet (via domain); references the originating Order, Grant, or analysis run via source reference |
+| **AI Credit Package** | A purchasable credit bundle (catalog). | Name, credits, price (INR, optional USD), description, highlight feature, active/featured flags, display order | 1..N AI Credit Order |
+| **AI Credit Order** | A checkout order for a credit package purchase. | UUID, domain, package snapshot, credits ordered, amount (INR/USD), currency, payment gateway, gateway transaction ID, order status (created/attempted/paid/failed/expired), buyer billing details (name, email, phone, address, GSTIN), tax breakdown (CGST/SGST/IGST, grand total) | N..1 AI Credit Package; 1..N AI Credit Transaction; 1..1 AI Credit Invoice |
+| **AI Credit Transaction** | An individual payment capture/failure/refund event against an order. | Order reference, domain, gateway payment ID & signature, gateway response payload, status (captured/failed/refunded), amount (INR/USD) | N..1 AI Credit Order |
+| **AI Credit Invoice** | A GST invoice generated on successful payment. | Order reference, domain, invoice number (unique) & date, currency, base amount, tax rates & amounts (CGST/SGST/IGST), total amount, buyer billing details, generated file reference, payment status | N..1 AI Credit Order |
+| **AI Credit Grant** | A non-purchased credit grant (onboarding/promotional/support/referral/other) credited to a wallet. | UUID, domain, credits, grant type, reason, promo reference, expiry (defined but never enforced — see FT-005), granted-by, acknowledgement timestamp | Credits an AI Credit Wallet; produces an AI Credit Ledger entry |
+| **AI Credit Task Rate** | Catalog defining how many credits an analyzer task type costs. | Task type (ai_analysis/ai_thesis_generation/ai_rescore/ai_source_refresh, unique), rate mode (fixed_per_unit/cost_multiplier — cost_multiplier defined but not yet consumed by any reserve/settle call site, see FT-005/SAN-21), credits per unit, cost multiplier, description, updated-by | Consulted when reserving/settling credits for an analysis run |
+
 ---
 
 ## 5. Referential Integrity & Relationship Summary
@@ -456,6 +493,7 @@ Attribute lists below focus on business-meaningful fields; the common convention
 - Every business entity described in Section 4.2 onward exists once per tenant, within that tenant's own database instance — there is no tenant-identifier column threaded through business tables, because isolation is achieved structurally (separate databases) rather than by row-level filtering.
 - The Control Plane schema (Section 4.1) is the sole exception: it is intentionally shared across all tenants, as its purpose is to hold the configuration that identifies and describes each tenant.
 - A small number of platform capabilities are deliberately cross-tenant by design (for example, an intellectual-property/patent registry and certain ecosystem-wide facility listings, described in the FRS); these are explicitly modeled as shared reference data, distinct from the isolated per-tenant business schema described in this document.
+- **AI Credits (Section 4.14) is a third, distinct isolation pattern** — not the per-tenant-database model, and not read-only shared reference data. It lives in the shared Control Plane database and is scoped by a `domain` string column on every table, with isolation enforced by application-layer query filtering rather than by separate database instances. Three independently-deployed codebases (`sanchiconnect-saas-tenants` via TypeORM on the purchase path only, plus `sc-saas-admin` and `sanchiconnect-saas-tenants-admin` via direct Medoo/raw-PDO writes for every other mutation) write to these same tables with no shared validation layer — see `specs/features/FT-005-ai-credits-system.spec.md` for the full architectural picture and the team's decision to accept this as permanent.
 
 ---
 
@@ -486,7 +524,8 @@ Attribute lists below focus on business-meaningful fields; the common convention
 | Content | 4 |
 | Administrative & Platform Services | 16 |
 | Facilities | 12 |
-| **Total** | **~109** |
+| AI Credits | 8 |
+| **Total** | **~117** |
 
 ### Appendix B — Glossary
 
