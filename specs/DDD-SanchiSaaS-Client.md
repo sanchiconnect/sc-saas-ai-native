@@ -187,6 +187,8 @@ The platform supports two parallel program models sharing the same underlying ev
    Chat Message (supports threaded replies)
 
    Event ---> Event Attendee (User)
+
+   Broadcast Message (admin-sent, segmented audience) ---> Email Queue Entry (per-recipient delivery log)
 ```
 
 ### 3.6 Commercial
@@ -370,6 +372,8 @@ Attribute lists below focus on business-meaningful fields; the common convention
 | **Chat Conversation** | A private or group messaging thread. | Conversation type, name, creator, members/admins list, last message reference | N..1 User (creator); 1..N Messages, Members |
 | **Chat Conversation Member** | Membership record for a user in a group conversation. | (Join record) | N..1 Chat Conversation, User |
 | **Chat Message** | A single message within a conversation, supporting threaded replies. | Sender, message content, message type, metadata, read-by tracking, edited flag, reply count | N..1 Chat Conversation, User (sender) |
+| **Broadcast Message** | An outbound bulk message sent by an administrator to a segmented audience — covers both the dedicated Broadcast Messaging feature and the Application Review Board's Bulk Email action (distinguished by `module_type`). | Sending administrator, audience filters (geography, receiver user types/profile statuses, industries, technologies, programs, application programs), delivery methods, title, message body, denormalized total-receivers count, module type, header image, single-attachment field (Broadcast Messaging's own feature), multi-file attachments manifest (JSON array — original filename, MIME type, size, storage key, inline-vs-link delivery mode, link expiry, malware-scan status; added for the Bulk Email Attachments feature, see `specs/features/FA-003-broadcast-community.spec.md` and `sc-saas-admin/specs/features/bulk-email-attachments/database.md`) | References the sending administrator; 1..N Email Queue Entry (per-recipient delivery log) |
+| **Email Queue Entry** | A single queued/sent email dispatch record — one per recipient for a Broadcast Message, and also used for other system emails (invitations, reviewer assignments) not tied to a broadcast. | To/from/reply-to, subject, email type, invitation code & validity window (invite emails only), registration tracking, email data payload, HTML content, send status (pending/sent/failed), delivery/bounce/open timestamps, gateway response payload, broadcast-message reference (nullable) | N..1 Broadcast Message (nullable — not every queue entry originates from a broadcast) |
 
 ### 4.9 Commercial
 
@@ -518,14 +522,14 @@ Lives in the shared Control Plane database, scoped by a `domain` column rather t
 | Connections | 3 |
 | Community Wall | 8 |
 | Meetings & Events | 7 |
-| Messaging | 3 |
+| Messaging | 5 |
 | Commercial | 8 |
 | Learning Management | 16 |
 | Content | 4 |
 | Administrative & Platform Services | 16 |
 | Facilities | 12 |
 | AI Credits | 8 |
-| **Total** | **~117** |
+| **Total** | **~119** |
 
 ### Appendix B — Glossary
 
