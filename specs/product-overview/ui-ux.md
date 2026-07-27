@@ -37,10 +37,10 @@ There is **no single unified design system**; each surface has its own styling a
 
 | Surface | Styling system |
 |---------|----------------|
-| `sc-saas-frontend` (member) | **Bootstrap 5.1.3** (stock) — 5 breakpoints, a 6-step spacer scale; per-tenant branding overlaid |
-| `sc-saas-admin` (tenant admin) | A Bootstrap-4-era theme |
-| `sanchiconnect-saas-tenants-admin` (operator) | Generic CRUD-engine (sparkAdminTpl) styling |
-| AI-Credits screens (both panels) | A self-contained `aic-`-prefixed CSS system, brand colour from `$_SESSION['primary_color']` |
+| `sc-saas-frontend` (member) | **Bootstrap 5.1.3** (stock) — 5 breakpoints (576/768/992/1200/1400), a 6-step spacer scale; per-tenant branding overlaid |
+| `sc-saas-admin` (tenant admin) | **Bootstrap 4.6.1** (vendored), 4 breakpoints (576/768/992/1200); generic CRUD-engine (`add.php`/`edit.php`/`table.php`) styling layered on top as per-template inline `<style>` blocks reusing the Bootstrap 4 grid, plus a single hardcoded 576px split of its own |
+| `sanchiconnect-saas-tenants-admin` (operator) | **The same vendored Bootstrap 4.6.1** as `sc-saas-admin` (byte-identical file) — confirmed 2026-07-27, correcting the "four systems" framing below: this is not a third distinct system, the two PHP admin panels are already unified with each other on Bootstrap version |
+| AI-Credits screens (both panels) | A self-contained `aic-`-prefixed CSS system, brand colour from `$_SESSION['primary_color']` — confirmed 2026-07-27: redefined inline per-page across ~14 template files in both panels (no shared stylesheet), with **zero responsive breakpoints of its own** (fixed-layout, non-responsive) |
 
 ### 4.1 Reference palette (UI/UX v6, member surface)
 | Token | Value | Usage |
@@ -59,7 +59,7 @@ System sans-serif (Inter/Roboto); H1 24–28px Bold `#222`; H2 18–20px Semi-bo
 ### 4.3 Frontend spacing/grid (Bootstrap 5.1.3)
 The member frontend's spacing and grid are stock Bootstrap 5.1.3: the five standard breakpoints and the six-step spacer scale. Four non-standard ad-hoc breakpoints exist in the app's own stylesheet as accumulated one-off fixes; future work should stick to the five stock tiers.
 
-> **GAP · U-1 — No unified cross-surface design system; ad-hoc breakpoints on the frontend.** The four surfaces use four different styling systems (Bootstrap 5, Bootstrap 4, CRUD-engine, `aic-`), and the member frontend carries four off-scale breakpoints. The member frontend's tokens are now documented; the others are not reconciled. *Team + design to decide:* whether to unify (or deliberately keep separate), and to remove the ad-hoc breakpoints.
+> **GAP · U-1 — decided 2026-07-27 (Linear SAN-58).** The Bootstrap 5 (frontend) vs. Bootstrap 4 (both admin panels, already unified with each other) split is **formally accepted as permanent** — the two surfaces are genuinely different tech stacks (Angular SPA vs. PHP+jQuery) serving different audiences (end-users vs. platform/tenant operators); unifying them would mean rewriting one stack into the other for a purely cosmetic goal with no functional bug behind it, not a real design-system migration. The CRUD-engine's per-template inline styling is also accepted as-is — low risk, no functional problem, high migration cost relative to benefit (372 + 47 template files across both admins). **The one piece worth fixing is the `aic-` system**, which is a genuine, cheap-to-fix inconsistency rather than a deliberate architectural difference: it has zero responsive breakpoints at all (fixed-layout pages sitting inside otherwise-responsive Bootstrap-4 admin panels) and is redefined inline across ~14 files with no shared stylesheet. Filed as a separate follow-up (per this issue's own acceptance criteria: migration scoped as its own work, not built here) — see Linear SAN-68: extract `aic-` into one shared stylesheet per admin repo, adopting the existing Bootstrap 4 breakpoint scale (576/768/992/1200) both panels already use everywhere else.
 
 ## 5. Navigation & Layout
 
@@ -99,7 +99,7 @@ Branding is **per-tenant** — logos, colours, login/register customisation, pol
 
 Responsive layouts are required; the member frontend uses Bootstrap 5's responsive grid. Accessibility is present but ad-hoc: `aria-label`/`role` attributes appear ~234 times in the member frontend and ~285 times in the tenant admin — component-by-component effort, not a tracked conformance target. No WCAG level, audit, or acceptance criteria exists.
 
-> **GAP · U-2 — No accessibility standard.** There is no target conformance level, no component-level a11y specification, and no acceptance criteria. *Product + design to provide:* the accessibility target (if any) and its acceptance criteria.
+> **GAP · U-2 — decided 2026-07-27 (Linear SAN-59): explicitly deferred, not a current priority.** Product owner confirmed no WCAG conformance target is being set right now — the existing ad-hoc, component-by-component `aria-label`/`role` coverage stands as-is, with no tracked target or acceptance criteria. This is a stated decision, not an oversight; revisit if/when accessibility compliance becomes a real product priority.
 
 ## 10. Source Traceability
 
@@ -115,5 +115,9 @@ Consolidates **UI/UX v6** (philosophy, reference tokens, navigation, patterns, t
 | U-2 | §9 | Accessibility standard and target undefined | No conformance level or acceptance criteria | Product + design |
 
 **Note (resolved):** the frontend spacing/grid is documented (Bootstrap 5.1.3), and the net-new AI-Credits UI is fully specced (nine screens); the Bulk Email attachment UI is specced with its as-shipped control gaps tracked in `design.md` D-4.
+
+**Note (U-1, resolved 2026-07-27 — Linear SAN-58):** BS5-vs-BS4 and the CRUD-engine's inline styling are accepted as permanent (see §4). Only the `aic-` system's lack of shared stylesheet/breakpoints is being fixed, tracked separately as Linear SAN-68.
+
+**Note (U-2, resolved 2026-07-27 — Linear SAN-59):** explicitly deferred by product owner decision, not a current priority (see §9).
 
 *This completes the six-document canonical specification set: `program`, `design`, `knowledge`, `database`, `api`, `ui-ux`.*
