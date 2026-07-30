@@ -82,9 +82,9 @@ Work is driven by specs, not ad-hoc prompts. Two kinds:
 
 Flow: `/from-linear <id>` or `/spec-new feature <id>` → `spec-author` drafts (and creates a Linear Project + one Todo issue per affected repo) → you approve → `/spec-implement <id>` → `spec-implementer` builds in dependency order, running `/audit-contract`, `/trace-flag`, `/check-isolation` as gates before `in-review`, moving each repo's Linear issue Todo → In Progress → In Review → Done as work actually happens. Every issue created this way carries a severity (Linear's native Priority field), a repo badge label (the `Repo: *` group), and an assignee from a fixed repo→developer mapping — set once at creation and never touched by later state-only updates; `spec-implementer`/`bug-fix` must never edit a repo other than the one an issue is labeled for. Templates: `specs/feature.spec.template.md`, `specs/module.spec.template.md`. For a narrowly-scoped bug fix or small enhancement that doesn't need a spec, use `/bug-fix` instead — flat Linear issue in the team backlog, no project. See `specs/spec-authoring-practices.md` for the underlying practices (check code before proposing new entities, evidence-tag claims, name cross-repo contract impact, Linear tracking, severity/labels/assignee).
 
-### Standing process — every task/issue follows this loop (adopted 2026-07-27, confirmed mandatory 2026-07-30)
+### Standing process — every task/issue follows this loop (adopted 2026-07-27, branching step reversed 2026-07-30)
 
-Per **"The SanchiConnect Way · Book Two: The Developer Guide"** (by Prabs; `~/Desktop/SanchiConnect-Developer-Guide.pdf`), **every** Linear issue worked in this workspace — feature or bug fix, no exceptions — goes through this 10-step loop, not just the spec-driven feature path:
+Per **"The SanchiConnect Way · Book Two: The Developer Guide"** (by Prabs; `~/Desktop/SanchiConnect-Developer-Guide.pdf`), **every** Linear issue worked in this workspace — feature or bug fix, no exceptions — goes through this loop, not just the spec-driven feature path:
 
 1. **Orient** on the Linear issue — read it, understand what's actually being asked.
 2. **`/from-linear <id>`** — pull the issue into a governing spec.
@@ -92,14 +92,14 @@ Per **"The SanchiConnect Way · Book Two: The Developer Guide"** (by Prabs; `~/D
 4. **Resolve open design questions** — any `[DESIGN DECISION PENDING]` is routed to the product owner (business questions) or dev lead (technical questions). Never invent an answer.
 5. **Run the matching contract check** — `/trace-flag` (flags), `/audit-contract` (API/DTO), `/check-isolation` (tenant-scoped queries).
 6. **Write tests first.** Currently blocked workspace-wide: the guide's referenced "guardian" skill doesn't exist here yet. Until it does, substitute the strongest verification actually available (type-check, lint, existing test suite, manual repro) and say explicitly that automated test coverage wasn't added.
-7. **Branch off `ai_native_setup`** — one branch per repo touched, before editing, not after.
+7. **Work directly on `ai_native_setup`** — no dedicated feature branch per task (reversed 2026-07-30, see below).
 8. **`/spec-implement <id>`** — the actual development.
 9. **Verify** against tests/acceptance criteria, then update module specs + Gap Register + Linear issue states.
-10. **PR into `ai_native_setup` → lead review → merge → close.**
+10. **Commit and push straight to `ai_native_setup`** (no PR/merge step) once the user confirms — close the Linear issue.
 
-**For a narrowly-scoped bug fix or small enhancement that doesn't need a full feature spec, use `/bug-fix`** (flat Linear issue, no project) as the lightweight variant of this same loop — but steps 1, 5–7, and 9 still apply: orient on the issue, run the relevant contract check, branch per repo before editing, and update Linear state + specs when done. "Lightweight" means skipping the feature-spec document and Gap Register ceremony for genuinely small changes, not skipping branching or verification.
+**For a narrowly-scoped bug fix or small enhancement that doesn't need a full feature spec, use `/bug-fix`** (flat Linear issue, no project) as the lightweight variant of this same loop — but steps 1, 5, 6, and 9 still apply: orient on the issue, run the relevant contract check, verify, and update Linear state + specs when done. "Lightweight" means skipping the feature-spec document and Gap Register ceremony for genuinely small changes, not skipping verification.
 
-This applies retroactively as the bar going forward: a multi-issue fix pass (e.g. triaging a batch of bug reports) must still branch per repo and update Linear state per issue — it does not get a blanket exemption just because it's several small fixes rather than one large feature.
+**Branching policy (corrected 2026-07-30, overrides the original "branch per repo before editing" step):** do **not** create a dedicated feature branch for routine tasks/fixes, including multi-issue batches. Per explicit user instruction: *"don't create new branches for every new task. direct commit and push the changes on ai_native_setup because i have no idea what's merged and what's pending. i am deployed the branch but changes not merged on ai_native_setup."* Constant branch-per-task proliferation made it impossible for the user to track what was actually merged vs. still pending, and caused a real gap between what's deployed and what's in `ai_native_setup`. Going forward: edit directly on `ai_native_setup`, commit, and push to `ai_native_setup` — no intermediate branch, no merge step — for ordinary bug fixes and small enhancements across any repo. Only create a separate branch when the user explicitly asks for one (e.g. a large feature they want reviewed in isolation before it lands). Commit/push still only happens when the user explicitly asks — this constraint is unchanged.
 
 ## Global guardrails
 
