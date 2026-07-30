@@ -82,6 +82,25 @@ Work is driven by specs, not ad-hoc prompts. Two kinds:
 
 Flow: `/from-linear <id>` or `/spec-new feature <id>` → `spec-author` drafts (and creates a Linear Project + one Todo issue per affected repo) → you approve → `/spec-implement <id>` → `spec-implementer` builds in dependency order, running `/audit-contract`, `/trace-flag`, `/check-isolation` as gates before `in-review`, moving each repo's Linear issue Todo → In Progress → In Review → Done as work actually happens. Every issue created this way carries a severity (Linear's native Priority field), a repo badge label (the `Repo: *` group), and an assignee from a fixed repo→developer mapping — set once at creation and never touched by later state-only updates; `spec-implementer`/`bug-fix` must never edit a repo other than the one an issue is labeled for. Templates: `specs/feature.spec.template.md`, `specs/module.spec.template.md`. For a narrowly-scoped bug fix or small enhancement that doesn't need a spec, use `/bug-fix` instead — flat Linear issue in the team backlog, no project. See `specs/spec-authoring-practices.md` for the underlying practices (check code before proposing new entities, evidence-tag claims, name cross-repo contract impact, Linear tracking, severity/labels/assignee).
 
+### Standing process — every task/issue follows this loop (adopted 2026-07-27, confirmed mandatory 2026-07-30)
+
+Per **"The SanchiConnect Way · Book Two: The Developer Guide"** (by Prabs; `~/Desktop/SanchiConnect-Developer-Guide.pdf`), **every** Linear issue worked in this workspace — feature or bug fix, no exceptions — goes through this 10-step loop, not just the spec-driven feature path:
+
+1. **Orient** on the Linear issue — read it, understand what's actually being asked.
+2. **`/from-linear <id>`** — pull the issue into a governing spec.
+3. **`/spec-new feature <id>`** (or edit the existing governing spec if one already covers it). For a narrowly-scoped bug fix, this collapses to `/bug-fix` instead — see below.
+4. **Resolve open design questions** — any `[DESIGN DECISION PENDING]` is routed to the product owner (business questions) or dev lead (technical questions). Never invent an answer.
+5. **Run the matching contract check** — `/trace-flag` (flags), `/audit-contract` (API/DTO), `/check-isolation` (tenant-scoped queries).
+6. **Write tests first.** Currently blocked workspace-wide: the guide's referenced "guardian" skill doesn't exist here yet. Until it does, substitute the strongest verification actually available (type-check, lint, existing test suite, manual repro) and say explicitly that automated test coverage wasn't added.
+7. **Branch off `ai_native_setup`** — one branch per repo touched, before editing, not after.
+8. **`/spec-implement <id>`** — the actual development.
+9. **Verify** against tests/acceptance criteria, then update module specs + Gap Register + Linear issue states.
+10. **PR into `ai_native_setup` → lead review → merge → close.**
+
+**For a narrowly-scoped bug fix or small enhancement that doesn't need a full feature spec, use `/bug-fix`** (flat Linear issue, no project) as the lightweight variant of this same loop — but steps 1, 5–7, and 9 still apply: orient on the issue, run the relevant contract check, branch per repo before editing, and update Linear state + specs when done. "Lightweight" means skipping the feature-spec document and Gap Register ceremony for genuinely small changes, not skipping branching or verification.
+
+This applies retroactively as the bar going forward: a multi-issue fix pass (e.g. triaging a batch of bug reports) must still branch per repo and update Linear state per issue — it does not get a blanket exemption just because it's several small fixes rather than one large feature.
+
 ## Global guardrails
 
 - **Never commit secrets.** `.env`, key material, credentials stay out of git. (Exception: `sc-saas-backend/cloudfront-*.pem` is intentional and required — leave it.)

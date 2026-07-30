@@ -1,6 +1,6 @@
 # SanchiSaaS — Workspace Knowledge (as-is synthesis)
 
-Last updated: 2026-07-14
+Last updated: 2026-07-30
 
 This is a **synthesis document**, not a fresh code-extraction pass. Its source material is the seven
 per-repo `knowledge.md` files (plus spot-checked `api.md`/`database.md`/`design.md`), all completed earlier
@@ -476,8 +476,179 @@ unauthenticated WebSocket gateway, and `sc-saas-frontend`'s `admin-actions` impe
 
 ---
 
+## 12. Observability rollout (2026-07-28 → 2026-07-30) — Sentry across all 7 repos, a real multi-week downtime incident it surfaced, and a full 39-issue triage pass
+
+This week added the workspace's first error-tracking/observability layer, on top of which a genuine production
+incident was found and fixed, followed by a systematic bug-fixing pass over every issue it surfaced. This
+section is the map of what now exists and how it was built — read it before assuming "no monitoring exists"
+(true before this week) or before re-investigating any of the specific bugs listed below (already root-caused
+and fixed).
+
+**a. Sentry.io rollout.** One Sentry organization (`sanchisaas`, `sanchisaas.sentry.io`), one project per repo
+(7 total, matching the workspace's repo list). Errors + Performance are live on all 7; the structured Logs
+pillar only exists on the two repos whose stack can run the v8+ SDK mainline (`@sentry/nestjs`, Node ≥18) —
+everywhere else (`sc-saas-backend`, `sc-saas-3rdparty-webservices` on Node 16; both PHP admin repos;
+`sc-saas-frontend` on Angular 13) uses the older `@sentry/node@7`/`sentry/sentry` SDKs, which have no Logs API,
+so a `CaptureConsole`-equivalent integration (console.warn/error → Sentry Issues) substitutes for that pillar.
+A custom `SentryLoggerService` (NestJS repos) forwards only `logger.error()`/`.warn()` to Sentry — `.log()`
+(the `LOG_ENTER`/`LOG_EXIT` convention used ~360 places) stays console-only, so routine tracing never floods
+the Sentry quota. Every `Sentry.init()`/`\Sentry\init()` across all 7 repos sets `sendDefaultPii: false` plus a
+`beforeSend`/`before_send` hook that scrubs known secret-key-name patterns from request data/headers/extra
+context — a deliberate hardening layer given this workspace's own confirmed plaintext-secret exposure paths
+(payment gateway credentials, per-tenant DB passwords, live API keys — see §6). Full env-var and Sentry-project
+detail lives in each repo's own `CLAUDE.md`/`knowledge.md`, not repeated here.
+
+**b. The rollout itself briefly broke production** (SAN-76 through SAN-85, ~2-3 weeks of real downtime/degradation
+before root cause was found) — three independent, unrelated dependency-vs-runtime mismatches, all surfaced or
+caused by the same rollout:
+- Two PHP repos (`sc-saas-admin`, `sanchiconnect-saas-tenants-admin`): `composer install` resolves against
+  whatever PHP version is on the *local machine running the install*, not the actual deployment target — a
+  version mismatch there silently installs incompatible package versions.
+- One Node repo: same failure mode, npm-side.
+- A `.env` var left blank (present but empty, not absent) passed Joi's `.optional()` check (which only
+  tolerates *absent*, not *empty-string*) without `.empty('')` — `SENTRY_DSN` silently stayed unset with zero
+  error, so `Sentry.init()` ran with an empty DSN and never sent anything, for both PHP admin repos before this
+  was caught (root cause underneath SAN-84/85).
+- `instrument.ts` must load `.env` itself (`import 'dotenv/config'` as the literal first line) — `Sentry.init()`
+  runs before NestJS's own `ConfigModule.forRoot()` ever executes, so without this the DSN is empty at init
+  time regardless of what's actually in `.env`.
+- An unanchored `.gitignore` pattern matched a nested vendor path on a case-insensitive filesystem (SAN-81),
+  separately.
+
+All of SAN-76 through SAN-85 are fixed and were pushed in earlier sessions this week (not part of this
+session's uncommitted work) — flagged here only so a future session doesn't re-diagnose a solved incident from
+scratch.
+
+**c. Sentry MCP connected** (`claude mcp add --transport http sentry https://mcp.sentry.dev/mcp`, then `/mcp` →
+Authenticate) — this is what made both the incident diagnosis and the 39-issue triage pass below possible
+without manual dashboard screenshots. Tools available: `find_organizations`/`find_projects`, `search_issues`,
+`get_sentry_resource` (full event detail: stack trace, HTTP request, tags), `update_issue`
+(resolve/resolvedInNextRelease/ignore/unresolved). **This connection is not durable across sessions** — it
+silently expired mid-session on 2026-07-30 (both Sentry and Linear MCP did) and needed manual re-authorization
+via `/mcp` before work could continue; a future session hitting `MCP server requires re-authorization` on
+either connector should treat that as expected/recoverable, not a sign the integration was removed.
+
+**d. All 39 then-unresolved Sentry issues were bulk-imported into Linear** (2026-07-30) as `SAN-87` through
+`SAN-125`, one Linear Project per Sentry project ("Sentry Issues: `<repo>`"), Sentry's severity mapped to
+Linear priority. **e. Then, in the same session, every one of those 39 issues was individually investigated
+and resolved** — root-caused against the real Sentry event payload (not guessed), fixed in code where the
+finding was a genuine bug, marked resolved/ignored/canceled in both Sentry and Linear with a comment explaining
+why, and Linear-Canceled (not code-fixed) where the finding was environmental/non-actionable noise rather than
+a defect. **All code changes were held as uncommitted working-tree changes through a full user review pass**
+(per [[feedback_commit_push]]), which itself caught two real regressions before they shipped: an `!empty()`
+guard in `sc-saas-admin` that would have blanked a legitimately-₹0 program amount (fixed to `isset()`), and an
+overly-broad `catch` in `sc-saas-frontend` that silently swallowed genuine backend 500s alongside the expected
+404 (narrowed to only silence the 404 case). After that review, every fix was committed to a dedicated branch
+per repo (`fix/sentry-logger-error-object-gap` for `sc-saas-backend`, `fix/sentry-issues-2026-07-30` for the
+other three touched repos — see [[feedback_developer_guide_mandatory]] for why per-repo branching is now a hard
+rule, not optional), merged `--no-ff` into `ai_native_setup`, and pushed. All 30 code-fixed Linear issues moved
+to Done; the 3 environmental/non-actionable ones (SAN-109, SAN-122, plus the 3 `ai-startups-analyzer` ones)
+stayed Canceled; SAN-123 (HammerJS, needs a new npm dependency) stayed in Backlog on purpose. Patterns found,
+several recurring across multiple repos:
+
+- **`sc-saas-backend` (10 issues, all resolved).** `SentryLoggerService.error(msg, err)` was dropping the
+  `Error` object before forwarding to Sentry — fixed to use `captureException` when one is present, so future
+  backend errors actually carry a stack trace. Five separate cron jobs (`meeting-reminder`,
+  `pending-program-application-reminder`, `startup-recommendation-to-investor`, `connection-remainder-2`,
+  `milestone-notifications`) crashed on unguarded access after a `LEFT JOIN` that can legitimately return null
+  (a deleted user, a startup owned by a team-member sub-account, a startup with no financials/pitch-deck yet)
+  — one of these (`meeting-reminder`) never marked the record processed on failure, so it retried and re-failed
+  every ~4 minutes forever (332+ events); all five fixed with null-guards, and the permanent-data-problem cases
+  now mark themselves handled instead of retrying. `GlobalExceptionFilter` was forwarding *every* exception to
+  Sentry including deliberately-thrown 4xx `HttpException`s (a normal "not found" 404 is not a bug) — fixed to
+  only forward `statusCode >= 500`, closing 4 issues at once. `FetchCountGateway.handleConnection()` registered
+  a new `server.engine.on('initial_headers'/'headers', ...)` listener on *every client connection*, an
+  unbounded EventEmitter leak — fixed by moving registration to `afterInit()` (fires once). One genuine
+  environmental one-off (S3 `SignatureDoesNotMatch`, single local-env occurrence, likely clock skew) and two
+  AWS-SDK deprecation console notices (non-actionable, ignored forever in Sentry) needed no code fix.
+- **`sc-saas-admin` + `sanchiconnect-saas-tenants-admin` (9 issues combined, all resolved).** Both PHP admin
+  repos' `Sentry\init()` had no `error_types` set, so the SDK wrapped *every* PHP error level — including
+  routine `E_WARNING`/`E_NOTICE`/`E_DEPRECATED` from normal rendering — into a full "error"-severity Sentry
+  issue; fixed with an explicit `error_types` exclusion in both repos, closing most of these at once. Behind
+  that noise, `sc-saas-admin` had 4 genuine first-party template bugs (unguarded nested array access, a
+  `foreach()` on a `false` value, two unguarded `$this->amount[...]` reads inconsistent with every sibling field
+  in the same file) — all fixed to match this repo's own established `sparkAdminTpl`-has-no-`__isset` /
+  local-var-first convention. **The most consequential single finding of this whole pass**: `sc-saas-admin`'s
+  "Too many connections" DB-exhaustion issue was actually `.git` reconnaissance scanning — the `.htaccess`
+  rewrite rule only skips requests matching an *existing* file/dir, so a probe for a non-existent git ref fell
+  through to `index.php`, whose bootstrap opens a DB connection before routing even determines it's a 404; high
+  request-volume scanning this way exhausted the connection pool. Fixed by blocking dotfile/dotdir paths with a
+  403 at the `.htaccess` level, before PHP or the DB are ever touched (excluding `/.well-known/` so ACME
+  renewal isn't broken). **Flagged directly for you, not resolved by this pass**: if `.git` was actually
+  readable (not just probed) before this fix, a full commit-history extraction may have succeeded — worth
+  confirming from web-server access logs, which this session had no access to.
+- **`sc-saas-frontend` (17 issues, all resolved).** The highest-volume single bug this pass found (291 events,
+  plus 3 duplicate-grouped variants Sentry hadn't merged): `DynamicFormPreviewComponent`'s template gated
+  rendering on `*ngIf="formObject"`, but `formObject` is set synchronously while `dynamicFormGroup` (the actual
+  `FormGroup` used by every `[formGroup]` binding and `getFormValues()`) is only built afterward, behind an
+  `await`-loop fetching field options — a real timing window rendered the form before its own FormGroup
+  existed. Fixed with one gate change: `*ngIf="formObject && dynamicFormGroup"`. Also found: an `ngOnDestroy`
+  calling `.unsubscribe()` on a `Subject` before `.complete()` (throws `ObjectUnsubscribedError` — RxJS's
+  correct teardown is `.next()` + `.complete()`, no `.unsubscribe()` on the subject itself, confirmed against
+  the correct pattern already used elsewhere in this same repo); a backdoor-login flow with no error handling
+  at all (a missing route param resolves to the literal string `'null'`, always 404s, and left users stuck on
+  a "Logging in..." spinner forever); an async API-response-details method with zero try/catch that treated a
+  normal "no application yet" 404/null response as a crash, called from 6 unguarded sites; a `notificationsCount`
+  template accessed without the `?.` safe-navigation operator already used correctly two lines above it in the
+  same file; an investor-list `.map()` crashing on the same class of empty-join-result bug found independently
+  in `sc-saas-backend` that same session. Two issues were **traced but deliberately not code-fixed**: an NG0100
+  `ExpressionChangedAfterItHasBeenCheckedError` is provably a dev-mode-only diagnostic (Angular's
+  double-check-and-compare pass that throws it is disabled by `enableProdMode()`, confirmed active only when
+  `environment.production` is true, and every event here is tagged `environment: local`) — no evidence it ever
+  reaches a real production build; a `status: 0` HTTP failure is a genuine network-layer blip (CORS/DNS/reset),
+  not a code defect. One (`NgxImageCropper`/HammerJS pinch-gesture warning) was left open in Linear Backlog on
+  purpose — real fix needs a new npm dependency (`hammerjs` + `HammerModule` wiring), out of scope for a
+  bug-fixing pass, your call whether it's worth adding.
+- **`ai-startups-analyzer` (3 issues, all closed, no code fix).** All three were the same known, pre-existing,
+  deferred local-dev MySQL connectivity issue (see [[project_ai_analyzer_specs_done]]) — Sentry-ignored
+  (`untilEscalating`, so a genuine regression would still surface) and Linear-Canceled with that context.
+
+**What this enables next** (not yet done, listed so a future session doesn't have to rediscover the
+opportunity): the `error_types` fix pattern applied to both PHP admin repos this pass is a genuinely reusable
+finding — worth a quick check of whether any *other* Sentry-instrumented repo has the same "capturing
+everything, including expected noise" problem before it accumulates 39 more issues. The async-timing bug class
+found in `sc-saas-frontend` (`*ngIf` gated on a proxy field instead of the actual dependency) is a pattern worth
+a targeted sweep across the other ~50 dynamic-forms-adjacent components in that repo, since this pass only
+looked at the ones with filed Sentry issues, not the whole surface area. The `.git`-exposure fix in
+`sc-saas-admin` should be spot-checked against the other 6 repos' web-server configs — none of them were
+audited for the same rewrite-rule gap this session, since the bug was found via a specific Sentry event, not a
+systematic scan.
+
+---
+
 ## Change Log
 
+- 2026-07-30 (final update this day) | The §12 Sentry fix pass shipped: after a full review pass (which caught
+  2 real regressions before commit — see §12), all 4 touched repos' fixes were committed to a dedicated
+  per-repo branch, merged `--no-ff` into `ai_native_setup`, and pushed — `sc-saas-backend`
+  (`fix/sentry-logger-error-object-gap` → `4084661f`), `sc-saas-admin` (`fix/sentry-issues-2026-07-30` →
+  `a5e4ad79`), `sanchiconnect-saas-tenants-admin` (`fix/sentry-issues-2026-07-30` → `2b2e1ac`),
+  `sc-saas-frontend` (`fix/sentry-issues-2026-07-30` → `5da9e5cf`). All 30 code-fixed Linear issues moved
+  Backlog/In Review → Done to match. §12's body text above is updated to reflect this shipped state rather
+  than "uncommitted."
+- 2026-07-30 (later same day) | User confirmed the 10-step Developer Guide loop (§77-93 of the workspace
+  `CLAUDE.md`'s "Specs" section, adopted 2026-07-27) is mandatory for **every** task/issue, not just
+  spec-driven feature work — prompted directly by this session's own Sentry 39-issue fix pass (§12) not
+  fully following it (no per-repo branches for 3 of 4 repos touched, no automated tests added, no Gap
+  Register update). Codified into `CLAUDE.md` with an explicit "Standing process" subsection spelling out
+  all 10 steps and clarifying that the lightweight `/bug-fix` path still requires branching-per-repo and
+  Linear-state updates — "lightweight" only exempts the feature-spec document and Gap Register ceremony, not
+  verification or version control hygiene. Also clarified this applies to batch fix passes (many small
+  issues in one session), not just single large features — no blanket exemption for volume.
+- 2026-07-30 | Added §12 — full Sentry.io observability rollout across all 7 repos (errors/perf on all,
+  structured Logs only where the SDK supports it, CaptureConsole substitute elsewhere), the real multi-week
+  downtime incident it caused/surfaced (SAN-76→85, three independent PHP/Node dependency-vs-runtime
+  mismatches, already fixed in earlier sessions), the Sentry MCP connection (confirmed non-durable — expired
+  mid-session once already), the bulk import of all 39 then-unresolved Sentry issues into Linear
+  (SAN-87→125), and this session's full triage pass resolving every one of them — 22 real code fixes across
+  `sc-saas-backend`/`sc-saas-admin`/`sanchiconnect-saas-tenants-admin`/`sc-saas-frontend` (all uncommitted,
+  awaiting manual review), plus honest no-fix closures for genuinely non-actionable/environmental findings.
+  Single most consequential finding: `sc-saas-admin`'s DB-connection-exhaustion issue was actually `.git`
+  reconnaissance scanning exploiting a rewrite-rule gap — fixed, but full-history exposure isn't ruled out
+  and needs a manual web-server-log check this session couldn't perform. Listed 3 concrete next-step
+  opportunities the pass's findings point to but didn't cover (the `error_types`-noise pattern, the
+  async-timing-race pattern, and the `.git`-exposure pattern, each worth a wider sweep beyond just the repos
+  that happened to have a filed Sentry issue).
 - 2026-07-20 | Added §11 — closed the last remaining module-spec gaps workspace-wide (101 new
   `module.spec.md` files across 4 sessions: 38 in `sc-saas-admin`, 3 in `sc-saas-backend`, 52 in
   `sc-saas-frontend`, 2 in `sanchiconnect-saas-tenants`, 6 in `sanchiconnect-saas-tenants-admin`), and
