@@ -1,17 +1,17 @@
 # Onboarding — SanchiSaaS AI-Native Workspace
 
-This gets a teammate's machine to the same state as the reference workspace: the 7 product repos, plus the workspace-level Claude Code layer (root `CLAUDE.md`, `.claude/` commands & agents, `specs/`) that makes this an "AI-native" setup rather than a plain poly-repo checkout.
+This gets a teammate's machine to the same state as the reference workspace: **8 repos total** — the 7 product repos, plus this workspace-root repo (`sc-saas-ai-native`) carrying the Claude Code layer (root `CLAUDE.md`, `.claude/` commands & agents, `specs/`) that makes this an "AI-native" setup rather than a plain poly-repo checkout.
 
 **Read this in order — Part 1 is a hard prerequisite for Part 2 to make sense.**
 
 ---
 
-## Part 1 — Understand the two layers
+## Part 1 — Understand the layout
 
-1. **The 7 product repos.** Each is its own git repo with its own GitHub remote, versioned/deployed independently (poly-repo, not a monorepo). Normal `git clone` access.
-2. **The workspace-root orchestration layer.** `CLAUDE.md` (constitution), `.claude/commands/*.md`, `.claude/agents/*.md`, `.claude/hooks/`, `.claude/settings.json`, `specs/`, plus reference docs (`knowledge.md`, `design.md`, `database.md`, `api.md`, `README.md`, `AGENTS.md`, `AI-NATIVE-SETUP.md`). **This layer is intentionally NOT a git repo** — there is no remote to clone it from. It has to be copied to you directly (ask whoever set up the reference workspace to zip the workspace root — excluding the 7 repo subfolders, which are separately cloned — and send it to you, or check whether it's since been promoted to its own repo).
+1. **The 7 product repos** (`sanchiconnect-saas-tenants`, `sc-saas-backend`, `sc-saas-frontend`, `sc-saas-admin`, `ai-startups-analyzer`, `sc-saas-3rdparty-webservices`, `sanchiconnect-saas-tenants-admin`) — each its own git repo with its own GitHub remote, versioned/deployed independently (poly-repo, not a monorepo).
+2. **The workspace-root repo** (`sc-saas-ai-native`) — `CLAUDE.md` (constitution), `.claude/commands/*.md`, `.claude/agents/*.md`, `.claude/hooks/`, `.claude/settings.json`, `specs/`, plus reference docs (`knowledge.md`, `design.md`, `database.md`, `api.md`, `README.md`, `AGENTS.md`, `AI-NATIVE-SETUP.md`, `ONBOARDING.md` — this file). **This is a real, clonable git repo** — `git clone`s directly *as* the workspace root folder itself (not into a subfolder of it), and the 7 product repos then get cloned as subfolders *inside* it. Its own `.gitignore` already excludes those 7 subfolder names, so nesting independent git repos inside this repo's working tree is intentional, not an accident — each nested repo keeps its own separate `.git`, history, and remote.
 
-Don't skip layer 2 — without it you get a normal poly-repo checkout with no slash commands, no subagents, no cross-repo invariant docs, and no specs.
+Don't skip the workspace-root repo — without it you get a normal poly-repo checkout with no slash commands, no subagents, no cross-repo invariant docs, and no specs.
 
 ---
 
@@ -23,11 +23,19 @@ Don't skip layer 2 — without it you get a normal poly-repo checkout with no sl
 - GitHub access to the `sanchiconnect` org's repos below — request from whoever manages repo access if you don't have it yet.
 - Access to wherever your team stores secrets (`.env` values, DB creds, API keys) — **none of these are in git**, ask your team lead for the secure channel (vault / 1Password / etc.).
 
-### 2.2 Create the workspace folder and clone the 7 repos
+### 2.2 Clone the workspace-root repo *as* your working folder
 
 ```bash
-mkdir -p ~/Desktop/Work/SanchiSaaS && cd ~/Desktop/Work/SanchiSaaS
+git clone https://github.com/sanchiconnect/sc-saas-ai-native.git ~/Desktop/Work/SanchiSaaS
+cd ~/Desktop/Work/SanchiSaaS
+git checkout ai_native_setup
+```
 
+Note the clone target: `sc-saas-ai-native`'s content lands directly in `SanchiSaaS/` (as `CLAUDE.md`, `.claude/`, `specs/`, etc. sitting right there) — you're not cloning it into a nested subfolder.
+
+### 2.3 Clone the 7 product repos as subfolders inside it
+
+```bash
 git clone https://github.com/sanchiconnect/sanchiconnect-saas-tenants.git
 git clone https://github.com/sanchiconnect/sc-saas-backend.git
 git clone https://github.com/sanchiconnect/sc-saas-frontend.git
@@ -35,43 +43,42 @@ git clone https://github.com/sanchiconnect/sc-saas-admin.git
 git clone https://github.com/sanchiconnect/ai-startups-analyzer.git
 git clone https://github.com/sanchiconnect/sc-saas-3rdparty-webservices.git
 git clone https://github.com/sanchiconnect/sanchiconnect-saas-tenants-admin.git
+
+for d in sanchiconnect-saas-tenants sc-saas-backend sc-saas-frontend sc-saas-admin ai-startups-analyzer sc-saas-3rdparty-webservices sanchiconnect-saas-tenants-admin; do
+  (cd "$d" && git checkout ai_native_setup)
+done
 ```
 
-Each repo's active development branch is **`ai_native_setup`** (not `main`) — after cloning, check out that branch in each repo:
+Each of the 8 repos' active development branch is **`ai_native_setup`** (not `main`) — the commands above already check it out in all of them.
 
-```bash
-for d in */; do (cd "$d" && git checkout ai_native_setup); done
-```
-
-### 2.3 Drop in the workspace-root layer
-
-Once you have the layer-2 files (see Part 1), place them directly in `~/Desktop/Work/SanchiSaaS/` (the parent of the 7 repo folders), so the layout is:
+Resulting layout:
 
 ```
-SanchiSaaS/
+SanchiSaaS/                              ← this IS the sc-saas-ai-native repo's working tree
 ├── CLAUDE.md
 ├── AI-NATIVE-SETUP.md
+├── ONBOARDING.md
 ├── README.md, AGENTS.md, knowledge.md, design.md, database.md, api.md
-├── .gitignore
+├── .gitignore                           ← already excludes the 7 subfolder names below
 ├── .claude/
-│   ├── settings.json          ← keep as-is
-│   ├── settings.local.json    ← DO NOT copy this one; it's machine-specific, create your own (see 2.5)
+│   ├── settings.json                    ← committed, keep as-is
+│   ├── settings.local.json              ← gitignored/machine-specific; Claude Code creates yours as you go
 │   ├── commands/*.md
 │   ├── agents/*.md
 │   └── hooks/guard-sensitive-files.sh
 ├── specs/
-├── sanchiconnect-saas-tenants/       (cloned in 2.2)
-├── sc-saas-backend/                 (cloned in 2.2)
-├── sc-saas-frontend/                (cloned in 2.2)
-├── sc-saas-admin/                   (cloned in 2.2)
-├── ai-startups-analyzer/            (cloned in 2.2)
-├── sc-saas-3rdparty-webservices/    (cloned in 2.2)
-└── sanchiconnect-saas-tenants-admin/(cloned in 2.2)
+├── sanchiconnect-saas-tenants/           (separate repo, cloned in 2.3)
+├── sc-saas-backend/                     (separate repo, cloned in 2.3)
+├── sc-saas-frontend/                    (separate repo, cloned in 2.3)
+├── sc-saas-admin/                       (separate repo, cloned in 2.3)
+├── ai-startups-analyzer/                (separate repo, cloned in 2.3)
+├── sc-saas-3rdparty-webservices/        (separate repo, cloned in 2.3)
+└── sanchiconnect-saas-tenants-admin/    (separate repo, cloned in 2.3)
 ```
 
 ### 2.4 Per-repo dependencies and `.env`
 
-Each repo's own `CLAUDE.md` documents its exact run/build/test/lint commands. In short:
+Each of the 7 product repos' own `CLAUDE.md` documents its exact run/build/test/lint commands. In short:
 
 | Repo | Install | Env setup |
 |---|---|---|
@@ -90,7 +97,6 @@ Get the actual secret values from your team's secure channel — never from git,
 1. Open the **`SanchiSaaS/` root folder** (not a repo subfolder) in VS Code / your editor.
 2. Launch Claude Code from the root — accept the workspace-trust prompt so `.claude/settings.json`, commands, agents, and the hook activate.
 3. Start a **fresh session** after this — file-based commands/agents load at session start (`/agents` can load them interactively without a restart).
-4. `.claude/settings.local.json` is gitignored/machine-specific — you don't need to copy the reference one; Claude Code will create an empty one for you as you approve permissions on your own machine.
 
 ### 2.6 Authenticate the MCP connectors (per-person, cannot be shared)
 
@@ -102,10 +108,11 @@ This workspace uses two MCP connectors — **Linear** (issue tracking) and **Sen
 
 ### 2.7 Verify the setup
 
-- `/onboard` — should produce a platform summary reading all 7 repos' `CLAUDE.md` files without complaining anything is missing.
+- `/onboard` — should produce a platform summary reading all 7 product repos' `CLAUDE.md` files without complaining anything is missing.
 - Ask a real question referencing a Linear issue (e.g. "what's SAN-1 about?") — confirms the Linear connector.
 - Ask "what are the latest unresolved issues in the sc-saas-frontend Sentry project?" — confirms the Sentry connector.
-- Each repo: run its documented lint/build command from its own `CLAUDE.md` and confirm it passes clean on a fresh checkout.
+- Each product repo: run its documented lint/build command from its own `CLAUDE.md` and confirm it passes clean on a fresh checkout.
+- `git remote -v` from the `SanchiSaaS/` root should show `origin` pointing at `sc-saas-ai-native` — confirms you're set up to commit/push doc updates (`knowledge.md`, specs, etc.) back to the right place, same as any other repo in this workspace.
 
 ---
 
@@ -115,5 +122,6 @@ This workspace uses two MCP connectors — **Linear** (issue tracking) and **Sen
 - **Cross-repo subagents**: `cross-repo-reviewer`, `feature-flag-mapper`, `api-contract-auditor`, `tenant-isolation-reviewer`, `flag-impact-planner`, `spec-author`, `spec-implementer`.
 - **The spec system** (`specs/features/*.spec.md`, `<repo>/src/<module>/module.spec.md`) with per-repo master indexes.
 - **Guardrails**: a `PreToolUse` hook that blocks writes to secrets/keys and flags edits to flag-definition/API-contract files for a second look.
+- **`knowledge.md`** — the running narrative of what's been built/found/fixed across the whole workspace over time (read its Change Log at the bottom first for the most recent state).
 
-Full detail on all of the above lives in `AI-NATIVE-SETUP.md` and the root `CLAUDE.md` once you have them.
+Full detail on all of the above lives in `AI-NATIVE-SETUP.md` and the root `CLAUDE.md`, both already in this repo.
