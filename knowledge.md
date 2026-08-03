@@ -1,6 +1,6 @@
 # SanchiSaaS — Workspace Knowledge (as-is synthesis)
 
-Last updated: 2026-07-30
+Last updated: 2026-08-03
 
 This is a **synthesis document**, not a fresh code-extraction pass. Its source material is the seven
 per-repo `knowledge.md` files (plus spot-checked `api.md`/`database.md`/`design.md`), all completed earlier
@@ -616,8 +616,142 @@ systematic scan.
 
 ---
 
+## 13. Second Sentry wave (2026-07-31 → 2026-08-03) — a platform-wide live incident, ~90 more issues triaged, a real access-control gap closed, and a cross-2-repo CSS consolidation
+
+Picking up where §12 left off. §12 covered the Sentry rollout itself and its first 39-issue triage pass
+(SAN-87 through SAN-125). This section covers everything since: a second, larger Sentry sweep (36 newly
+unresolved issues at the time, filed as SAN-126 through SAN-221), a genuine live production incident found
+mid-sweep, and two unrelated pieces of debt cleared alongside it (SAN-27, SAN-68). As with §12, treat
+anything marked Done below as already root-caused and fixed — don't re-diagnose it.
+
+**a. `sc-saas-backend` (SAN-126, SAN-138, SAN-143, SAN-154, SAN-189, SAN-190, SAN-191/192/193, SAN-194,
+SAN-195/196 — all Done except SAN-189, parked Backlog).** Recurring theme: unguarded access after a
+`LEFT JOIN`/optional field can legitimately be null or absent, same class as §12's cron-job findings.
+`checkUsersOnline()` had an off-by-one (`<=` against `.length`) that read one element past the array end,
+producing `undefined`/empty values passed straight through to `sc-saas-3rdparty-webservices`'s comet-chat
+proxy — which is why one backend bug manifested as two different-looking Sentry issues in a downstream repo
+(SAN-195/196, both closed by the same one-line fix). `getProfileDataByEmailOfGuestUser` silently overwrote
+earlier form answers sharing a duplicate field label ("LinkedIn URL", "Other", etc.) — three separate Sentry
+issues (SAN-191/192/193), one root cause. **SAN-189 (Handlebars template parse error breaking the bulk
+pending-connection-reminder email) is a real functional bug, deliberately left in Backlog** — the crash was
+wrapped in try/catch so it fails gracefully instead of crashing the cron, but the underlying malformed email
+template still needs an admin-side content fix, out of scope for a code-only bug-fix pass.
+
+**b. `sc-saas-frontend` (the large majority of SAN-126–221 — dozens Done, several deliberately parked).**
+Same "optional chaining missing" pattern recurred across many components (`auth.guard`, dashboard-v2,
+startup-information edit, startup-public-profile-v2, investor-dashboard effects, startup-kit-detail,
+`getUserTypeArray`, multiple `*Fault` console.warn sites) — all fixed with `?.` guards matching the
+already-established convention elsewhere in each file. Confirmed-third-party/unfixable, closed without a
+code change after exhaustive grep-for-references verification: 8 "in-app-browser bridge" issues
+(SAN-197–204) — `iabjs://`-scheme errors from Instagram/Facebook/TikTok's injected in-app-browser JS, not
+this app's code. **Deliberately parked in Backlog, not fixed this pass:**
+- **SAN-158 (Urgent) — `thub.sanchidev.in` is serving a non-production Angular build** (`SENTRY_ENVIRONMENT:
+  local` in production traffic). Root cause narrowed to Jenkins bypassing this repo's npm build hooks
+  entirely (confirmed via an existing code comment in `generate-build-info.js`), but the actual Jenkins job
+  config isn't visible from this checkout — needs the CI/infra owner.
+- **SAN-159 — capture tenant-verification failures as a fingerprinted Sentry issue + alert rule.** Needs a
+  manual Sentry Alert Rule created in the dashboard UI, not something committable as code.
+- **SAN-150 (Low) — lightGallery running with the default/invalid license key** (`0000-0000-000-0000`)
+  platform-wide. Needs a licensing decision from whoever owns that vendor relationship, not a code fix.
+- **SAN-219 — recurring 404 on `/users/profile-types`** across multiple tenants, regressed. Investigation
+  pending SAN-158's Jenkins fix (suspected same root cause — a stale/dev build not carrying a route that
+  exists in the real source).
+- **SAN-221 — Sentry source-map upload wired up but not shipped.** `scripts/upload-sourcemaps.js` was
+  written and verified end-to-end against a real production build (real `.map` files generated, real
+  Sentry 401 on a fake token, correctly skips file deletion on failure) — but per SAN-158's finding above,
+  a `postbuild` npm hook alone won't run under this repo's actual CI, so this needs an explicit Jenkins
+  pipeline step + a real `SENTRY_AUTH_TOKEN` added to CI before it does anything in production. Also still
+  open: SAN-160–166 (NG0100 `ExpressionChangedAfterItHasBeenCheckedError`, all in Todo, likely blocked on
+  the same SAN-158 build-config investigation) and SAN-168–184 (17 webpack-dev-server compile-warning
+  events — confirmed dev-server-only noise, not production-relevant, left in Todo rather than closed since
+  they're harmless but not actioned either).
+
+**c. `sc-saas-admin` + `sanchiconnect-saas-tenants-admin` (SAN-127, SAN-136/137, SAN-155 — all Done).** Same
+`error_types`-noise class as §12. One genuine content-leak bug: `sc-saas-admin`'s auto-generate-AI-thesis
+flow forwarded the analyzer service's raw HTTP response body (including e.g. a raw nginx 502 HTML page)
+straight into the user-facing error message — fixed to show a generic message and log the raw body
+server-side instead.
+
+**d. `ai-startups-analyzer` (SAN-186, SAN-187 — Done).** A thesis-generation timeout and a Gemini quota
+error were both leaking the raw provider exception into the API response — fixed to return a generic
+message. **Separately confirmed (not a code bug):** the underlying Gemini quota exhaustion traces back to
+the linked Google Cloud Billing account being fully closed (not just a payment-method issue) — reopening it
+is a Google Cloud Console action outside what this session can do; flagged to the user directly.
+
+**e. The live incident — SAN-188, `verify_tenant` intermittent 504s across many tenants.** What first looked
+like a single-tenant issue (`hub.startupsingam.com`) turned out, on checking the raw Sentry event data
+directly rather than assuming, to be hitting many unrelated tenant hostnames simultaneously, including
+explicit 504 Gateway Timeouts — a platform-wide incident, not a one-off. Root cause: `global.service.ts`'s
+tenant-lookup query uses a **leading-wildcard `LIKE '%hostname%'`** on `tenant.customDomain`/`tenant.domain`,
+which cannot use a B-tree index (the wildcard prefix defeats index range-scanning), forcing a full table
+scan on every single tenant-verification request platform-wide. **Fix shipped (safe-first, user's explicit
+choice over the more invasive query-tightening option): added `@Index()` to `domain`, `customDomain`, and
+`active` on `TenantUsersEntity`** (`sanchiconnect-saas-tenants`, commit `f66114b`) — zero semantic change to
+the query itself, so this is a pure performance mitigation, not a behavior change. **The query logic itself
+(the leading-wildcard `LIKE`) is deliberately left untouched and SAN-188 stays in Backlog** — tightening it
+to an exact/anchored match is a real behavior change (could reject a currently-matching subdomain pattern)
+that needs a design decision, not a quick fix, and the same query is the suspected root cause of the
+still-open SAN-219 (frontend 404s) too. **Caveat on the index fix's durability:** every repo in this
+workspace has `synchronize: true` with no formal migrations (see §5) — a schema-touching deploy could
+silently drop this manually-added index on next restart; worth confirming this specific risk before
+treating SAN-188 as durably closed.
+
+**f. SAN-27 — a real access-control gap, closed.** `sc-saas-admin`'s `task_management` module
+(`list.php`/`create.php`/`edit.php`/`details.php`) checked only `checkLoggedIn()` — none of the four routes
+enforced the `task_management` tenant flag despite it existing and being read elsewhere (the dashboard
+widget). A tenant with the flag explicitly disabled had full CRUD access to the module anyway. Fixed by
+adding the repo's own established gate pattern (`if ($brandSettings['task_management'] == 0) { redirect to
+/403 }`) to all four handlers, verified via `php -l` + a targeted grep confirming none of the four files are
+`include()`d elsewhere as partials (ruling out an unexpected execution context for the new `exit()` call).
+**Residual, smaller gap left open on purpose:** the sidebar nav entry still has no `feature_key`, so a
+disabled tenant can still click into the module and land on `/403` — a missing UI affordance, not a missing
+enforcement, and out of SAN-27's scope. `sc-saas-admin/modules/task_management/module.spec.md` is updated to
+match (previously it documented the pre-fix state as an open "real gap" — now corrected).
+
+**g. SAN-68 — the `aic-` CSS system, deduplicated across 2 repos, with a genuine second-pass catch.** The
+`aic-` prefixed design system (built for AI Credits, reused in `finance_management`) was redefined inline,
+near-duplicated, across 14 templates in `sc-saas-admin` (4 files, byte-identical, clean extraction) and
+`sanchiconnect-saas-tenants-admin` (10 files, real drift: 5 different card-margin values, a font-size fork
+between `ai_credits`/`finance_management`, one outright class-name collision). Consolidated into one shared
+stylesheet per repo (`themes/default/assets/css/ai-credits-shared.css`, wired into each repo's existing
+`header.php` CSS-bundling array), with real 576/768/992/1200 breakpoints added (none existed before —
+confirmed via grep, only `@media print` rules existed anywhere in these files). Two things that are
+per-tenant PHP-templated (not static CSS) correctly stayed inline: the `:root{--aic-primary...}` color block,
+and — found only by reading the file's exact literal content rather than trusting a first-pass summary — a
+second, easy-to-miss dynamic rule (`.aic-mhd`'s modal-header gradient), refactored to consume a new
+`--aic-primary-75` CSS var so it too could become static. **A first review pass (selector-coverage only)
+looked clean; a second, property-by-property diff against every page's pre-edit declarations caught 3 real
+regressions the first pass missed** — a class-name collision leaking `uppercase`/`letter-spacing`/`display`
+into 6 form labels on one page, a wrong canonical CSS-variable pick in a shared modal rule, and one page's
+card-margin override that was simply forgotten. All three fixed and re-verified before shipping.
+`finance_management/invoice_view.php` was deliberately left untouched — a wholesale-forked design system
+(`--pc`/`iv-`/`inv-` naming, different alphas, uppercase badge suffixes), never a clean duplicate of the
+`aic-` system to begin with. **Lesson for future consolidation work in this workspace:** a selector-only
+diff is not sufficient to prove "nothing changed" — verify property-by-property against the pre-edit
+original, not just "does every class still resolve somewhere."
+
+**What's still open, for a future session to pick up rather than rediscover:** SAN-158/159/219/221 (frontend,
+all blocked on Jenkins/infra access this session didn't have), SAN-150 (licensing decision), SAN-188 (query
+redesign decision, index-only fix shipped), SAN-189 (admin-side email template content fix), SAN-140 (older
+MySQL connection-pool issue, needs an infra decision, parked in an earlier session), SAN-160–166 (NG0100,
+likely resolves alongside SAN-158), SAN-168–184 (webpack dev-noise, harmless).
+
+---
+
 ## Change Log
 
+- 2026-08-03 | Added §13 (second Sentry wave, 2026-07-31→2026-08-03): ~90 more Sentry-sourced issues triaged
+  (SAN-126–221) across all repos, the SAN-188 platform-wide `verify_tenant` 504 incident (root cause + a
+  safe-first index fix, query redesign deliberately deferred), SAN-27 (a real access-control gap in
+  `sc-saas-admin`'s `task_management` module, closed), and SAN-68 (the `aic-` CSS system deduplicated across
+  `sc-saas-admin` + `sanchiconnect-saas-tenants-admin`, including a second review pass that caught 3 real
+  regressions a first, selector-only pass had missed). Corrected `sc-saas-admin`'s
+  `modules/task_management/module.spec.md`, which had documented SAN-27's bug as an open "real gap" — it now
+  reflects the fix. This catch-up pass was itself prompted by a direct user question ("are you updated the
+  spec knowledge... what we have build in last 2 weeks?") that surfaced the gap: this document, all 7
+  `specs/*-module-specs-index.md` files, and an unknown number of individual module specs had drifted stale
+  against ~2 weeks of real commits (verified via `git log` across all 7 repos + a Linear query against actual
+  current issue states, not assumed from memory).
 - 2026-07-30 (final update this day) | The §12 Sentry fix pass shipped: after a full review pass (which caught
   2 real regressions before commit — see §12), all 4 touched repos' fixes were committed to a dedicated
   per-repo branch, merged `--no-ff` into `ai_native_setup`, and pushed — `sc-saas-backend`
