@@ -1,5 +1,5 @@
-# Workspace-root orchestration is local-only (poly-repo: each repo has its own .git).
-# Promote this root to its own repo later if you want to share the orchestration.
+# This root is its own repo (sc-saas-ai-native) — a poly-repo orchestration layer.
+# The 7 product repos below are separately cloned/versioned; never nest their history here.
 .DS_Store
 
 # Machine-specific Claude Code overrides
