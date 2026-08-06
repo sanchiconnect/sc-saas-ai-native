@@ -130,6 +130,7 @@ supplementary background. Bundled entries are marked **(legacy/combined)** below
 | certificate_builders | [module.spec.md](../sc-saas-admin/modules/certificate_builders/module.spec.md) | Visual template designer for certificates across 9 stakeholder types; writes design settings to `spa_settings`, paired with `certificates/` for issuance |
 | id_card_builders | [module.spec.md](../sc-saas-admin/modules/id_card_builders/module.spec.md) | Visual template designer for digital ID cards (startup-only, v1) — near-identical twin of `certificate_builders/` |
 | id_cards | [module.spec.md](../sc-saas-admin/modules/id_cards/module.spec.md) | Issuance side of the ID-card feature — bulk generate/revoke/reactivate/regenerate, reads defaults from `spa_settings` written by `id_card_builders/` |
+| onboarding_design | [module.spec.md](../sc-saas-admin/modules/onboarding_design/module.spec.md) | SAN-250 — per-tenant custom branding editor for all 10 onboarding screens (Login/Signup + 8 profile screens); same builder pattern as `certificate_builders`/`id_card_builders`, gated on `custom_onboarding_design_enabled` (read-only here, written only by `sanchiconnect-saas-tenants-admin`) |
 
 ---
 
