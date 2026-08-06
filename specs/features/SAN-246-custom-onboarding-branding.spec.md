@@ -94,6 +94,18 @@ lost or re-litigated:
   renamed from `DRAFT-custom-onboarding-branding.spec.md` to `SAN-246-custom-onboarding-branding.spec.md`.
   `status` intentionally left as `draft` — moving to `approved` remains an explicit call for the document
   owner.
+- **v15 (implementation pass, post-approval): logo cap raised back to 4.** Explicit ask from the
+  document owner during SAN-250 implementation — Decision #7 is amended, superseding v7's "up to 2"
+  (which had itself reduced v6's original "up to 4"). The fallback behavior from v7 is unchanged:
+  still plain marks (no light/dark variant, no gallery), still nothing renders when none of the slots
+  are uploaded. Only the count changed. Implemented end-to-end same-pass: backend (`onboarding_logo_3`/
+  `onboarding_logo_4` added to both the fresh-install seed and the per-boot backfill in
+  `AdminRepository`; `buildOnboardingDesignSettings()`'s `logos` shape extended to `logo1..logo4`),
+  admin (`onboarding_logo_3`/`_4` added to the seed/allowlist/remove-flag/SELECT sites in
+  `modules/onboarding_design/list.php`, "Up to 4 logos" copy), and frontend (`IOnboardingDesignLogos`
+  extended to 4 keys in `settings.model.ts`; `OnboardingLogoLockupComponent` reworked from 2
+  copy-pasted `<img>` tags to an `*ngFor` over the non-null subset, so a 3rd/4th mark doesn't need
+  hand-copied margin logic).
 
 ## Problem
 
@@ -151,9 +163,10 @@ one specific post-signup redirect, in that same flow, or not."
 5. **Background image constraints** — JPG, PNG, WebP, SVG; max 10MB (revised this pass, was 5MB). No
    fixed pixel dimension requirement at upload — see Decision #12.
 6. **Logo lockup scope** — one shared logo lockup across all 10 screens, not per-screen.
-7. **Logo count — up to 2 (final, resolved this pass).** Two independent, optional upload slots — no
-   variant concept, no gallery. **Empty-state rule: if neither slot is uploaded, the logo area renders
-   nothing at all** — no placeholder, no fallback to the platform's default logo asset. Logos are meant
+7. **Logo count — up to 4 (raised back from v7's "up to 2" in v15/SAN-250).** Four independent,
+   optional upload slots — no variant concept, no gallery. **Empty-state rule: if none of the slots
+   are uploaded, the logo area renders nothing at all** — no placeholder, no fallback to the platform's
+   default logo asset. Logos are meant
    to sit on top of a tenant's own uploaded hero background image, not to substitute for one; a tenant
    without a custom background hasn't set up custom logos either. Each screen still has its own
    visibility toggle for the cases where logos *are* uploaded but a specific screen shouldn't show them.
@@ -227,8 +240,8 @@ one specific post-signup redirect, in that same flow, or not."
       hero panel (logo-lockup visible, heading primary/accent text+color, reorderable body/bullet list
       with its own color + visible, background color + optional image) and form card (**background
       color only — no image field**, heading primary/accent text+color).
-- [ ] Up to 2 logo images make up the shared lockup, applied identically wherever the logo is shown; if
-      neither is uploaded, the logo area renders nothing — no placeholder, no default-logo fallback.
+- [ ] Up to 4 logo images make up the shared lockup, applied identically wherever the logo is shown; if
+      none are uploaded, the logo area renders nothing — no placeholder, no default-logo fallback.
 - [ ] The 8 profile screens render this branding **only** on the immediately-post-signup path, not when
       reached later from the dashboard for editing.
 - [ ] One global CTA color applies to every screen's buttons.
@@ -276,8 +289,8 @@ one specific post-signup redirect, in that same flow, or not."
   `imagekitUrlAppender` (same one `LogoRendererComponent` already uses) with resize params sized to the
   hero panel's actual rendered dimensions per breakpoint — per Decision #12, no fixed upload dimension
   is enforced; responsiveness is handled here, not at upload time.
-- **Logo rendering:** a small component reading up to 2 URLs from the global settings, rendered in slot
-  order. If both are absent, the component renders nothing — no markup, no reserved space, no fallback
+- **Logo rendering:** a small component reading up to 4 URLs from the global settings, rendered in slot
+  order. If all are absent, the component renders nothing — no markup, no reserved space, no fallback
   to the platform's default logo asset (that fallback still applies outside Custom mode, unchanged).
 - **The eight profile screens — new work, not extension:**
   - **Implementation note on Decision #11:** static route `data` (e.g. `data: { onboarding: true }` on
@@ -341,7 +354,7 @@ one specific post-signup redirect, in that same flow, or not."
 
 ## Test plan
 
-- tenants/backend/admin: unchanged in kind from v5, scaled to 10 screens and 2 logo slots.
+- tenants/backend/admin: unchanged in kind from v5, scaled to 10 screens and 4 logo slots (v15).
 - frontend: the route-context test (same component, `onboarding: true` vs. absent) remains the key new
   coverage, now across 8 profile components instead of 6; confirm the dashboard-editing path never picks
   up onboarding branding regardless of flag state.
