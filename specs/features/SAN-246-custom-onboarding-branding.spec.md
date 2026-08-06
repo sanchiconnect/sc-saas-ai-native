@@ -180,6 +180,15 @@ one specific post-signup redirect, in that same flow, or not."
     enforce the already-set format/size limits (Decision #5); responsive sizing per screen resolution is
     handled by appending the appropriate ImageKit transform params for the hero panel's rendered
     dimensions at each breakpoint, not by constraining what the tenant is allowed to upload.
+13. **Signup wizard scope — confirmed intentional (this pass).** "Signup" is the "I am" account-type
+    step specifically (Decision matches the reference screens). The hero panel and form-panel
+    background color are applied once at `register.component`'s top level and so persist across all 4
+    wizard steps (I am → Account Information → OTP → Completed) — but the heading override is passed
+    only to `<app-account-type>` (step 0). Steps 1–3 keep their own default heading text while the hero
+    image/logo and form background stay custom around them. Confirmed with the document owner this is
+    the desired behavior, not a gap: one consistent hero/background for the whole signup experience,
+    with the heading differing only on the one step the BRD's reference screens actually showed
+    branded.
 
 ## Corrections vs the BRD
 
