@@ -26,17 +26,7 @@ Convert a request into a feature spec using specs/feature.spec.template.md.
      | sanchiconnect-saas-tenants-admin | `Repo: Tenants-Admin` |
 
    - `priority`: judge severity for THAT repo's own slice of the work, never omit it or leave it at 0/None. Use: 1 (Urgent) if it touches one of the 6 cross-repo invariants (flag names, API contract, tenant-verification contract, auth, tenant scoping, the PowerPitch contract) or is otherwise blast-radius-critical; 2 (High) if it's a significant scoped feature; 3 (Medium) for routine, well-contained feature work (the default when genuinely unsure); 4 (Low) for small polish/follow-up items.
-   - `assignee`: the repo's fixed owner —
-
-     | Repo | Assignee |
-     |---|---|
-     | sc-saas-backend | Aman Kabra |
-     | sc-saas-admin | Sandeep |
-     | sc-saas-frontend | Vishali Kashyap |
-     | sanchiconnect-saas-tenants | Nirmal Singh |
-     | ai-startups-analyzer | Nirmal Singh |
-     | sc-saas-3rdparty-webservices | Nirmal Singh |
-     | sanchiconnect-saas-tenants-admin | Nirmal Singh |
+   - `assignee`: **ask the user who this project should be assigned to before creating any of its issues** (revised 2026-08-13 — no longer a fixed per-repo lookup). Whatever name they give goes on every issue in the project, single-repo or multi-repo — one project, one owner, decided by scope, not by which repo/stack each issue touches.
 
 8. Set the spec's `linear:` frontmatter field to the resulting Linear Project URL.
 Do NOT write application code. List ambiguities under Open questions and stop rather than guessing.
