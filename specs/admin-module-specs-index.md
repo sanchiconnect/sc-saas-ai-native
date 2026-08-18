@@ -190,7 +190,7 @@ supplementary background. Bundled entries are marked **(legacy/combined)** below
 
 | Module | Spec | Description |
 |---|---|---|
-| developer | [module.spec.md](../sc-saas-admin/modules/developer/module.spec.md) | Super-admin config cockpit — DDL, email/WhatsApp config, menu management, form-field/table-view mapping, settings management |
+| developer | [module.spec.md](../sc-saas-admin/modules/developer/module.spec.md) | Super-admin config cockpit — DDL, email/WhatsApp config, menu management, form-field/table-view mapping, settings management; now also SAN-315's `location_master_import.php` (SSRF-hardened direct-Medoo countries/states/districts/sub_districts/cities import, no backend route) |
 | system_logs | [module.spec.md](../sc-saas-admin/modules/system_logs/module.spec.md) | Read-only viewer over `spa_admin_logs`, populated opportunistically by ~90 modules calling `createAdminLogs()` — no central logging hook; includes an unrouted near-duplicate `list_aditya.php` |
 | profile_audit_logs | [module.spec.md](../sc-saas-admin/modules/profile_audit_logs/module.spec.md) | Read-only viewer of backend-written, field-level stakeholder profile change history |
 | task_management | [module.spec.md](../sc-saas-admin/modules/task_management/module.spec.md) | Internal ops to-do/ticketing tool for admin staff; backend's `TasksController` is an empty controller with no routes — all real reads/writes happen here via Medoo |
