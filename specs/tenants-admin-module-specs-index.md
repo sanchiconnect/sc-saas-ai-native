@@ -1,7 +1,7 @@
 ---
 type: index
 repo: sanchiconnect-saas-tenants-admin
-updated: 2026-07-20
+updated: 2026-08-18
 ---
 
 # Tenants-Admin Module Specs Index
@@ -12,7 +12,7 @@ Master index of all `sanchiconnect-saas-tenants-admin` module specs. This is the
 
 > **How to use:** When working on a module, read its spec first — it records owned files, DB access, known bugs, and security findings surfaced during spec authoring. When adding a handler or changing a table this panel touches, update the spec's frontmatter and `updated` date.
 
-**Coverage:** all 9 directories under `modules/` have a `module.spec.md` (`ai_credits`, `ajax`, `auth`, `aws`, `csv`, `developer`, `filemanager`, `finance_management`, `upload`) — full coverage, no gaps. `developer/_actions/` is an internal subdirectory of `developer` (one file, `_data_export_generate.php`) and is covered by that module's spec rather than having its own.
+**Coverage:** all 10 directories under `modules/` have a `module.spec.md` (`ai_credits`, `ajax`, `auth`, `aws`, `csv`, `developer`, `filemanager`, `finance_management`, `tenant_management`, `upload`) — full coverage, no gaps. `developer/_actions/` is an internal subdirectory of `developer` (one file, `_data_export_generate.php`) and is covered by that module's spec rather than having its own.
 
 ---
 
@@ -47,6 +47,14 @@ Master index of all `sanchiconnect-saas-tenants-admin` module specs. This is the
 | Module | Spec | Description |
 |---|---|---|
 | finance_management | [module.spec.md](../sanchiconnect-saas-tenants-admin/modules/finance_management/module.spec.md) | The **platform's own billing of tenants** for AI Credits purchases — GST/VAT tax profiles, invoice supplier settings, read-only invoice register against `ai_credit_orders`; not a port of `sc-saas-admin`'s member-facing `finance_management` (no shared code, tables, or contract) |
+
+---
+
+## Tenant Management
+
+| Module | Spec | Description |
+|---|---|---|
+| tenant_management | [module.spec.md](../sanchiconnect-saas-tenants-admin/modules/tenant_management/module.spec.md) | Self-contained List/Create/Edit/Detail module for tenant onboarding (SAN-363) — Clone Latest Tenant, grouped/searchable ~222-switch UI, atomic Organization+Tenant+Subscription creation, duplicate-domain guard, and a role-gated, audit-logged, upload-only SQL Script Runner scoped to exactly one tenant's own database; additive-only, does not touch the generic CRUD engine |
 
 ---
 
