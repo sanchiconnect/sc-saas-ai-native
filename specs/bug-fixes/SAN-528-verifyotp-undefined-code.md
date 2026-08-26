@@ -2,12 +2,12 @@
 id: SAN-528
 title: SignUpService.verifyOTP crash on undefined code before md5 hashing
 type: bug-fix
-status: in-progress
+status: done
 linear: https://linear.app/sanchiconnect/issue/SAN-528
 sentry:
   - SC-SAAS-FRONTEND-7Q
 repos: [frontend]
-commit: "n/a — uncommitted (working tree, branch ai_native_setup_vishali), pending user review before commit/push"
+commit: sc-saas-frontend@943385c9 (branch ai_native_setup_vishali, pushed to origin, not yet on ai_native_setup/main)
 created: 2026-08-26
 updated: 2026-08-26
 ---
@@ -24,4 +24,4 @@ Added a guard at the top of `verifyOTP()`: if `code` is missing, return a synthe
 None — no behavior change for the valid-input case; a missing code now surfaces as a clear "Please enter the OTP code" toast instead of a crash. Diff is 3 lines.
 
 ## Verification
-`tsc --noEmit` clean. No test suite configured for this repo; type-check + code-review against the existing `catchError` error-shape convention in the same file was the strongest verification available. Not yet committed/pushed — pending user review.
+`tsc --noEmit` clean. No test suite configured for this repo; type-check + code-review against the existing `catchError` error-shape convention in the same file was the strongest verification available. Committed (`943385c9`) and confirmed pushed to `origin/ai_native_setup_vishali`. Not yet on the shared `ai_native_setup` branch or `main`.
