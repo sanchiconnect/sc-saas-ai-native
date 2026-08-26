@@ -7,7 +7,7 @@ linear: https://linear.app/sanchiconnect/issue/SAN-527
 sentry:
   - SC-SAAS-FRONTEND-A8
 repos: [frontend]
-commit: sc-saas-frontend@0b862bb0 (branch ai_native_setup_vishali, not yet pushed to origin as of 2026-08-26)
+commit: sc-saas-frontend@0b862bb0 (branch ai_native_setup_vishali, pushed to origin)
 created: 2026-08-26
 updated: 2026-08-26
 ---
@@ -37,4 +37,4 @@ In all 3 files:
 None for the working case — the same text length drives the same UI; the value is now read from a stable field instead of re-querying the live Quill instance on every check, which is what removes the two-pass mismatch. Diff is the identical shape in all 3 files (field declaration, handler body, one line after patchValue).
 
 ## Verification
-`tsc --noEmit` clean across all 3 files. No test suite configured for this repo; type-check + code-review was the strongest verification available. Committed (`0b862bb0`) but not yet pushed to `origin/ai_native_setup_vishali` — checked via `git fetch` + `git rev-list --left-right --count`, local branch is 1 commit ahead of the remote.
+`tsc --noEmit` clean across all 3 files. No test suite configured for this repo; type-check + code-review was the strongest verification available. Committed (`0b862bb0`) and confirmed pushed to `origin/ai_native_setup_vishali`. Not yet on the shared `ai_native_setup` branch or `main`.
