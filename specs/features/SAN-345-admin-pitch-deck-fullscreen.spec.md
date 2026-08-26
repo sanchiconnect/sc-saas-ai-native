@@ -2,7 +2,7 @@
 id: SAN-345
 title: "Add Expand/Fullscreen CTA to Admin Panel Pitch Deck Viewer"
 type: feature
-status: approved
+status: done                     # implemented, verified (php -l + node --check + live smoke via local XAMPP), pushed to ai_native_setup_aman 2026-08-26
 linear: https://linear.app/sanchiconnect/project/san-345-add-expandfullscreen-cta-to-admin-panel-pitch-deck-viewer-4c6e600cc152
 owner: aman.k@sanchiconnect.com
 repos: [admin]
