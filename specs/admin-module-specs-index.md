@@ -157,6 +157,7 @@ supplementary background. Bundled entries are marked **(legacy/combined)** below
 | facilities | [module.spec.md](../sc-saas-admin/modules/facilities/module.spec.md) | Physical space booking — facility types, availability/pricing/add-ons/images/ratings, booking calendar, kiosk flow; soft-delete writes to both tenants and client DB |
 | partners | [module.spec.md](../sc-saas-admin/modules/partners/module.spec.md) | Partner (tenant sub-admin) self-service portal — token-exchange login, own scoped stakeholders/programs/team/photo-gallery, two-layer tenant + partner_id scoping |
 | recruitment-partners | [module.spec.md](../sc-saas-admin/modules/recruitment-partners/module.spec.md) | Recruiter-facing job pipeline view gated by an admin role (not a partner-organisation login) — `job_applications.partner_id` actually stores an admin_user_id |
+| partner_domain_branding | [spec.md](../sc-saas-admin/modules/partner_domain_branding.spec.md) | SAN-388 Hub/Spoke — Domain & Branding iframe tab on partner-detail.php; sets a partner's Spoke subdomain (`partners.abbreviation`) + white-label branding. Writes `partner_branding` via Medoo (NOT the backend's partner-JWT-only write routes) and pushes the spoke hostname to the cockpit's CORS registry |
 | partners-recruitment **(legacy/combined)** | [module.spec.md](../sc-saas-admin/modules/partners-recruitment/module.spec.md) | Predates the `partners`/`recruitment-partners` split; documents both partner types under one spec |
 
 ---

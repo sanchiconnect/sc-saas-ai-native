@@ -12,7 +12,7 @@ Master index of all `sanchiconnect-saas-tenants-admin` module specs. This is the
 
 > **How to use:** When working on a module, read its spec first — it records owned files, DB access, known bugs, and security findings surfaced during spec authoring. When adding a handler or changing a table this panel touches, update the spec's frontmatter and `updated` date.
 
-**Coverage:** all 10 directories under `modules/` have a `module.spec.md` (`ai_credits`, `ajax`, `auth`, `aws`, `csv`, `developer`, `filemanager`, `finance_management`, `tenant_management`, `upload`) — full coverage, no gaps. `developer/_actions/` is an internal subdirectory of `developer` (one file, `_data_export_generate.php`) and is covered by that module's spec rather than having its own.
+**Coverage:** all 11 directories under `modules/` have a `module.spec.md` (`ai_credits`, `ajax`, `auth`, `aws`, `cors_domain_management`, `csv`, `developer`, `filemanager`, `finance_management`, `tenant_management`, `upload`) — full coverage, no gaps. `developer/_actions/` is an internal subdirectory of `developer` (one file, `_data_export_generate.php`) and is covered by that module's spec rather than having its own.
 
 ---
 
@@ -54,7 +54,8 @@ Master index of all `sanchiconnect-saas-tenants-admin` module specs. This is the
 
 | Module | Spec | Description |
 |---|---|---|
-| tenant_management | [module.spec.md](../sanchiconnect-saas-tenants-admin/modules/tenant_management/module.spec.md) | Self-contained List/Create/Edit/Detail module for tenant onboarding (SAN-363) — Clone Latest Tenant, grouped/searchable ~222-switch UI, atomic Organization+Tenant+Subscription creation, duplicate-domain guard, and a role-gated, audit-logged, upload-only SQL Script Runner scoped to exactly one tenant's own database; additive-only, does not touch the generic CRUD engine |
+| tenant_management | [module.spec.md](../sanchiconnect-saas-tenants-admin/modules/tenant_management/module.spec.md) | Self-contained List/Create/Edit/Detail module for tenant onboarding (SAN-363) — Clone Latest Tenant, grouped/searchable ~222-switch UI, atomic Organization+Tenant+Subscription creation, duplicate-domain guard, and a role-gated, audit-logged, upload-only SQL Script Runner scoped to exactly one tenant's own database; additive-only, does not touch the generic CRUD engine. Since SAN-385, Create/Edit also sync the tenant's seven domain-shaped columns into the shared `cors_domains` registry |
+| cors_domain_management | [module.spec.md](../sanchiconnect-saas-tenants-admin/modules/cors_domain_management/module.spec.md) | Operator UI for the DB-backed CORS domain registry (SAN-385, part of the SAN-384 Hub/Spoke architecture) — List/Create/Edit over the cockpit-owned `cors_domains` table via direct Medoo, an explicit (never automatic) "Sync to PowerPitch & VideoSDK" push to the cockpit's orchestration endpoint, and a one-time, dry-runnable Hub/Spoke backfill that also generates missing partner `abbreviation` values inside each tenant's own database with per-tenant failure isolation |
 
 ---
 
