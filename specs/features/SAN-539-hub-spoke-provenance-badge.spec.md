@@ -294,12 +294,20 @@ deciding it.
 
 - Fixing the likely-dead `is_business_challenge === 1` / `=== "1"` type-comparison bug in `list.php`
   (Evidence #1) — pre-existing, unrelated to this spec's acceptance criteria, flagged for a separate ticket.
-- Badging a Hub-owned program (`partnerId IS NULL`) shared to a partner via `promoteWithPartners` with the
-  Hub's own name (Decision #3) — no local source for a tenant's own display name exists in `sc-saas-backend`
-  today without a new bootstrap field or a live cross-service call, both excluded by the resolved design
-  decision. Candidate follow-up: add `tenantName` to the cockpit's `getTenantSettings()` hand-maintained field
-  list (the same mechanism SAN-384 used to add `hub_spoke_domain_enabled`), then this boundary can close
-  without any further design change here.
+- ~~Badging a Hub-owned program (`partnerId IS NULL`) shared to a partner via `promoteWithPartners` with the
+  Hub's own name (Decision #3)~~ — **REOPENED 2026-08-31, day after ship**, via live testing: a Hub program
+  promoted to a spoke via "Promote program" never showed the badge on that spoke's own Programs page, which
+  turned out to be the primary scenario this whole feature was built for. The original assumption ("no local
+  source for a tenant's own display name exists") was wrong — Hub and every one of its spokes are the *same*
+  backend deployment (unlike Case 1's genuinely separate source tenant), so `AppConfigService.getBrandName`
+  already IS that name, no new bootstrap field or cross-service call needed. Implemented as Case 2b: a
+  Hub-owned row viewed by any partner/spoke session (`viewerPartnerId` supplied) is badged with the Hub's own
+  brand name — see `application-management/module.spec.md`. `getAllPublicPrograms()` also gained a `partnerId`
+  parameter it never had, resolved server-side from the request's spoke subdomain via
+  `PartnerSubdomainMiddleware`/`@ResolvedPartner()` (gated on `Feature.HUB_SPOKE_DOMAIN_ENABLED`), mirroring
+  `program-management.controller.ts`'s existing convention for the sibling `programs` module — this endpoint
+  has no session, so a client-supplied query param was never an option the way it is for the authenticated
+  `getAllPrograms()`.
 - Rendering the new fields in `call-for-applications-applied.component.html` ("My Applications") — different
   template structure (table, not card/ribbon); a real follow-up, not bundled in to keep this change's surface
   area contained to the one existing visual pattern it extends (Decision #4).
