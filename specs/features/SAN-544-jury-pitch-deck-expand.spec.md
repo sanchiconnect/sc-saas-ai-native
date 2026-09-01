@@ -2,7 +2,7 @@
 id: SAN-544
 title: Add Expand/Fullscreen CTA to Pitch Deck on Jury Rating/Feedback screens
 type: feature
-status: in-review
+status: done
 linear: https://linear.app/sanchiconnect/issue/SAN-544/sc-saas-admin-add-expandfullscreen-cta-to-pitch-deck-on-jury
 owner: aman.k@sanchiconnect.com
 repos: [admin]
@@ -40,8 +40,8 @@ already cover it.
       closed on.
 - [x] No changes to the rating/feedback form (score inputs, `data[comments]` textarea)
       that sits below the pitch deck panel on either screen.
-- [ ] Manual click-through as a logged-in jury user on both screens — pending user
-      verification in local (XAMPP) before merge/deploy.
+- [x] Manual click-through as a logged-in jury user on both screens — verified locally
+      (XAMPP, `admin.localhost`) 2026-09-01.
 
 ## Per-repo plan
 
