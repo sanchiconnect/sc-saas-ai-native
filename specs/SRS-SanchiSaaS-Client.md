@@ -306,6 +306,7 @@ The platform follows a **layered, service-oriented architecture**: distinct fron
 - **SR-5.3.1** Each tenant's business data shall reside in a logically isolated database, resolved at request time based on the tenant identified by the incoming request's domain.
 - **SR-5.3.2** A single, shared control-plane data store shall hold tenant identity, branding, and feature-configuration records, distinct from any tenant's business data.
 - **SR-5.3.3** No system component shall query or write to more than one tenant's business database within a single user-initiated request, except for the small set of platform-level cross-tenant directories (e.g. the intellectual property registry, ecosystem-wide facility listings) that are designed by intent to span tenants.
+- **SR-5.3.4** Within a single tenant, the system shall support a secondary, optional scoping layer ("spoke") for partner-branded sub-portals: connection, meeting, and program-visibility records shall be attributable to a spoke without weakening the tenant-level isolation of SR-5.3.1–SR-5.3.3, and a spoke's own administrative scope shall never extend to another spoke's or the platform's own data by default.
 
 ### 5.4 Deployment Model
 
@@ -347,6 +348,7 @@ The following describe the platform's design targets for system quality attribut
 - **SR-6.4.5** Administrative actions of consequence (approvals, financial transactions, data exports, configuration changes) shall be recorded in an audit trail identifying the acting administrator and the timestamp of the action.
 - **SR-6.4.6** File uploads shall be validated and stored using access-controlled, time-limited URLs rather than permanently public storage locations, except where content is intentionally designated public (e.g. a public profile photo).
 - **SR-6.4.7** The platform shall undergo periodic security review as part of its ongoing maintenance process, consistent with the terms of the service agreement.
+- **SR-6.4.8** A moderation or administrative action scoped to a spoke (SR-5.3.4) shall be authorized against the acting administrator's own spoke identity as resolved server-side, never against a client-supplied identifier, so that one spoke's administrator cannot act on another spoke's records by manipulating a request parameter.
 
 ### 6.5 Data Privacy & Compliance
 

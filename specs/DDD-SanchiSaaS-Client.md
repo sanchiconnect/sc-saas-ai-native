@@ -336,7 +336,7 @@ Attribute lists below focus on business-meaningful fields; the common convention
 
 | Entity | Purpose | Key Attributes | Related Entities |
 |---|---|---|---|
-| **Connection** | A connection request/relationship between two users. | Requester & recipient, account types, status, connection type, acceptance/rejection details, moderation state, linked group chat | N..1 User (requester), N..1 User (recipient) |
+| **Connection** | A connection request/relationship between two users. | Requester & recipient, account types, status, connection type, acceptance/rejection details, moderation state, linked group chat, owning spoke (`partner_id`, set only when both parties belong to the same spoke — records moderation ownership, not general visibility) | N..1 User (requester), N..1 User (recipient), optionally N..1 Partner (spoke) |
 | **Connection Global Policy Matrix** | Platform-wide default rules for whether two stakeholder types may search/connect. | Profile-type pair, search/connect permissions, moderation requirement, daily request limit | Standalone configuration entity |
 | **Connection User Policy Override** | A per-profile override of the global policy matrix. | Profile, target profile type, search/connect permissions, moderation requirement, request limit | N..1 the overriding stakeholder profile |
 
@@ -357,7 +357,7 @@ Attribute lists below focus on business-meaningful fields; the common convention
 
 | Entity | Purpose | Key Attributes | Related Entities |
 |---|---|---|---|
-| **Meeting** | A scheduled or proposed meeting between two users. | Title, location/tool type, status, meeting type, date/time, reschedule proposal, acceptance/rejection details, optional link to a job interview | N..1 User (creator), N..1 User (invitee); optionally N..1 Job Application; 1..N Meeting Notes |
+| **Meeting** | A scheduled or proposed meeting between two users. | Title, location/tool type, status, meeting type, date/time, reschedule proposal, acceptance/rejection details, optional link to a job interview, owning spoke (`partner_id`, set only when both parties belong to the same spoke — records moderation ownership, not general visibility) | N..1 User (creator), N..1 User (invitee); optionally N..1 Job Application, N..1 Partner (spoke); 1..N Meeting Notes |
 | **Meeting Notes** | A note taken about a meeting, optionally shared. | Note text, sharing scope | N..1 User, Meeting |
 | **Calendar Availability** | A user's configured availability for meeting scheduling. | Availability window configuration | 1..1 User |
 | **Meeting Feedback Question** | A configurable post-meeting feedback question. | Question text, position, mandatory flag, answer type | 1..N Feedback Answer |

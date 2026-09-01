@@ -341,6 +341,9 @@ Members can browse dedicated directories for each stakeholder type (startups, in
 **FR-3.7.7 — Global Search**
 A single search bar allows members to search across all stakeholder types, news, reports, and other content simultaneously.
 
+**FR-3.7.8 — Same-Spoke Auto-Connect**
+Where the platform is configured with partner-branded sub-portals ("spokes"), a connection request between two members who belong to the same spoke is accepted without requiring moderation review, by default. A tenant may opt to require moderation for same-spoke requests too, in which case that moderation is handled by the spoke's own partner administrator rather than the platform administrator (see FR-4.8.4).
+
 ### 3.8 Messaging
 
 **FR-3.8.1 — Direct Messaging**
@@ -397,6 +400,9 @@ Participants can submit structured feedback after a meeting concludes.
 
 **FR-3.10.7 — Availability & Calendar**
 Members can set their weekly availability for meeting scheduling and view a consolidated calendar of their meetings and registered events.
+
+**FR-3.10.8 — Same-Spoke Meeting Auto-Approval**
+Where the platform is configured with partner-branded sub-portals ("spokes"), a meeting requested between two members of the same spoke bypasses moderation review by default, mirroring FR-3.7.8's connection behavior; a tenant may opt back into moderating same-spoke meetings as well.
 
 ### 3.11 Content & Resource Library
 
@@ -639,6 +645,12 @@ Administrators can view all connection requests across the platform for support 
 **FR-4.8.3 — Connection Matrix Configuration**
 Administrators configure the platform-wide default connection, search, and moderation rules between every pair of stakeholder types, and can reset an individual profile's settings back to those defaults.
 
+**FR-4.8.4 — Spoke-Owned Meeting Moderation**
+Where same-spoke meeting moderation is enabled (FR-3.10.8), Accept/Reject authority over a same-spoke meeting belongs to that spoke's own partner administrator, not the platform administrator; the platform administrator retains moderation authority over every request that crosses spoke boundaries or involves a non-spoke member.
+
+**FR-4.8.5 — Partner Engagement Console**
+A partner administrator can view every connection and meeting involving their own spoke's members — including requests to or from members outside their spoke — through a dedicated Engagement section of their admin console, separate from and narrower in edit-rights than the platform administrator's own view.
+
 ### 4.9 Finance & Membership Administration
 
 **FR-4.9.1 — Membership Plan Configuration**
@@ -819,7 +831,9 @@ A platform operator manages the credit package catalogue (what a tenant can buy)
 
 ### 5.1 Multi-Tenancy & Branding
 
-The platform serves multiple independent client organizations from a shared application, with each tenant presenting its own domain, visual branding, and data — fully isolated from every other tenant.
+The platform serves multiple independent client organizations from a shared application, with each tenant presenting its own domain, visual branding, and data — fully isolated from every other tenant. Within a tenant, a partner may additionally operate its own branded sub-portal ("spoke") on a dedicated subdomain, presenting the same platform under that partner's own identity while remaining part of the tenant's shared data and ecosystem.
+
+A tenant may also rename the platform's core persona terminology (e.g. "Startups") to a word that better fits its own ecosystem, applied consistently across every page, menu, and search placeholder that references that persona.
 
 ### 5.2 Feature Configuration
 
