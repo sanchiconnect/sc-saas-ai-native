@@ -2,12 +2,12 @@
 id: SAN-723
 title: "programs-details-page crashes reading startupId off null CURRENT_USER on ngOnInit"
 type: bug-fix
-status: in-review
+status: done
 linear: https://linear.app/sanchiconnect/issue/SAN-723
 sentry:
   - SC-SAAS-FRONTEND-7M
 repos: [frontend]
-commit: not committed — fix applied in working tree on ai_native_setup_vishali, held pending Vishali's local verification
+commit: sc-saas-frontend@07320233 (branch ai_native_setup_vishali, pushed)
 created: 2026-09-09
 updated: 2026-09-09
 ---
@@ -41,4 +41,4 @@ this.startupId = this.modalHandler.CURRENT_USER?.startupId;
 ## Verification
 No existing `.spec.ts` covers either component (workspace-wide test blocker per CLAUDE.md — no `guardian` skill yet, so tests-first is substituted with the strongest available check). Ran `npx tsc --noEmit -p tsconfig.app.json` — clean, no errors. Manually traced every downstream use of `this.startupId` in `programs-details-page.component.ts` (`checkPricingDetails`, the `applicantId` payload field, `getPreviousOrder`) — all treat it as a plain passthrough value, so `undefined` behaves identically to `null`/the already-working case.
 
-**Not committed or pushed** — Vishali verifies locally first, per instruction. Linear moved to In Review (not Done). Sentry not touched for this issue (still unresolved/ongoing — will only be marked resolved once the fix is confirmed deployed, consistent with how the six already-fixed-but-undeployed issues in this same session were handled).
+Vishali verified locally, then committed and pushed as `sc-saas-frontend@07320233` on `ai_native_setup_vishali`. Linear moved to Done. Sentry SC-SAAS-FRONTEND-7M marked resolved with a comment referencing the commit — note this branch is still behind `main` (per the workspace's known frontend deploy lag, tracked separately in SAN-589), so the fix won't reach production until the next deploy.
