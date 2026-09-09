@@ -130,6 +130,7 @@ supplementary background. Bundled entries are marked **(legacy/combined)** below
 | certificate_builders | [module.spec.md](../sc-saas-admin/modules/certificate_builders/module.spec.md) | Visual template designer for certificates across 9 stakeholder types; writes design settings to `spa_settings`, paired with `certificates/` for issuance |
 | id_card_builders | [module.spec.md](../sc-saas-admin/modules/id_card_builders/module.spec.md) | Visual template designer for digital ID cards (startup-only, v1) — near-identical twin of `certificate_builders/` |
 | id_cards | [module.spec.md](../sc-saas-admin/modules/id_cards/module.spec.md) | Issuance side of the ID-card feature — bulk generate/revoke/reactivate/regenerate, reads defaults from `spa_settings` written by `id_card_builders/` |
+| onboarding_design | [module.spec.md](../sc-saas-admin/modules/onboarding_design/module.spec.md) | SAN-250 — per-tenant custom branding editor for all 10 onboarding screens (Login/Signup + 8 profile screens); same builder pattern as `certificate_builders`/`id_card_builders`, gated on `custom_onboarding_design_enabled` (read-only here, written only by `sanchiconnect-saas-tenants-admin`) |
 
 ---
 
@@ -156,6 +157,7 @@ supplementary background. Bundled entries are marked **(legacy/combined)** below
 | facilities | [module.spec.md](../sc-saas-admin/modules/facilities/module.spec.md) | Physical space booking — facility types, availability/pricing/add-ons/images/ratings, booking calendar, kiosk flow; soft-delete writes to both tenants and client DB |
 | partners | [module.spec.md](../sc-saas-admin/modules/partners/module.spec.md) | Partner (tenant sub-admin) self-service portal — token-exchange login, own scoped stakeholders/programs/team/photo-gallery, two-layer tenant + partner_id scoping |
 | recruitment-partners | [module.spec.md](../sc-saas-admin/modules/recruitment-partners/module.spec.md) | Recruiter-facing job pipeline view gated by an admin role (not a partner-organisation login) — `job_applications.partner_id` actually stores an admin_user_id |
+| partner_domain_branding | [spec.md](../sc-saas-admin/modules/partner_domain_branding.spec.md) | SAN-388 Hub/Spoke — Domain & Branding iframe tab on partner-detail.php; sets a partner's Spoke subdomain (`partners.abbreviation`) + white-label branding. Writes `partner_branding` via Medoo (NOT the backend's partner-JWT-only write routes) and pushes the spoke hostname to the cockpit's CORS registry |
 | partners-recruitment **(legacy/combined)** | [module.spec.md](../sc-saas-admin/modules/partners-recruitment/module.spec.md) | Predates the `partners`/`recruitment-partners` split; documents both partner types under one spec |
 
 ---
@@ -189,7 +191,7 @@ supplementary background. Bundled entries are marked **(legacy/combined)** below
 
 | Module | Spec | Description |
 |---|---|---|
-| developer | [module.spec.md](../sc-saas-admin/modules/developer/module.spec.md) | Super-admin config cockpit — DDL, email/WhatsApp config, menu management, form-field/table-view mapping, settings management |
+| developer | [module.spec.md](../sc-saas-admin/modules/developer/module.spec.md) | Super-admin config cockpit — DDL, email/WhatsApp config, menu management, form-field/table-view mapping, settings management; now also SAN-315's `location_master_import.php` (SSRF-hardened direct-Medoo countries/states/districts/sub_districts/cities import, no backend route) |
 | system_logs | [module.spec.md](../sc-saas-admin/modules/system_logs/module.spec.md) | Read-only viewer over `spa_admin_logs`, populated opportunistically by ~90 modules calling `createAdminLogs()` — no central logging hook; includes an unrouted near-duplicate `list_aditya.php` |
 | profile_audit_logs | [module.spec.md](../sc-saas-admin/modules/profile_audit_logs/module.spec.md) | Read-only viewer of backend-written, field-level stakeholder profile change history |
 | task_management | [module.spec.md](../sc-saas-admin/modules/task_management/module.spec.md) | Internal ops to-do/ticketing tool for admin staff; backend's `TasksController` is an empty controller with no routes — all real reads/writes happen here via Medoo |

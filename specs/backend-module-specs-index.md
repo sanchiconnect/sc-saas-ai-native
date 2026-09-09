@@ -1,12 +1,12 @@
 ---
 type: index
 repo: backend
-updated: 2026-07-19
+updated: 2026-08-13
 ---
 
 # Backend Module Specs — Index
 
-All 58 `sc-saas-backend` modules under `src/modules/` have a `module.spec.md`, plus 3 real bounded-context directories under `src/core/` (`zoho`, `upload-module`, `sockets` — the rest of `core/` is cross-cutting infra like `config`/`guards`/`entities`/`decorators`/`utils` and deliberately has no spec) — **61 specs total**. This index maps each to its spec, summarises its role, and flags security/quality notes surfaced during spec authoring.
+All 60 `sc-saas-backend` modules under `src/modules/` have a `module.spec.md` (up from 58 — `startup-recognition-id` and `public-portal` were added this pass, both new SAN-253/public-portal-work modules that previously had no spec coverage), plus 3 real bounded-context directories under `src/core/` (`zoho`, `upload-module`, `sockets` — the rest of `core/` is cross-cutting infra like `config`/`guards`/`entities`/`decorators`/`utils` and deliberately has no spec) — **63 specs total**. This index maps each to its spec, summarises its role, and flags security/quality notes surfaced during spec authoring.
 
 > **How to use:** When working on a module, read its spec first — it records owned routes, consumed flags, tenant-scoping mechanism, invariants, and known footguns. When adding a route or flag gate, update the spec's `owns` / `consumes` frontmatter and `updated` date.
 
@@ -29,7 +29,7 @@ All 58 `sc-saas-backend` modules under `src/modules/` have a `module.spec.md`, p
 |---|---|---|
 | `application-management` | [spec](../sc-saas-backend/src/modules/application-management/module.spec.md) | Form submission, review, and scoring pipeline. |
 | `form-management` | [spec](../sc-saas-backend/src/modules/form-management/module.spec.md) | Dynamic form builder and renderer. |
-| `program-management` | [spec](../sc-saas-backend/src/modules/program-management/module.spec.md) | Incubator program CRUD + payment reminders. `payment-reminder/:adminMd5` has admin-check commented out — fully unauthenticated write. |
+| `program-management` | [spec](../sc-saas-backend/src/modules/program-management/module.spec.md) | Incubator program CRUD + payment reminders. `payment-reminder/:adminMd5` has admin-check commented out — fully unauthenticated write. `updateRound()` now also triggers Startup Recognition ID generation (SAN-253) and drives `startup_reapplication_history`; a DI crash-loop from a missed provider registration (`CitiesRepository`/`DistrictsRepository`/`SubDistrictsRepository`) was fixed this pass. |
 | `program-office-members` | [spec](../sc-saas-backend/src/modules/program-office-members/module.spec.md) | POM stakeholder lifecycle + ecosystem sync. Circular dep with `EcoSystemModule` via `forwardRef`. |
 | `vs-programs-management` | [spec](../sc-saas-backend/src/modules/vs-programs-management/module.spec.md) | Venture Studio program rounds. Most `@Features(VENTURE_STUDIO)` annotations commented out. `getProgram` creates a DB row on every read. |
 
@@ -39,7 +39,8 @@ All 58 `sc-saas-backend` modules under `src/modules/` have a `module.spec.md`, p
 
 | Module | Spec | Notes |
 |---|---|---|
-| `startup` | [spec](../sc-saas-backend/src/modules/startup/module.spec.md) | Largest module (46 routes, 6 controllers). Pitch-deck, founders, funding, advisory board. `public/startup-information` uses unverified JWT for gating. |
+| `startup` | [spec](../sc-saas-backend/src/modules/startup/module.spec.md) | Largest module (44 routes, 6 controllers). Pitch-deck, founders, funding, advisory board, and (new SAN-253) self-service Digital ID Card fetch. `public/startup-information` uses unverified JWT for gating. |
+| `startup-recognition-id` | [spec](../sc-saas-backend/src/modules/startup-recognition-id/module.spec.md) | **New this pass.** Owns schema for Startup Recognition ID / Digital ID Card (SAN-253) — deliberately **no controller**; format config, Standard Geography, and Card templates are admin-configured tables `sc-saas-admin` reads/writes directly via Medoo. Only in-process behavior: round-entry ID generation, called from `program-management`. District/Sub-District segments are a live no-op today — no city has real district mapping data yet. |
 | `individual` | [spec](../sc-saas-backend/src/modules/individual/module.spec.md) | Individual stakeholder profile. |
 | `investor` | [spec](../sc-saas-backend/src/modules/investor/module.spec.md) | Investor profile and portfolio. |
 | `corporate` | [spec](../sc-saas-backend/src/modules/corporate/module.spec.md) | Corporate stakeholder profile. |
@@ -146,6 +147,14 @@ All 58 `sc-saas-backend` modules under `src/modules/` have a `module.spec.md`, p
 
 ---
 
+## Public Portal (external website)
+
+| Module | Spec | Notes |
+|---|---|---|
+| `public-portal` | [spec](../sc-saas-backend/src/modules/public-portal/module.spec.md) | **New this pass.** Read-mostly public API for an external, unauthenticated website (Quicklinks, Contacts, Events, Incubation Centers, Mentors, Startups, Registration/Recognition summaries + admin "flag for clarification" writes). Gated by `PublicPortalApiKeyGuard` (DB-stored key, fails closed) — no `Feature` flag involved at all. `buildAttachmentUrl()` (new) makes every image/attachment field a complete, ready-to-embed URL since the external site has no access to this app's own bootstrap endpoint. |
+
+---
+
 ## Platform Infrastructure
 
 | Module | Spec | Notes |
@@ -175,7 +184,7 @@ Most of `core/` is deliberately un-specced infra (config, guards, entities, deco
 
 | Module | Spec | Notes |
 |---|---|---|
-| `upload-module` (`core/`) | [spec](../sc-saas-backend/src/core/upload-module/module.spec.md) | Shared internal provider (no controller) centralising all S3 file I/O (`AmazonS3Service`, `UploadService`) plus an HTML→PDF renderer (`PdfRenderHtmlService`) used for invoice generation. Consumed by ~25 feature modules — the one shared upload path for the whole backend. Content-type derivation is inconsistent: fixed maps for documents/images but raw-extension-derived for video, despite an in-file comment saying that's unsafe. |
+| `upload-module` (`core/`) | [spec](../sc-saas-backend/src/core/upload-module/module.spec.md) | Shared internal provider (no controller) centralising all S3 file I/O (`AmazonS3Service`, `UploadService`) plus an HTML→PDF renderer (`PdfRenderHtmlService`) used for invoice generation. Consumed by ~25 feature modules — the one shared upload path for the whole backend. New this pass: `getBase64DataUri()`/`getObjectAsBase64DataUri()` — returns S3 object bytes as a data URI (no origin) so client-side `<canvas>` export can't be CORS-tainted; used by `startup`'s Digital ID Card. Content-type derivation is inconsistent: fixed maps for documents/images but raw-extension-derived for video, despite an in-file comment saying that's unsafe. |
 | `sockets` (`core/`) | [spec](../sc-saas-backend/src/core/sockets/module.spec.md) | Single Socket.IO gateway (`FetchCountGateway`) — the only real-time push channel (unread counts, typing indicators, presence, connection/chat notifications). **No auth guard of any kind** on the WS gateway; rooms are named by raw numeric user id with no membership check, so a guessed/enumerated room id can receive another user's `fetch-count`/notification events. Presence map is in-process only (no Redis) — inconsistent across multi-instance deployments. |
 
 ---

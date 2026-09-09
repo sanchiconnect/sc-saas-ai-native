@@ -1,6 +1,6 @@
 # SanchiSaaS — Workspace Knowledge (as-is synthesis)
 
-Last updated: 2026-08-03
+Last updated: 2026-08-13
 
 This is a **synthesis document**, not a fresh code-extraction pass. Its source material is the seven
 per-repo `knowledge.md` files (plus spot-checked `api.md`/`database.md`/`design.md`), all completed earlier
@@ -738,8 +738,144 @@ likely resolves alongside SAN-158), SAN-168–184 (webpack dev-noise, harmless).
 
 ---
 
+## 14. Startup ID Creation Module + Digital ID Card (2026-08-12/13) — a full feature built end-to-end across all 3 core repos, 3 real flag-gating gaps found and closed, and one confirmed-still-open data gap
+
+SAN-253/257 (Startup ID Creation Module) and its Digital ID Card feature, plus the related SAN-312/313/314/317
+Location Master removal-and-replacement work, were built end-to-end this session across `sc-saas-admin`,
+`sc-saas-backend`, and `sc-saas-frontend`. This section is the workspace-level map of what now exists, the
+real bugs found along the way (several independent of each other), and what's still genuinely open — read
+this before re-investigating any of the below from scratch.
+
+**a. What exists now, per repo.**
+- **`sc-saas-admin`**: Format Builder (drag-and-drop segment composer — COUNTRY_CODE/STATE_CODE/YEAR/
+  DISTRICT/SUB_DISTRICT/SPOKE/SERIAL_NO segments, live sample preview, delimiter config), Card Design Builder
+  (layer-based front/back template editor — `static_asset` + `bound_field` layers, drag-to-position, S3
+  asset upload), and a Settings page (the tenant's `startup_recognition_enabled` toggle plus a Country/State
+  Code panel that upserts the single `state_master` row and wires it into
+  `startup_recognition_id_config.state_master_id`). Location Master Import gained file-upload support (not
+  just Source URL), an async detached-CLI-worker architecture (mirroring
+  `cli/regenerate_startup_recognition_ids.php`'s own established pattern), and an O(n) hash-indexed matching
+  rewrite replacing an earlier O(n²) per-row-SQL approach the user explicitly rejected mid-session ("i think
+  its not a good approach"). `[Source: sc-saas-admin/modules/startup_recognition_management/module.spec.md,
+  sc-saas-admin/modules/developer/module.spec.md]`
+- **`sc-saas-backend`**: `GET /startups/digital-id-card` (new endpoint, `StartupService.getDigitalIdCard()`),
+  District/Sub-District segment resolution (`resolveCityDistrictContext()`, new `DistrictsRepository`/
+  `SubDistrictsRepository`), and the round-entry generation trigger in `program-management.service.ts`.
+  Deliberately has **no controller** for the format-config/card-template/state-master data itself — those
+  stay admin-configured, read/written directly by `sc-saas-admin`'s own Medoo connection, the same
+  established pattern as `id_cards`/`master_data` elsewhere in this codebase. `[Source:
+  sc-saas-backend/src/modules/startup-recognition-id/module.spec.md]`
+- **`sc-saas-frontend`**: a new `AccDigitalIdCardComponent` (`/account/edit/digital-id-card`) rendering the
+  admin-designed card as a generic layer list, with Download-as-Image/PDF via `html-to-image` + `jsPDF`, and
+  a new recognition-ID eligibility gate on program applications (`ProgramPublicApplyComponent`).
+  `[Source: sc-saas-frontend/src/app/modules/account/module.spec.md,
+  sc-saas-frontend/src/app/modules/programs/module.spec.md]`
+
+**b. Real, independent bugs found and fixed this session** (beyond ordinary feature-building):
+- **A NestJS boot-time DI crash-loop**: `ProgramsManagementModule` duplicates `StartupRecognitionIdGenerationService`
+  as a raw provider (an established pre-existing pattern in this codebase, not something this session
+  introduced) but was missing `CitiesRepository`/`DistrictsRepository`/`SubDistrictsRepository` once those
+  became new constructor dependencies — crash-looped the live backend in production until fixed.
+- **Two independent `html-to-image` export bugs on the frontend**: (1) the library throws trying to read
+  `.cssRules` off cross-origin stylesheets (Google Fonts etc.) while embedding web fonts, silently blocking
+  the whole PNG/PDF export — fixed with `skipFonts: true`. (2) The library doesn't reliably respect
+  `border-radius`/`overflow:hidden` clipping from the source DOM at a scaled `pixelRatio` — both the outer
+  card boundary AND each individual layer's own rounding had to be re-applied by hand on the exported bitmap
+  via a `destination-in` canvas composite, not trusted to the library.
+- **A resolution-mechanism inconsistency in `sc-saas-admin`'s regenerate-all flow**: `srIdRegenerateAll()`
+  resolved `state_master` from each startup's own stale `state_id` column (only ever an *output* of a prior
+  generation, so `null` until a startup has successfully generated at least once) instead of from
+  `startup_recognition_id_config.state_master_id` like fresh generation correctly does — so a format-change
+  regenerate silently produced no visible change for any startup that had never yet resolved a state_master,
+  even after the tenant properly configured one. Fixed to resolve once from the config, matching fresh
+  generation, and to write `state_id` back onto the startup row for consistency going forward.
+- **A missing template variable hid an entire admin UI section**: `modules/startup-detail.php` never set
+  `$tpl->brandSettings` (only `modules/common.php` sets it globally, and this specific module never inherited
+  that instance correctly) — since `sparkAdminTpl` has no `__isset()`, the view's
+  `isset($this->brandSettings[...])` check silently evaluated false regardless of the real tenant flag,
+  hiding the whole "Startup Recognition ID" panel on every startup's detail page for every tenant, flag on or
+  off. One line fixed it; confirmed via a temporary inline HTML debug comment (added and removed same
+  session) rather than guessed.
+- **Font Awesome version mismatch**: two new segment-type icons (`fa-map-marker-alt`, `fa-calendar-alt`) used
+  Font Awesome 5 class names in a codebase running FA **4.7.0** — silently failed to render (no error, just a
+  missing icon), producing inconsistent tag spacing that read as "alignment broken" rather than "wrong icon
+  library." Verified the fix's replacement names (`fa-map-marker`, `fa-calendar`) actually exist in this
+  project's specific vendored `font-awesome.min.css`, not assumed from memory.
+- **Missing `uuid` on two new raw-Medoo inserts**: `state_master` and `startup_recognition_id_config` are
+  TypeORM entities with a JS-side `@BeforeInsert()` uuid generator that only fires through TypeORM — any
+  insert via this repo's own PHP/Medoo connection bypasses it entirely. This repo has an established
+  `gen_uuid()` convention for exactly this situation (already used correctly elsewhere in this same module,
+  e.g. `format_builder.php`'s regeneration-log insert) that the two new insert sites simply missed. Fixed
+  with both a forward fix (set `uuid` on insert) and a backfill (set it on update too, if still missing on an
+  existing row) — the general fix shape worth knowing about if any *other* new insert against a TypeORM
+  entity table is ever added from this repo's PHP side.
+- **Three real server-side flag-gating gaps, found by a dedicated adversarial audit** (see §c below):
+  `format_builder.php` (`previewFormat`/`getAffectedCount`/`saveFormat`), `card_design_builder.php`
+  (`uploadAsset`/`saveTemplate`), and `settings.php`'s `saveStateMaster` were all gated only by
+  `srIdCheckRole(true)` (a role check), never re-checking `startup_recognition_enabled` (the tenant flag)
+  server-side — despite each page's own UI hiding itself when the flag is off, a Developer Admin on a
+  flag-off tenant could reach any of these by direct POST and mutate `startup_recognition_id_config`,
+  `state_master`, or `digital_id_card_template`, or upload arbitrary S3 assets, for a feature the tenant
+  hasn't enabled. This is the exact "checked at render time, not re-validated on the POST handler" bug class
+  this same module's own code comments already warn about elsewhere (a pattern this workspace's module-spec
+  sweeps — see §10 — have found repeatedly across multiple repos). Fixed with the same explicit
+  `if (empty($brandSettings['startup_recognition_enabled']) || ...) { exit; }` check already used correctly
+  in `edit_program_round.php`'s `generate_recognition_id` handler and `startup-detail.php`'s
+  `generateStartupRecognitionId` handler — added alongside the existing role check, not in place of it,
+  matching this repo's own established defense-in-depth convention (role checks are similarly duplicated
+  file-level + per-handler throughout this module).
+
+**c. A dedicated cross-repo flag-gating audit was run before calling this feature done**, prompted directly
+by a user request ("check all the updates... are gated with tenant key startup_recognition_enabled... so
+that any existing functionality not broken for any existing client"). Three parallel agents, one per repo,
+each verified every SR-ID/Digital-ID-Card code path added this session:
+- `sc-saas-backend`: **0 gaps** — `getDigitalIdCard()` checks the flag first, before touching any
+  repository; the only caller of `generateForStartup()` (`program-management.service.ts`'s `updateRound()`)
+  gates on the flag before ever calling it; the DI fix and base64-asset fix are both flag-independent
+  wiring/downstream changes with no behavioral effect of their own.
+- `sc-saas-frontend`: **0 gaps** — the nav entry requires both `ACCOUNT_TYPE.STARTUP` and the flag; the route
+  itself has no flag guard (consistent with this repo's documented "no route-level flag guard, ad hoc per
+  component, backend is the real gate" convention) but the component degrades gracefully via `data.enabled`
+  on direct-URL access; one confirmed benign detail — a flag-off tenant landing on the URL directly still
+  fires one API call that the backend safely no-ops, not a functional gap.
+- `sc-saas-admin`: **3 real gaps found and fixed** (see §b above). Also confirmed, as an explicit product-
+  scope finding rather than a bug: the new `freeze_applications` round toggle is *intentionally*
+  flag-independent (a generic round-freeze concept, no "unfreeze" UI, direct DB edit only for correction) —
+  meaning flag-off tenants DO get one genuinely new capability (the ability to freeze a round and have that
+  block Kanban drag-and-drop, both client- and server-side) that didn't exist before this session. This is a
+  deliberate scope decision this audit surfaced for confirmation, not something the audit itself judged right
+  or wrong.
+
+**d. Still genuinely open — a real data gap, not a code bug.** District/Sub-District ID segments resolve to
+empty for every real startup today, and this is **confirmed structural, not a missing feature**: a real
+source file (`location-master-final.json`, checked directly) has 150,541 city records with `state_id`/
+`country_id` but **zero** have `district_id`/`sub_district_id` populated — there is currently no data
+anywhere in this workspace linking a city to a district/sub-district, for any city. Separately, real LGD
+(Local Government Directory) district/sub-district codes are numeric (e.g. district code `603`, sub-district
+code `2925`), not short letter abbreviations like the "GOM"/"UDPR" reference example used during this
+session's requirements discussion — that reference was always an illustrative mockup, not a literal target
+once real government data is involved. Closing this gap needs either a real city→district/sub-district
+mapping data source (none currently available) or a scoped, explicit product decision to source/enter it
+for a smaller subset (e.g. one tenant's own state) — flagged back to the user rather than fabricated.
+
+---
+
 ## Change Log
 
+- 2026-08-13 | Added §14 — the Startup ID Creation Module + Digital ID Card feature (SAN-253/257, plus the
+  related SAN-312/313/314/317 Location Master removal-and-replacement), built end-to-end across all 3 core
+  repos this session. Seven independent real bugs found and fixed along the way (a NestJS boot-time DI
+  crash-loop, two separate `html-to-image` export bugs, a state_master resolution inconsistency in the
+  admin's regenerate-all flow, a missing template variable that silently hid an entire admin UI section
+  regardless of the tenant flag, a Font-Awesome-version icon mismatch, and a missing `uuid` convention on two
+  new inserts). A dedicated 3-agent cross-repo flag-gating audit (prompted by explicit user request) found
+  backend and frontend fully clean, but 3 real server-side flag-gating gaps in `sc-saas-admin`
+  (`format_builder.php`, `card_design_builder.php`, `settings.php`'s `saveStateMaster` — role-checked but
+  never re-checking the tenant flag, the same "checked at render, not on the POST handler" class §10 already
+  flagged elsewhere in this workspace) — found and fixed. One real, confirmed-open data gap remains:
+  District/Sub-District segments resolve empty for every real startup, traced directly to zero of 150,541
+  real city records anywhere in this workspace having a district/sub-district link — a genuine missing data
+  source, not a code defect, flagged back to the user rather than fabricated.
 - 2026-08-03 | Added §13 (second Sentry wave, 2026-07-31→2026-08-03): ~90 more Sentry-sourced issues triaged
   (SAN-126–221) across all repos, the SAN-188 platform-wide `verify_tenant` 504 incident (root cause + a
   safe-first index fix, query redesign deliberately deferred), SAN-27 (a real access-control gap in

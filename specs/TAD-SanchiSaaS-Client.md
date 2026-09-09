@@ -25,6 +25,7 @@
    2.1 Architectural Style
    2.2 High-Level Architecture
    2.3 Component Inventory
+   2.4 Per-Repository Technology Stack
 3. Member Web Application Architecture
    3.1 Technology Stack
    3.2 Application Structure
@@ -157,6 +158,22 @@ Key architectural principles applied throughout:
 | Tenant Control Plane | A dedicated service resolving tenant identity from the requesting domain and serving each tenant's branding and feature configuration. |
 | Data Layer | Per-tenant relational databases holding all business data. |
 | Integration Gateway | A set of services and direct integrations bridging the platform to external providers (Section 7). |
+
+### 2.4 Per-Repository Technology Stack
+
+The components above are implemented as **seven independently-versioned, independently-deployed source repositories** ("poly-repo", not a monorepo) — each with its own dependency set, build pipeline, and release cadence. A change in one repository never triggers an automatic rebuild or redeploy of another; cross-repository contracts (the business API shape, feature-flag names, the tenant-verification response, the authentication model) are coordinated deliberately, not enforced by shared tooling.
+
+| Repository | Architectural Role | Technology Stack |
+|---|---|---|
+| Tenant Control Plane | Source of truth for feature-flag definitions and tenant provisioning; the platform's cockpit/control-plane service. | NestJS 9, TypeORM, MySQL |
+| Business API Services | Owns the versioned REST API contract (controllers, request/response DTOs) consumed by both front-end applications. | NestJS 8, TypeORM, MySQL |
+| Member Web Application | End-user Progressive Web Application; resolves the tenant via the Control Plane, then consumes Business API Services for all business data. | Angular 13, NgRx (reactive state management), service-worker-backed PWA |
+| Administration Panel | Server-rendered administrative application; consumes Business API Services over REST and reads the tenant business database directly for reporting/list views. | PHP, Medoo (database abstraction), a shared admin theming/templating layer |
+| AI Evaluation Service | Independently deployed service performing LLM-based scoring of program applications; invoked by the Administration Panel and never calls back into it. | Python 3.10+, FastAPI, SQLAlchemy (async), MySQL |
+| Integration Gateway | Centralizes all outbound third-party integrations (SMS, transactional email, video-session provisioning, chat, URL shortening, document conversion) behind one internal contract; stateless, holds no database of its own; called only by Business API Services. | NestJS 9, TypeScript |
+| Tenant Control Plane — Operator Console | Platform-operator administrative UI for tenant provisioning and control-plane configuration; shares its database directly with the Tenant Control Plane service rather than calling it over an API. | PHP, Medoo, a shared admin theming/templating layer |
+
+A schema change in the Tenant Control Plane's database is the one architectural edge that can break two repositories in the same deploy, since the Operator Console reads and writes that database directly rather than through the Control Plane's own API — every other cross-repository dependency in the table above is mediated by a versioned interface.
 
 ---
 
@@ -335,6 +352,16 @@ Every request is authorized against the requesting user's role and, for administ
 
 Tenant isolation is enforced at the data-access layer: every business-data request is scoped to the single tenant resolved for that request, using the database-per-tenant model described in Section 6.1. This is a structural property of the data-access layer rather than a per-query convention, meaning isolation does not depend on every individual feature remembering to apply a tenant filter.
 
+### 8.3.1 Spoke Scoping & Moderation-Ownership (added 2026-09)
+
+Within a tenant, partner-branded sub-portals ("spokes", resolved from the request's hostname by a dedicated middleware) introduce a second, optional scoping layer beneath tenant isolation. A stakeholder's spoke membership is a property of their profile record, not of the login/session record, and is resolved server-side via a single shared utility rather than re-derived ad hoc per call site — an earlier inconsistency between two superficially similar repository methods (one loading the relations needed to resolve it, one not) produced a class of silent data bug and was closed by consolidating on the one method everywhere.
+
+Two spoke-scoped behaviors that must not be conflated:
+- **Moderation-ownership fields** (`partner_id` on a connection/meeting) are set only for same-spoke pairs and gate who may act on that specific record — never trust a client-supplied actor identity for this check; resolve it server-side from the acting administrator's own session.
+- **Visibility for a spoke's own console** is intentionally broader than moderation-ownership — it includes any record touching one of that spoke's stakeholders, not only same-spoke-to-same-spoke pairs — and is served through the platform administrator's own generic listing surface with spoke-scoped filtering applied, not a parallel bespoke view.
+
+A narrow, explicit exception to spoke-domain redirection exists for real-time video-session join links: the third-party video-conferencing provider's domain whitelist is Hub-domain-only, so those specific links remain Hub-routed for every participant regardless of spoke, while all other stakeholder-facing action links (profile, connection, message, feedback) resolve to the recipient's own spoke domain.
+
 ### 8.4 Transport & Storage Security
 
 - All communication between the front-end applications, backend services, and third-party integrations is encrypted in transit using industry-standard TLS.
@@ -395,15 +422,18 @@ Tenant-specific configuration (branding, feature flags, custom forms, evaluation
 
 | Layer | Technology |
 |---|---|
-| Member Web Application | Angular (single-page application framework), reactive state management, Progressive Web App delivery |
-| Administration Panel | PHP with a lightweight MVC/templating framework, progressively enhanced with JavaScript |
-| Backend Business Services | Modern server-side application framework(s) exposing versioned REST APIs |
-| AI Evaluation Service | Independently deployed service supporting multiple large-language-model providers |
-| Data Persistence | Relational database management system, database-per-tenant |
+| Member Web Application | Angular 13 (single-page application framework), NgRx reactive state management, Progressive Web App delivery |
+| Administration Panel | PHP with Medoo and a lightweight MVC/templating framework, progressively enhanced with JavaScript |
+| Backend Business Services | NestJS (8 and 9 across services), TypeORM, exposing versioned REST APIs |
+| Integration Gateway | NestJS 9, TypeScript — stateless proxy to third-party communication/video/document providers |
+| AI Evaluation Service | Python 3.10+, FastAPI, SQLAlchemy (async) — supports multiple large-language-model providers |
+| Data Persistence | MySQL, database-per-tenant |
 | File & Media Storage | Cloud object storage with signed-URL access control |
 | Real-Time Communication | WebSocket-based messaging infrastructure |
 | Search (optional) | Dedicated full-text search infrastructure for high-volume tenants |
 | Content Delivery | Content delivery network for static assets |
+
+See Section 2.4 for the mapping of each layer above onto its owning repository.
 
 ## Appendix B — Component Interaction Diagram
 

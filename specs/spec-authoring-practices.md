@@ -73,19 +73,9 @@ Every bug fix, requirement implementation, and enhancement should have a corresp
 
 - **Severity → Linear's native `priority` field** (not a separate label), mapped from this workspace's existing 🔴 Critical / 🟠 High / 🟡 Medium / 🟢 Low convention already used in every `module.spec.md` security-findings table: 1=Urgent (🔴 — touches a cross-repo invariant, security, data loss, or is otherwise blast-radius-critical), 2=High (🟠 — broken/blocked workflow or a significant scoped feature), 3=Medium (🟡 — the default when genuinely unsure), 4=Low (🟢 — cosmetic/minor/polish). Never `0`/No priority.
 - **Repo badge → a grouped label**, parent group `Repo` with one child per repo (confirmed created in Linear 2026-07-21): `Repo: Tenants`, `Repo: Backend`, `Repo: Frontend`, `Repo: Admin`, `Repo: AI Analyzer`, `Repo: 3rdparty Webservices`, `Repo: Tenants-Admin`. Applied alongside the existing type label (`Bug`/`Feature`/`Improvement`) — both go in the same `labels` array, since `save_issue`'s `labels` param replaces the full set on every call.
-- **Assignee → a fixed repo→developer mapping:**
+- **Assignee (revised 2026-08-13 — supersedes the fixed repo→developer mapping this section used to define):** every project — and every issue inside it — goes to **one single developer**, decided by task scope, not by repo/stack. Judge whether the work is a **single-repo task** or a **multi-repo task**; either way, the whole project/issue set gets one owner, not one assignee per repo. **Always ask the user who to assign the work to before creating the issue(s)** — never auto-derive the assignee from a fixed table. (The old table — Aman Kabra/backend, Sandeep/admin, Vishali Kashyap/frontend, Nirmal Singh/tenants+analyzer+3rdparty+tenants-admin — no longer applies as a default; it's historical context only.)
 
-  | Repo | Assignee |
-  |---|---|
-  | `sc-saas-backend` | Aman Kabra |
-  | `sc-saas-admin` | Sandeep |
-  | `sc-saas-frontend` | Vishali Kashyap |
-  | `sanchiconnect-saas-tenants` | Nirmal Singh |
-  | `ai-startups-analyzer` | Nirmal Singh |
-  | `sc-saas-3rdparty-webservices` | Nirmal Singh |
-  | `sanchiconnect-saas-tenants-admin` | Nirmal Singh |
-
-- **One-repo-per-task guardrail:** the repo label is more than a visual tag — `spec-implementer` and `/bug-fix` must never edit files outside the one repo an issue is labeled for. If implementation reveals a genuine need to touch another repo, stop, leave that repo untouched, and create a new, separately labeled/prioritized/assigned issue there instead (linked via `relatedTo`/`blockedBy` if useful) — never fold unplanned cross-repo work into the current issue.
+- **One-repo-per-task guardrail (unchanged):** the repo label is more than a visual tag — `spec-implementer` and `/bug-fix` must never edit files outside the one repo an issue is labeled for. If implementation reveals a genuine need to touch another repo, stop, leave that repo untouched, and create a new, separately labeled/prioritized issue there instead (linked via `relatedTo`/`blockedBy` if useful) — never fold unplanned cross-repo work into the current issue. This guardrail is about file-edit scope, independent of the (now single, asked-for) assignee.
 - **Don't clobber these fields on state-only updates:** any `save_issue` call that only moves an issue between states (`Todo`→`In Progress`→`In Review`→`Done`) must omit `labels`, `priority`, and `assignee` entirely — passing `labels` replaces the full set and would silently wipe the repo badge and type label set at creation.
 
 **When to create the issue:** at the point work is confirmed to start (not necessarily at the first mention of an idea) — mirrors the existing `/from-linear` command's direction (pulling work *from* Linear into a spec); this is the reverse flow, pushing tracked work *back into* Linear as it happens.
