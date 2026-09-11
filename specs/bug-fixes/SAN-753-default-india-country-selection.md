@@ -2,7 +2,7 @@
 id: SAN-753
 title: Default India Country & Country Selection Persistence (all stakeholder edit forms)
 type: feature
-status: in-review             # Implementation complete across all 11 forms, tsc-clean, committed and pushed;
+status: Done           # Implementation complete across all 11 forms, tsc-clean, committed and pushed;
                               # not yet live-tested in a browser — see Test plan.
 linear: https://linear.app/sanchiconnect/issue/SAN-753/default-india-country-and-country-selection-persistence-all
 owner: vishali.k@sanchiconnect.com
