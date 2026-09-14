@@ -94,7 +94,8 @@ All 60 `sc-saas-backend` modules under `src/modules/` have a `module.spec.md` (u
 | `memberships` | [spec](../sc-saas-backend/src/modules/memberships/module.spec.md) | Membership tiers + upgrade requests. Majority of routes have JWT commented out. Any caller can submit upgrade for any `profileId`. |
 | `invoice` | [spec](../sc-saas-backend/src/modules/invoice/module.spec.md) | PDF invoice generation → S3 upload. Single unauthenticated endpoint; no DTO validation on file-write path. |
 | `grants` | [spec](../sc-saas-backend/src/modules/grants/module.spec.md) | Entity stub only (no controller/service). Two grant entities registered for admin panel use. |
-| `schemes-management` | [spec](../sc-saas-backend/src/modules/schemes-management/module.spec.md) | Empty controller stub — no routes. Entities scaffolded for admin panel. |
+| `schemes-management` | [spec](../sc-saas-backend/src/modules/schemes-management/module.spec.md) | Empty controller stub — no routes; now consumed by `operational-cost-reimbursement`'s find-or-create scheme row (SAN-756). |
+| `operational-cost-reimbursement` | [spec](../sc-saas-backend/src/modules/operational-cost-reimbursement/module.spec.md) | SAN-756/757/758 (T-RISE). 12-month eligibility grid, Month-1 claim submission, admin single/bulk download-triggers-Under-Process with immutable first-download stamp + transition email. New `AdminTokenGuard`. Flag: `operational_cost_reimbursement_enabled`. |
 
 ---
 

@@ -160,6 +160,7 @@ All 82 directories under `sc-saas-frontend/src/app/modules/` have a `module.spec
 | `payment` | [spec](../sc-saas-frontend/src/app/modules/payment/module.spec.md) | Umbrella spec: gateway selection/checkout, coupons, order listing, membership subscription+upgrade, proforma invoices — the shared `CheckoutModule` widget is embedded across 4+ other feature modules. |
 | `payment-gateways` | [spec](../sc-saas-frontend/src/app/modules/payment-gateways/module.spec.md) | **DEAD CODE — confirmed unreachable.** No `loadChildren` entry anywhere; calls hardcoded `localhost:3000` directly (bypasses `apiUrl`/`ApiEndpointService` entirely). Prototype/spike for PayPal/Stripe/Razorpay never wired up. |
 | `membership` | [spec](../sc-saas-frontend/src/app/modules/membership/module.spec.md) | Two independent, non-code-sharing surfaces: the standalone `/membership` plan-picker page, and a reusable upgrade/renewal form embedded at `/account/edit/membership`. |
+| `operational-cost-reimbursement` | [spec](../sc-saas-frontend/src/app/modules/operational-cost-reimbursement/module.spec.md) | SAN-756/757/758 (T-RISE, Tripura). 12-month eligibility grid + category preview, Month-1-only claim form. Gated on `operational_cost_reimbursement_enabled`; hard-redirects to `/errors/404` when off (mirrors `TrackerComponent`). |
 
 ---
 

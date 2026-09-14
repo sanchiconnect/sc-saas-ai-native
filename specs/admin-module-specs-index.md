@@ -91,6 +91,7 @@ supplementary background. Bundled entries are marked **(legacy/combined)** below
 | tax_management | [module.spec.md](../sc-saas-admin/modules/tax_management/module.spec.md) | Tax profile CRUD (GST/VAT rates applied to payment amounts) |
 | ai_credits | [module.spec.md](../sc-saas-admin/modules/ai_credits/module.spec.md) | Admin-facing AI-credits wallet/buy/history/orders/invoice UI; purchases via tenants' `v1/ai-credits/purchase`; reserve/settle/refund logic lives in `includes/ai_credits_functions.php`, called from `application_management`, not from this module |
 | finance-memberships **(legacy/combined)** | [module.spec.md](../sc-saas-admin/modules/finance-memberships/module.spec.md) | Predates the `memberships`/`finance_management`/`payment_gateways`/`tax_management` split; `settings.php` still the documented cross-DB write to tenants DB |
+| operation_cost | [module.spec.md](../sc-saas-admin/modules/operation_cost/module.spec.md) | SAN-756/758 (T-RISE). Self-declaration template upload (direct Medoo write) + a minimal claims list whose download action is a genuine REST call into `sc-saas-backend` (not a direct DB read/write) — the one module in this repo that proxies a mutating write to the backend instead of Medoo. Gated on `operational_cost_reimbursement_enabled`. |
 
 ---
 
