@@ -4,7 +4,7 @@ id: SAN-756                     # Linear Project created (team: Sanchiconnect); 
                                  # SAN-757 (frontend), SAN-758 (admin).
 title: Operational Cost Reimbursement — Slices 1-2 (Tripura)
 type: feature
-status: in-review
+status: done
 linear: https://linear.app/sanchiconnect/project/operational-cost-reimbursement-slices-1-2-tripura-bd9afb3dfb3e
 owner: nirmal.s@sanchiconnect.com
 repos: [tenants, backend, frontend, admin]
