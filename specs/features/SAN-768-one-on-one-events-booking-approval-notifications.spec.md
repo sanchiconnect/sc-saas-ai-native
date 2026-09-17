@@ -187,6 +187,22 @@ including three decisions reversed mid-review; §13.2 leaves one item explicitly
   form only offers the two merged options for a new event, but still displays/preserves an existing event's
   original value if it's one of the 5 old ones; the list-page filter dropdown adds the two merged options
   alongside all 12 existing ones (none removed), since historical events still need to be filterable.
+- `themes/default/html/events/edit/info.php` (follow-up, working label "SAN-792"): the CC Emails field's tooltip
+  example text used two real-looking `@sanchiconnect.com` addresses (`mahima.s@...`, `ritu.r@...`) — replaced with
+  generic `@example.com` placeholders so the help text can never be mistaken for real staff emails.
+- `themes/default/html/events/details.php` (follow-up, working label "SAN-792"): the Event Details tab's info card
+  only ever showed scheduling fields (Event URL, Privacy, Venue, Time Slot Length) — added three more rows, same
+  conditional-row pattern and `event_type == 'one_to_one'` gating as `Time Slot Length` right above them: **Approval
+  Mode** (`format_names($this->record['approval_mode'])` → "Manual"/"Automatic"), **Application Cap (per slot)**,
+  and **Max Slots per Startup** — all three already available on `$this->record` for free, since `details.php`'s
+  controller does `SELECT *` on `events` and assigns the row straight to the template (`$tpl->record = $getEvent`).
+- **FR-1.5 reversal flow (`modules/events/details.php`'s `deleteAttendee` handler on an Approved attendee) verified
+  by code inspection this session, end to end** — not previously called out explicitly as verified in this doc: it
+  calls `cancel_attendee_meeting` (never deletes locally first), which resets the attendee to `PENDING_MODERATION`
+  (Applied, not Rejected), restores every co-applicant `cancelAttendeeMeeting()` had auto-rejected for that same
+  approval, and sends a real distinct cancellation email (`sendCancelledMeetingEmail`, templated + ICS `CANCEL`
+  attachment, not a stub) to both parties. Still not exercised live against a real DB/email send in this
+  environment — see Test plan.
 
 ### frontend
 
@@ -283,9 +299,12 @@ including three decisions reversed mid-review; §13.2 leaves one item explicitly
   Manually exercised in a live browser against a real event (cap/limit/withdraw/full states, and the
   `?mockOneToOne=1` dev toggle for states not yet reachable because this backend change wasn't deployed to the
   environment being tested against at the time) — not exercised as an automated test.
-- admin: no PHP linter available in this environment; all edits reviewed by hand against the working patterns
-  they extend (approve branch's status-code check, existing show/hide field toggles, existing Parsley
-  required-toggling convention).
+- admin: no PHP linter available in this environment (`php -l` confirmed not installed); all edits reviewed by hand
+  against the working patterns they extend (approve branch's status-code check, existing show/hide field toggles,
+  existing Parsley required-toggling convention, the details-page's existing conditional-row pattern). The FR-1.5
+  reversal path (`deleteAttendee` → `cancel_attendee_meeting`) was traced end to end through both the admin PHP and
+  the backend TS this session and found already fully wired, per the admin plan note above — not separately
+  live-tested against a real event in this environment.
 - cross-repo (not yet performed — this is what QA-1/SAN-783 exists to do): walk Manual mode end-to-end (multiple
   applicants → approve one → confirm the rest are auto-rejected with email → confirm cap/limit counting) and
   Automatic mode (first applicant auto-booked with confirmation email, no admin action, second applicant sees a
