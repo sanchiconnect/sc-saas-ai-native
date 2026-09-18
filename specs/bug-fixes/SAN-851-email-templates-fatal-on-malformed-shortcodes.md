@@ -58,6 +58,16 @@ SET shortcodes = '["email","brand_name","receiver_name","sender_name","organizat
 WHERE template_code = 'meeting-requested-moderation' AND shortcodes LIKE '%brand_logo]%';
 ```
 
+## Addendum (2026-09-18, same day) — true root cause traced to sc-saas-backend
+
+The user correctly pointed out these templates are created by the backend, not hand-typed via the admin UI.
+Traced to `sc-saas-backend/src/modules/global/admin/spa_email_templates.repository.ts`'s
+`installDefaultEmailTemplates()` — a hardcoded seed array with the exact same malformed `"brand_logo]` string
+literal, run on every backend boot for any tenant missing that `templateCode`. Fixed in [[SAN-855]] (a second,
+identical typo was also found and fixed there). This admin-side fix stays valid and necessary regardless — it's
+the crash-hardening layer that stops a bad row (from any source, not just this one) from ever taking the whole
+page down again.
+
 ## Separate finding (own issue, not fixed here)
 
 [[SAN-852]] — the same page's "DB Administration" Developer-zone link renders the production Adminer URL with
