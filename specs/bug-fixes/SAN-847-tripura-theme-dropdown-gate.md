@@ -5,7 +5,7 @@ type: bug-fix
 status: done
 linear: https://linear.app/sanchiconnect/issue/SAN-847
 repos: [admin]
-commit: sc-saas-admin@25ad01e4
+commit: sc-saas-admin@25ad01e4, sc-saas-admin@2441b47e
 created: 2026-09-18
 updated: 2026-09-18
 ---
@@ -51,6 +51,23 @@ tenant instead of being a constant).
   `program.php`) — this form is only reachable by an already-authenticated tenant admin acting on their own
   tenant's own settings, not a public/anonymous endpoint, so a UI-level gate is consistent with how this repo
   treats admin-only cosmetic toggles. Flagging this explicitly rather than silently deciding it doesn't matter.
+
+## Addendum (2026-09-18, same day, found during manual QA)
+
+Discovered testing this fix locally: a tenant that already had `certificate_theme` saved as `tripura` (selected
+before the flag existed, or while it was on) saw the dropdown fall back to the blank "Choose an option..."
+placeholder once `tripura` dropped out of the visible option list — the template
+(`themes/default/html/certificate_builders/edit.php:724-726`) always renders an empty placeholder `<option>` and
+only marks one `selected` if the stored value is found in the loop, so a stored value no longer in the list
+matches nothing.
+
+Fix: `modules/certificate_builders/edit.php`, right before the `$tpl->settingsKeyValPair` assignment — if the
+stored `certificate_theme` isn't in `$certThemeKeyValPair` (the now-filtered list), the **displayed** selection
+falls back to `default`. This only changes what's shown in the dropdown; the real `setting_value` in
+`spa_settings` is untouched unless the admin explicitly re-saves the form (consistent with "visibility gate
+only, does not force-select/un-select" from SAN-845's design decision — the live preview, which reads the real
+stored value via the frontend's own API, will still show the tenant's actual previously-chosen theme until they
+do).
 
 ## Verification
 
