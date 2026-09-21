@@ -2,11 +2,11 @@
 id: SAN-882
 title: "Schemes page served at confusing /operational-cost-reimbursement URL"
 type: bug-fix
-status: in-review
+status: done
 linear: https://linear.app/sanchiconnect/issue/SAN-882
 sentry: []
 repos: [frontend]
-commit: null
+commit: sc-saas-frontend@5e455016 (branch ai_native_setup_vishali)
 created: 2026-09-21
 updated: 2026-09-21
 ---
