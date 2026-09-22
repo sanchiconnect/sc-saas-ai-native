@@ -74,7 +74,7 @@ feature existed.
 - `includes/tripura_recognition_no_functions.php` (new) — `tripuraRecognitionNoParseSerial()`,
   `tripuraRecognitionNoPadSerial()`, `tripuraRecognitionNoFormat()`, `tripuraRecognitionNoGetNextSerial()` (the
   atomic counter, with one-time seeding), `tripuraRecognitionNoGenerateIfMissing()` (the shared idempotent
-  entry point both consumers call).
+  entry point every consumer calls).
 - `modules/certificates/list.php` — in the `generateCertificate` action's per-startup loop, when
   `getCertificateSetting('startup', 'theme') === 'tripura'`, use `tripuraRecognitionNoGenerateIfMissing()` for
   `certificateNumber` instead of the generic prefix/date/id format.
@@ -88,6 +88,17 @@ feature existed.
   new JS IIFE mirroring the existing Recognition ID one exactly.
 - `modules/startup-detail.php` — new `updateTripuraRecognitionNo` POST handler: role gate, empty check,
   collision check, save + `createAdminLogs()`.
+- **Third write path (found 2026-09-22 via screenshots, not in the original design pass):** the per-startup
+  "Certificate Number" field on the Startup / MSME Settings tab (`submitAction: createUpdateCertficate` in
+  `modules/startup-detail.php`) is a separate, pre-existing way to set `certificates.number`, independent of
+  the bulk "Generate Certificate" action. On a Tripura-themed tenant: the template
+  (`themes/default/html/startup-detail/startup-detail.php`) now displays the startup's `tripura_recognition_no`
+  read-only (prefix stripped, since the fixed prefix box already shows it) instead of the generic/free-text
+  value — and deliberately does NOT fall back to a stale `certificates.number` when `tripura_recognition_no`
+  isn't set yet, to avoid showing a value Save is about to discard. The `createUpdateCertficate` handler ignores
+  whatever was posted and always resolves via `tripuraRecognitionNoGenerateIfMissing()`, and skips the
+  "Certificate Number is required" validation (client- and server-side) since an empty value is expected and
+  correct pre-generation.
 
 ### backend (sc-saas-backend) — schema only
 
