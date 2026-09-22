@@ -145,6 +145,21 @@ Every non-Tripura tenant, and every non-startup/non-profile certificate type, is
 
 Committed and pushed to `ai_native_setup`: `sc-saas-backend@c1855c15`.
 
+## Addendum (2026-09-22, same day) — QR/verify lookup broke as a direct consequence
+
+`GET /api/v1/certificates/verify/:certificateNumber` (the public "verify this certificate" page, e.g. from a
+scanned QR code) does its own independent lookup — `getCertificateByNumber()`, a plain
+`WHERE number = :number` against `certificates`. Once the read-time override above made the DISPLAYED number
+diverge from what's actually stored there, verifying by the printed/QR Recognition Number 404'd.
+
+**Fix:** `CertificatesService.verifyCertificate()` now falls back to resolving the startup by
+`tripuraRecognitionNo` (new `StartupRepository.getByTripuraRecognitionNo()`, a lean lookup mirroring the
+existing `getByRecognitionId()` used by the OTHER Startup Recognition ID module's own public verify flow) when
+the plain by-number lookup misses and the Tripura flag is on, loads that startup's certificate the same way
+`getUserCertificates()` does, and stamps the same override on it. `tsc --noEmit` and `eslint` clean.
+
+Committed and pushed to `ai_native_setup`: `sc-saas-backend@f6d0ad55`.
+
 ## Contracts & invariants
 
 - **No new flag** — reuses the existing `tripura_certificate_theme_enabled` (SAN-845) purely to gate UI
