@@ -6,9 +6,9 @@ status: done
 linear: https://linear.app/sanchiconnect/issue/SAN-884
 sentry: []
 repos: [frontend]
-commit: sc-saas-frontend@0ee97e32 (branch ai_native_setup_vishali)
+commit: sc-saas-frontend@0ee97e32, sc-saas-frontend@992222b2 (branch ai_native_setup_vishali)
 created: 2026-09-21
-updated: 2026-09-21
+updated: 2026-09-22
 ---
 
 # SAN-884 — Fix Schemes/OCR page alignment
@@ -34,13 +34,16 @@ The Status/Scheme-window summary card — part of this ticket's "top section tex
 ### Follow-up 3 — reverted the edge-spread, just tightened the gap (direct user feedback)
 Spreading to the edges was the wrong direction — the user wanted the two blocks to stay left-aligned as before, just closer together. Final: `d-flex flex-wrap gap-4` (no `justify-content-between`, `gap-10` → `gap-4`).
 
+### Follow-up 4 — re-spread Scheme window to the card's far right edge (direct user request, 2026-09-22)
+Reopened after the previous fix shipped. New request: put "Scheme window" at the end/right side of the card, opposite "Status" — the same edge-spread layout Follow-up 3 had reverted. Confirmed with the user before reapplying (given the recorded prior reversal); user explicitly asked to redo it. Changed the row back to `d-flex flex-wrap justify-content-between` (no `gap-4` — the two blocks push to the card's own edges instead of needing a manual gap).
+
 ## Blast radius
 `.ocr-page` has no dedicated CSS rule of its own (confirmed via grep of the component's `.scss` and the module) — it's a marker class only, so the visual behavior comes entirely from the Bootstrap `container`/`container-xxl` utility swap. Both the Schemes tab's card grid (`col-12 col-sm-6 col-lg-4`) and the OCR tab's month grid (`row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4`) are already responsive column classes that degrade/upgrade with available width — widening the container only gives them more room at wide viewports, the same as `call-for-applications`'s own grid already does.
 
 ## Final shipped state
 `operational-cost-reimbursement.component.html`:
 - Wrapping div: `class="ocr-page container-xxl pb-4"` (plus the user's own `mt-4` added directly to the tab `btn-group`).
-- Summary card row: `class="d-flex flex-wrap gap-4"` (no `justify-content-between`).
+- Summary card row: `class="d-flex flex-wrap justify-content-between"` (Follow-up 4 — supersedes Follow-up 3's `gap-4`).
 
 ## Verification
-`tsc --noEmit` clean and `ng build --configuration local` run after every round. Each change was confirmed against the actual live dev-server bundle, not just source — refetched the OCR module's lazy chunk from `localhost:4200` after each edit and verified the compiled Ivy `consts` array matched what was written (final: `["ocr-page", "container-xxl", "pb-4"]` and `["d-flex", "flex-wrap", "gap-4"]`). No automated test applies — this is a CSS/markup-only visual fix with no visual-regression tooling in this repo; final confirmation is the user's own visual check at a few common widths before commit. Not committed/pushed — user verifying locally first.
+`tsc --noEmit` clean after every round, including Follow-up 4. Earlier rounds also ran `ng build --configuration local` and diffed the compiled Ivy `consts` array against the live dev-server bundle. No automated test applies — this is a CSS/markup-only visual fix with no visual-regression tooling in this repo; final confirmation is the user's own visual check at a few common widths.
