@@ -2,11 +2,11 @@
 id: SAN-902
 title: "OCR claims KPI counters ignore month/date filters"
 type: bug-fix
-status: in-review
+status: done
 linear: https://linear.app/sanchiconnect/issue/SAN-902
 sentry: []
 repos: [admin]
-commit: <not committed — user reviewing locally first> (branch to be confirmed)
+commit: sc-saas-admin@b33383f7 (branch ai_native_setup_vishali)
 created: 2026-09-22
 updated: 2026-09-22
 ---
@@ -29,4 +29,4 @@ Extended `ocrFetchClaimsCount()` to accept `$monthIndex`/`$startDate`/`$endDate`
 Only `modules/operation_cost/claims.php` touched (the `ocrFetchClaimsCount()` function and its 5 call sites). No template/JS change, no backend change.
 
 ## Verification
-No PHP linter available locally (`php` not on PATH in this environment) — reviewed the diff by hand for balanced syntax; it's a small, mechanical parameter-passthrough change following the exact pattern already used two lines above it for the main list query. No test framework exists in this repo (per this workspace's standing note). Not committed/pushed — user reviewing locally first.
+No PHP linter available locally (`php` not on PATH in this environment) — reviewed the diff by hand for balanced syntax; it's a small, mechanical parameter-passthrough change following the exact pattern already used two lines above it for the main list query. No test framework exists in this repo (per this workspace's standing note). Committed and pushed: `sc-saas-admin@b33383f7` (branch `ai_native_setup_vishali`), after user review.
