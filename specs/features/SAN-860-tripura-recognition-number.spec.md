@@ -121,6 +121,30 @@ a given tenant. Deploy/restart the backend for the Tripura tenant before relying
 paths (certificate generation, grant letter generation, and the new startup-detail edit field all assume these
 already exist).
 
+## Addendum (2026-09-22) — stale `certificates.number` on the public certificate view
+
+Found via screenshots: a startup whose `certificates` row predates this feature (or hasn't been re-saved
+through any of the three sc-saas-admin write paths since) could show a completely different, stale `number` on
+the actual downloaded public certificate than what its `tripura_recognition_no` field correctly showed on the
+Information tab — the stored `certificates.number` and `startups.tripura_recognition_no` can drift independently
+since only an active admin action re-syncs the former.
+
+**Fix (sc-saas-backend, not admin):** `CertificatesService.getUserCertificates()` — the method backing
+`GET /api/v1/certificates`, which `sc-saas-frontend`'s certificate view actually calls — now resolves a startup
+certificate's `number` from `StartupEntity.tripuraRecognitionNo` at READ time via a new
+`Feature.TRIPURA_CERTIFICATE_THEME_ENABLED` enum entry (backed by the same `tripura_certificate_theme_enabled`
+cockpit flag, already reachable in this app's `saasFeatures` from SAN-845, just never given a named enum entry
+before), instead of trusting the separately-stored `certificates.number`. Read-only override, never written
+back to the row — `tripura_recognition_no` becomes the single source of truth end-to-end; the stored
+`certificates.number` value is now vestigial for Tripura tenants. `CertificatesModule` gained `StartupRepository`
+as a provider (mirrors the exact pattern `startup-recognition-id.module.ts` already uses) to look up the
+startup; `AuditedUpdateService` (that repository's own dependency) needs no explicit import since
+`AuditLogModule` is `@Global()`.
+
+Every non-Tripura tenant, and every non-startup/non-profile certificate type, is byte-identical to before.
+
+Committed and pushed to `ai_native_setup`: `sc-saas-backend@c1855c15`.
+
 ## Contracts & invariants
 
 - **No new flag** — reuses the existing `tripura_certificate_theme_enabled` (SAN-845) purely to gate UI
