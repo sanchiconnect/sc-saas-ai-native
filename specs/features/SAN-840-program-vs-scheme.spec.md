@@ -33,6 +33,10 @@ created: 2026-09-17
 - **No new API endpoint for writing it.** `sc-saas-admin` writes `is_scheme` directly via Medoo in the same POST handler that already writes every other admin-only toggle on this entity (e.g. `restrictToRecognitionIdHolders`) — consistent with this entity's established pattern.
 - **Gated on `operational_cost_reimbursement_enabled`, not a new flag.** The admin toggle is only meaningful for a tenant that has OCR/Schemes enabled at all; reusing that existing flag avoids introducing a second, overlapping one.
 - **Existing general listing methods extended, not duplicated.** `getAllPrograms()`/`getAllPublicPrograms()` already had a hardcoded `isScheme=false` filter (added defensively when the column was introduced, so schemes never leaked into the general listing by default); this spec just parameterizes that filter (`schemesOnly`, default `false`) so the same query logic serves the new Schemes tab too.
+  **Superseded 2026-09-22 (SAN-907):** the general listing's exclusion of Schemes was explicitly reversed — a
+  Scheme is still a full program and now shows on BOTH the general Programs listing and its own Schemes tab.
+  Only the dedicated `schemesOnly=true` call (Schemes tab) still filters to schemes-only; the default call now
+  applies no `isScheme` constraint at all. See `specs/bug-fixes/SAN-907-programs-listing-includes-schemes.md`.
 
 ## Acceptance criteria
 
