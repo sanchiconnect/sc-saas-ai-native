@@ -150,6 +150,19 @@ Not committed by me. The user has been applying each iteration directly to their
 Developer → Email Management, confirming behavior as we went (see Verified above) — the code-repo side
 (`spa_email_templates.repository.ts`, for future tenants) matches the final, live-confirmed version.
 
+## Follow-up (2026-09-24): missing cell padding, in the repo seed
+
+Separate from the Open Link work above: this same template's Date/Time/Venue table `<td>` cells had no
+padding at all in the repo seed — only `background-color`/`height`, no `padding` of any kind (worse
+than `meeting-scheduled-to-sender`'s cells, which at least had some padding before its own SAN-977 fix,
+just missing `padding-left`). Text sat flush against every cell edge on all sides.
+
+Fixed by adding `padding: 10px;` to all 6 `<td>` cells (3 rows × label+value), matching the convention
+every other template in this seed file uses. Verified via `tsc --noEmit` (clean) and `git diff` (2 lines
+changed, confirmed to contain only the intended `padding: 10px;` additions).
+
+Same caveat as every other seed-file fix: reaches new tenants only, not any already-provisioned one.
+
 ## Open questions
 
 None blocking. Fully hiding the empty row (rather than accepting it) is a known, explicitly deferred
