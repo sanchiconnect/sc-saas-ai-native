@@ -2,7 +2,7 @@
 id: SAN-973
 title: 1:1 event slot modal shows Book on slots whose time has already passed today
 type: bug-fix
-status: in-review
+status: done
 linear: https://linear.app/sanchiconnect/issue/SAN-973
 repos: [frontend]
 assignee: Mahima Sharma

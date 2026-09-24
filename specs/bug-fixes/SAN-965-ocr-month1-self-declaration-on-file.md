@@ -2,7 +2,7 @@
 id: SAN-965 (+ SAN-971)
 title: OCR Month 1 Application re-asks for Self-Declaration / cheque already on file
 type: bug-fix
-status: in-review
+status: done
 linear: https://linear.app/sanchiconnect/issue/SAN-965 , https://linear.app/sanchiconnect/issue/SAN-971
 repos: [frontend, backend]
 assignee: Mahima Sharma
