@@ -2,7 +2,7 @@
 id: SAN-965
 title: OCR flow — Month 1 missing prefill on Verify & Submit + Download template hidden for Month 2+
 type: bug-fix
-status: in-review
+status: done
 linear: https://linear.app/sanchiconnect/issue/SAN-965
 project: Operational Cost Reimbursement — Slices 1-2 (Tripura)
 repos: [frontend]
