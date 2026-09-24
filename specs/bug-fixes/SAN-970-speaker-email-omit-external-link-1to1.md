@@ -1,6 +1,6 @@
 ---
 id: SAN-970
-title: Speaker email omits External Meeting Link section for 1:1 Online events
+title: Speaker email omits External Meeting Link section entirely (Venue-only)
 type: bug-fix
 status: in-review
 linear: https://linear.app/sanchiconnect/issue/SAN-970
@@ -75,23 +75,48 @@ the bug.
 
 Found the template's actual source: `sc-saas-backend/src/modules/global/admin/spa_email_templates.repository.ts`'s
 `installDefaultEmailTemplates()` seed data (not, as initially assumed, entirely absent from the repo —
-an earlier investigation in this session missed this 568KB file). First attempt wrapped the entire
-`<tr>` in `{{#if event_location}}...{{else}}{{#if event_link}}...{{/if}}{{/if}}` so the whole row would
-disappear for a 1:1 Online event. **Revised per explicit request:** keep the `{{#if}}` entirely inside
-the existing value `<td>` instead of wrapping the `<tr>`/label cell — raw Handlebars text sitting
-directly between `</tr>` and `<tr>` (outside any `<td>`) isn't valid table content and risks the
-WYSIWYG email-template editor mangling it on save. Final shape, nested inside the one `<td>` that
-already held the original `{{#if event_location}}...{{else}}<Open Link>{{/if}}`:
+an earlier investigation in this session missed this 568KB file). Three iterations, in order:
 
-```
-{{#if event_location}} {{event_location}} {{else}} {{#if event_link}} <Open Link> {{/if}} {{/if}}
-```
+1. **`<tr>`-wrap attempt.** `{{#if event_location}}<tr>...</tr>{{else}}{{#if event_link}}<tr>...</tr>{{/if}}{{/if}}`,
+   so the whole row would disappear for a 1:1 Online event while a genuine webinar's Open Link kept
+   working. **Live-tested on the real tenant and confirmed broken**: the admin's WYSIWYG email-template
+   editor visibly stripped the `{{#if}}`/`{{else}}`/`{{/if}}` markers on save (they sat as raw text
+   directly between `</tr>` and `<tr>`, outside any `<td>` — invalid table content), leaving both
+   `<tr>`s rendering unconditionally: an empty Venue row *and* an always-shown, still-dead Open Link
+   button — worse than the original bug. Reverted.
+2. **Cell-only attempt.** `{{#if event_location}} {{event_location}} {{else}} {{#if event_link}}
+   <Open Link> {{/if}} {{/if}}`, kept entirely inside the existing value `<td>` (editor-safe — no raw
+   text outside a cell). Technically correct and would have worked, but superseded by:
+3. Drop the Open Link branch entirely, for every event, not just one_to_one —
+   `{{#if event_location}} {{event_location}} {{/if}}`. External Meeting Link no longer renders in
+   this email at all; only Venue does, when set. Deliberate scope reduction agreed with the user, not
+   just a targeted bug fix — a genuinely working non-1:1 online event's speaker email also loses its
+   meeting link now, same as the 1:1 case.
+4. **Live-tested, confirmed working for the cell content** — but an empty row (empty label + empty
+   value cell) still rendered below "Time" for an event with no Venue, since step 3 only emptied the
+   cell contents, not the `<tr>` itself.
+5. **Attribute-injection attempt, live-tested, confirmed BROKEN — worse than a cosmetic issue.**
+   Tried conditionally injecting `display: none` into the `<tr>`'s own `style` attribute via
+   `{{#unless event_location}} display: none;{{/unless}}`, reasoning that Handlebars markers inside an
+   attribute value (a plain string to any parser) would survive where a freestanding text node between
+   `<tr>`s did not. **This stopped the email from sending at all** — most likely the editor runs the
+   `style` attribute through a CSS validator that doesn't recognize Handlebars syntax as valid CSS and
+   corrupts the surrounding markup when it tries to sanitize it, breaking Handlebars compilation
+   entirely. Reverted immediately back to step 4's known-working version.
 
-Now: Venue shows when set (offline, any event type, unaffected); Open Link shows only when `event_link`
-is actually set (non-1:1 online — webinar-style events, unaffected); for a 1:1 Online event (neither
-set), the cell renders empty — no dead link — though the row itself (with an empty label cell too,
-since `event_location_type` is also left empty by the backend fix) still takes up its row in the table,
-rather than disappearing. Accepted trade-off for not touching the table's row structure.
+**Final decision:** stop attempting to hide the row. Three attempts to remove/hide it (a `<tr>`-wrap,
+and an attribute-injection) both caused real, live regressions on the user's actual tenant — one
+silently broke email sending outright. Accepted the cosmetic empty-row trade-off from step 4 as the
+final, shipped state. If the row genuinely needs to disappear, that requires either a different email
+template engine/editor that doesn't mangle raw Handlebars, or a direct database edit of the template
+row bypassing the WYSIWYG editor's sanitization — both out of scope for this fix and out of reach from
+this sandbox (no direct access to the live tenant's DB).
+
+Backend (`admin-actions.service.ts`) simplified to match step 3: removed the `event.eventType` branch
+entirely (the `EventTypes` import along with it, now unused), removed the `event_link` variable and its
+entry in the email-data object — the ONLINE branch does nothing at all now; only the
+`deliveryMode != ONLINE` (Venue) branch remains. Left dead code would have misrepresented what the
+email actually does.
 
 **Important caveat, explained to the user:** `installDefaultEmailTemplates()` only *inserts* a row for
 a `templateCode` that doesn't already exist in a tenant's `spa_email_templates` table — it never
@@ -111,17 +136,21 @@ sandbox has no way to reach that tenant's DB directly.
   HTML they copied from the live Admin UI's source-code view, not reconstructed from a guess — same
   attributes, styling, and `data-offset-key`s preserved verbatim in both branches.
 
-## Not verified — genuinely outstanding
+## Verified (live, on the real tenant)
 
-No live send test yet confirming the corrected template (once manually applied to the test tenant)
-actually renders all three cases (Venue / Open Link / hidden) correctly in a received email.
+- Venue set → email correctly shows "Venue: Delhi" (screenshot-confirmed).
+- No Venue, no Open Link → email sends correctly, location row renders empty (screenshot-confirmed) —
+  the accepted final cosmetic trade-off.
+- Confirmed the failed attribute-injection attempt (step 5 above) by observing email delivery stop
+  entirely, then confirmed delivery resumed immediately after reverting.
 
 ## Rollout
 
-Not committed. Awaiting review and a real test from the user. The admin-panel template edit is a
-separate, immediate action the user needs to apply directly (not a code deploy) for their current test
-tenant to see the fix.
+Not committed by me. The user has been applying each iteration directly to their live test tenant via
+Developer → Email Management, confirming behavior as we went (see Verified above) — the code-repo side
+(`spa_email_templates.repository.ts`, for future tenants) matches the final, live-confirmed version.
 
 ## Open questions
 
-None blocking.
+None blocking. Fully hiding the empty row (rather than accepting it) is a known, explicitly deferred
+follow-up — would need a different template-editing path than the current WYSIWYG editor.
