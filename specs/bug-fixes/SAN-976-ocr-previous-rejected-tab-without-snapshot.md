@@ -31,6 +31,10 @@ CODE_ERROR.
 - The tab now shows whenever `previousRejectedClaim` exists. When there's no snapshot, Beneficiary Details reads "not recorded for this claim", and the diff card stays hidden because there's nothing to compare. With a snapshot, behavior is unchanged.
 - New red notice at the top of the **Current Submission** view: "Month N was previously rejected on <date> — "<reason>". See the Previous Submission tab for details." This way the admin sees it without opening the tab. It's cleared in `resetDetailsModal()`.
 
+## Follow-up (2026-09-24, after dev check)
+
+Once deployed, the notice showed correctly, but the user wanted the rejected claim's **details** in the same view, without switching tabs. Added a "Previously Rejected Claim — Month N" card right under the notice on the Current Submission view (`populatePreviousInlineCard()`). It shows the rejected claim's status timeline, rejection reason, documents, and Beneficiary Details, or "Not recorded for this claim" when there's no snapshot. The notice text now says "Its details are shown below." The Previous Submission tab and the diff are unchanged.
+
 ## Verification
 
 - No `php` binary locally, so `php -l` couldn't run. The page's inline JS was extracted (PHP tags stubbed out) and passes `node --check`.
@@ -39,4 +43,5 @@ CODE_ERROR.
 
 ## Commit
 
-Pending (not committed).
+- sc-saas-admin `4de7468a` (notice + tab visibility) on `ai_native_setup_mahima`.
+- Inline-details follow-up: pending (not committed).
