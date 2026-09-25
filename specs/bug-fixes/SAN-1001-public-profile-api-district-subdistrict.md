@@ -27,4 +27,4 @@ The change only adds fields to the response (`id` + `name` only). Auth is unchan
 - No automated regression test added yet
 
 ## Commit
-_pending_
+sc-saas-backend@fb7f7dd4 (branch ai_native_setup_mahima)
