@@ -2,7 +2,7 @@
 id: SAN-1025
 title: "Mentor designation >120 chars only rejected by backend; mislabeled loginFault"
 type: bug-fix
-status: in-review
+status: done
 linear: https://linear.app/sanchiconnect/issue/SAN-1025
 sentry: [SC-SAAS-FRONTEND-G4]
 repos: [frontend]

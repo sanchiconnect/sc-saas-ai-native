@@ -2,7 +2,7 @@
 id: SAN-1027
 title: "iOS in-app browser (null)('cs_<UUID>') Sentry noise"
 type: bug-fix
-status: in-review
+status: done
 linear: https://linear.app/sanchiconnect/issue/SAN-1027
 sentry: [SC-SAAS-FRONTEND-GC]
 repos: [frontend]

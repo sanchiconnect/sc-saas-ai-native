@@ -2,7 +2,7 @@
 id: SAN-1024
 title: "bootstrap Dropdown parentNode crash in phone country picker"
 type: bug-fix
-status: in-review
+status: done
 linear: https://linear.app/sanchiconnect/issue/SAN-1024
 sentry: [SC-SAAS-FRONTEND-G5]
 repos: [frontend]

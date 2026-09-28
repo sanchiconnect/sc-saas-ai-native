@@ -2,7 +2,7 @@
 id: SAN-1018
 title: "metrics/all 403 Forbidden unhandled"
 type: bug-fix
-status: in-review
+status: done
 linear: https://linear.app/sanchiconnect/issue/SAN-1018
 sentry: [SC-SAAS-FRONTEND-74]
 repos: [frontend]

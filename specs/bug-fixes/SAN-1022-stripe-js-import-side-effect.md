@@ -2,7 +2,7 @@
 id: SAN-1022
 title: "Failed to load Stripe.js on every dynamic-form page"
 type: bug-fix
-status: in-review
+status: done
 linear: https://linear.app/sanchiconnect/issue/SAN-1022
 sentry: [SC-SAAS-FRONTEND-2C]
 repos: [frontend]

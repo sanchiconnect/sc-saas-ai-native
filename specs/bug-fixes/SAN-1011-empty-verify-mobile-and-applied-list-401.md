@@ -2,7 +2,7 @@
 id: SAN-1011
 title: "Empty verify/mobile call on register + unhandled 401 on applied-programs list"
 type: bug-fix
-status: in-review
+status: done
 linear: https://linear.app/sanchiconnect/issue/SAN-1011
 sentry: [SC-SAAS-FRONTEND-2J]
 repos: [frontend]

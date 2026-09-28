@@ -2,7 +2,7 @@
 id: SAN-808
 title: "reading 'false' in zone addEventListener — mail link-scanner bot noise"
 type: bug-fix
-status: in-review
+status: done
 linear: https://linear.app/sanchiconnect/issue/SAN-808
 sentry: [SC-SAAS-FRONTEND-3G]
 repos: [frontend]

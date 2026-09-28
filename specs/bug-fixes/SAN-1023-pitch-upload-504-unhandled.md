@@ -2,7 +2,7 @@
 id: SAN-1023
 title: "pitch-file upload 504 unhandled — spinner stuck, failed file shown"
 type: bug-fix
-status: in-review
+status: done
 linear: https://linear.app/sanchiconnect/issue/SAN-1023
 sentry: [SC-SAAS-FRONTEND-2W, SC-SAAS-FRONTEND-F7]
 repos: [frontend]

@@ -2,7 +2,7 @@
 id: SAN-1026
 title: "Blank elevator pitch sent on auto-save / Next Step"
 type: bug-fix
-status: in-review
+status: done
 linear: https://linear.app/sanchiconnect/issue/SAN-1026
 sentry: [SC-SAAS-FRONTEND-CP]
 repos: [frontend]
