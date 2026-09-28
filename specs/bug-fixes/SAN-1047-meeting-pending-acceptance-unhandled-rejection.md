@@ -33,4 +33,4 @@ Zero change to any success path — only the previously-unhandled rejection is n
   Karma bundle fails to compile due to ~16 pre-existing unrelated broken specs, 0 of 0 executed
 
 ## Commit
-None yet — uncommitted, awaiting review (workspace rule: commit only when explicitly asked).
+sc-saas-frontend@016f34063 (branch ai_native_setup_sandeep) — "fix(meeting): update fetchMeetingsWithPendingAcceptance to handle errors correctly and prevent unhandled rejections"
