@@ -288,6 +288,86 @@ but `refundAiCreditReservation()` matches `source_ref = ?`, so it never claims t
 Follow-up: add `ZENXAI_RESERVE_MINUTES` to the env-key list in `sc-saas-admin/CLAUDE.md`. It is already
 documented in the `application_management` module spec.
 
+## SAN-1150 ledger trail (2026-09-29, sc-saas-admin only, uncommitted)
+
+**Problem.** Balances were correct, but the ledger misled a client's finance team:
+1. The overview/history templates showed RESERVE rows as "DEBIT" with a "−" (`$typeLabel = reserve → 'debit'`).
+2. REFUND rows showed "+N", although releasing a hold never changes the balance.
+3. `settleAiCredits` / `refundAiCreditReservation` convert the RESERVE row in place, so the hold vanished
+   and there was no "charged X, released Y" breakdown.
+
+**Decision (user): fix for new rows only.** Existing ledger rows are not rewritten or migrated.
+
+**A. Append-only voice trail.** New `zenxaiVoiceLedgerResolve()` (+ `zenxaiVoiceLedgerSettle` /
+`zenxaiVoiceLedgerRelease`) in `includes/zenxai_functions.php`; `zenxaiSettleCallCredits` and
+`zenxaiRefundCallCredits` (the only voice settle/refund paths: completed, unanswered, rejected POST, 402,
+401/403 release, cancel, 404, reconcile) now call them instead of `settleAiCredits` /
+`refundAiCreditReservation`. One `$mainDatabase` transaction:
+- Claim the single open hold (`credit_type='RESERVE' AND source_type='RESERVE'`, `FOR UPDATE`) by setting
+  `source_type='VOICE_CALL'`; rowCount must be 1. The HOLD row keeps credit_type RESERVE, task_type,
+  amount, balance_after and created_at.
+- Answered: wallet `balance -= charge, reserved_balance -= held, total_consumed += charge WHERE balance >= charge`
+  (0 rows → rollback), then DEBIT (charge) and, if held > charge, REFUND "release" (held − charge).
+- Not answered / failed / rejected: `reserved_balance -= held`, one REFUND "release" (held).
+- New rows: `source_type VOICE_CALL`, same `source_ref`, `task_type ai_voice_call`, `applicant_count 1`,
+  `balance_after` = wallet balance after the change, `created_at` = PHP `date()`.
+- `zenxaiOpenReservation()` now requires `source_type='RESERVE'`.
+
+`includes/ai_credits_functions.php` is **unchanged** (`git diff` empty; SHA-1 5546e93d… equals HEAD), so the
+AI Analysis flow is byte-identical. Example (68 s call, rate 8, 80 held): HOLD 80 → DEBIT 16 → RELEASED 64;
+balance −16, reserved back to 0, consumed +16.
+
+**B. Display (all rows, presentation only).** `includes/ai_credits_ledger_display.php` (`aicLedgerRowView`)
+is used by the ai_credits overview/history templates and the dashboard modal:
+- RESERVE → amber HOLD "N held", tooltip "Reserved from available credits; balance unchanged", and a
+  "settled" note when `source_type=VOICE_CALL`.
+- REFUND → blue-grey RELEASED "N released", "balance unchanged".
+- DEBIT → "−N"; CREDIT → "+N".
+- Friendly source labels, "call #N" for voice rows, and the legend line.
+- New CSS classes `aic-badge-hold` / `aic-badge-released` (+ helpers) in `ai-credits-shared.css`.
+- Ledger lists sort `created_at DESC, id DESC`.
+
+**C. View ledger.**
+- `history.php` has a whitelisted `task_type` filter, with a chip and a clear link, kept in the form and
+  in pagination links.
+- The dashboard AI Credits card has a **View ledger** link (`/ai_credits/history?task_type=ai_voice_call`).
+- The call-details modal has a **Credit ledger** section. It uses one domain-scoped query for the calls on
+  the page (`source_ref IN ('zenxai:<ids>')`).
+- Credits-column wording is `held R` / `charged C (M min)` / `not charged`. The stored `credit_status`
+  values are unchanged.
+
+**Cross-repo grep (all 7 repos).** Only sc-saas-admin reads ledger RESERVE rows. That covers
+`ai_credits_functions.php`, `analysis_list.php` and `analysis_result.php` (all by folder-id `source_ref`,
+never `zenxai:`), plus `zenxai_functions.php`. `sanchiconnect-saas-tenants` only writes PURCHASE CREDIT
+rows and declares the enums; `VOICE_CALL` already exists in `AiLedgerSourceType`. `sanchiconnect-saas-tenants-admin`
+only writes GRANT CREDIT rows. backend, frontend, the analyzer and webservices have no ledger access.
+Nothing depends on RESERVE rows disappearing. `reconcileStaleAiCreditReservations()` excludes `zenxai:%`,
+so persistent voice holds are never refunded by it.
+
+**Evidence** (scratch MySQL 9 + local mock, harness in the session scratchpad; no request to crm.zenxai.io):
+- **AI Analysis unchanged:** `credits_scenario.php` flows + reconcile, run with the HEAD file and the
+  working-tree file, give byte-identical output.
+- **Voice trail:** `ledger_trail_tests.php` passes 27/27. It covers answered 68 s / 9 s / cap, the four
+  unanswered statuses, 400, 402 (Sentry still sent), cancel, double Refresh, and a 9-process race (Refresh +
+  batch reconcile + overview reconcile) giving exactly one DEBIT + one RELEASED. It also covers settle with
+  an insufficient balance (whole transaction rolled back, hold still open), 429 then resume, an old-scheme
+  open hold created by the HEAD code and resolved by the new code, and an old converted row never touched
+  again. Both reconciles skip resolved holds, and the other tenant is untouched.
+- **SAN-1136 regression:** `feature_tests.php` passes 81/81, with the ledger-shape assertions updated to the trail.
+- **Rendering:** `render_tests.php` passes 30/30. It checks labels and signs for new trail rows, old
+  converted rows, analysis, purchase and an open hold. It also checks XSS escaping, the task_type filter
+  (combined, pagination, unknown value ignored), the credit_type filter, the overview, the dashboard View
+  ledger link and the modal Credit ledger, with no PHP warnings.
+- **Lint:** `php -l` passes on all touched files, and `node --check` passes on the inline JS of the 3
+  rendered pages.
+
+**Known, not changed:**
+- A crash between the ledger commit and the `zenxai_calls.credit_status` update leaves the row `reserved`
+  while its hold is resolved. There is no double charge, but the column shows `held R`. This is a pre-existing
+  window.
+- `settleAiCredits` / `refundAiCreditReservation` restamp `created_at` with MySQL `NOW()`, while the
+  templates assume UTC. Analysis rows can show a time-zone-shifted time.
+
 ## Out of scope
 - Separate voice-only wallets or package-specific rates.
 - Automatic billing against Sanchi's ZenxAI plan tier.
