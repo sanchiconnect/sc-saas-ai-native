@@ -2,7 +2,7 @@
 id: FA-009                      # next free FA- id. Linear: SAN-1156 (backend), SAN-1157 (admin). Project P-SAN-65.
 title: Platform Email Stats for All Emails
 type: feature
-status: draft
+status: in-review
 linear: https://linear.app/sanchiconnect/project/platform-email-stats-for-all-emails-fd92c2078655
 owner: nirmal.s@sanchiconnect.com
 repos: [backend, admin]         # dependency order: sc-saas-backend, then sc-saas-admin
@@ -63,6 +63,9 @@ Today this is impossible for most email types because no record of the send exis
 4. **[USER DECISION 2026-09-30]** No email body is stored for sensitive templates: OTP, password
    reset and email verification. Their rows keep recipient, subject, template_code, status,
    response/message id and stats only.
+   **[USER DECISION 2026-09-30, resolves former open question 1]** `admin-account-created` and
+   `jury-account-created` are sensitive too (their body carries the new account's plaintext
+   password): no stored body, and `data.password` is masked in the stored subject.
 5. **[USER DECISION 2026-09-30]** Stats are collected by polling: the SAN-1155 cron is extended
    to every logged type. SES event publishing (configuration set to SNS to a per-tenant backend
    webhook) is a possible later phase and is out of scope here.
@@ -117,7 +120,7 @@ the secret value masked. This follows directly from decision 4 and is not a new 
 `sendAdminAccountCreatedEmail` (templates `admin-account-created` / `jury-account-created`) puts
 `data.password` into the rendered body when not SSO **[verified: ses-email.service.ts:1099-1101]**.
 Today it logs no row (:1116). Once logging is central, its body would be stored unless it is
-redacted too. See **Open questions**.
+redacted too. **Resolved:** both codes are sensitive (decision 4).
 
 Separate existing issue, not in scope: `console.log('attributesToMap', attributesToMap)` at
 **[verified: ses-email.service.ts:1103]** prints that password to stdout on every admin/jury
@@ -218,11 +221,10 @@ account creation. It should be filed as its own bug.
 - [ ] **Chat excluded:** `sendChatMessageEmail` passes `skipLog: true`, so no row is created
       for `chat-message`.
 - [ ] **Sensitive templates:** for `verify-email-address`, `verify-email-address-via-link` and
-      `admin-password-reset`, the row has `html_content = NULL` and `email_data = NULL`, and the
-      stored subject contains none of the secret values (OTP, verify URL, reset URL), which are
+      `admin-password-reset`, `admin-account-created` and `jury-account-created`, the row has `html_content = NULL` and `email_data = NULL`, and the
+      stored subject contains none of the secret values (OTP, verify URL, reset URL, account password), which are
       replaced with `******`. `sendEmail()` enforces "no body" for these template codes even if
-      a caller forgets the redact option. The list of codes is one constant (extended by the
-      open question below if confirmed).
+      a caller forgets the redact option. The list of codes is one constant.
 - [ ] **template_code everywhere:** every `sendEmail()` call site in `ses-email.service.ts`
       passes `templateCode`, and every enqueue-only and inline writer (F1) sets it on its row.
       A unit test or lint-style check fails if a call site in `ses-email.service.ts` calls
@@ -492,10 +494,63 @@ Use the strongest verification available and state explicitly which automated co
 
 ## Open questions
 
-1. **Should `admin-account-created` and `jury-account-created` also be treated as sensitive (no
-   stored body)?** Their body contains the new account's plaintext password when not SSO
-   (F4, ses-email.service.ts:1099-1101). Decision 4 names only OTP, password reset and email
-   verification. Central logging would otherwise store these passwords in `html_content`,
-   readable by admins with DB or generic-table access. **Recommendation:** yes, add both codes
-   (and mask `data.password` in the subject) to `SENSITIVE_TEMPLATE_CODES`. Needs product-owner
-   or user confirmation before approval.
+None. Former question 1 (account-created emails) was resolved by the user on 2026-09-30:
+treat `admin-account-created` and `jury-account-created` as sensitive (see decision 4).
+
+## Implementation notes (2026-09-30, spec-implementer)
+
+Both repos implemented on `ai_native_setup`, **uncommitted**, awaiting review. SAN-1156 and
+SAN-1157 moved to In Review.
+
+**Backend (sc-saas-backend).**
+- Synchronize DDL, produced offline from TypeORM 0.3.6 metadata (schema builder run against a
+  table built from the pre-change entity, no DB connection): exactly one query,
+  ``ALTER TABLE `ses_email_queue` ADD `template_code` varchar(100) NULL`` (down:
+  `DROP COLUMN`). A control run with an unchanged table produced zero queries. The staging capture
+  in the test plan is still needed to rule out drift between the live table and the entity.
+- The helper had **49** call sites, not 51 (the 51 counted its own `LOG_ENTER`/`LOG_EXIT`
+  strings). All 49 now pass their previous `EmailQueueEmailType` via options. All 116
+  `this.sendEmail(` calls pass an options object with `templateCode`. A static jest check enforces
+  this.
+- `SendEmailLogOptions.templateCode` is typed `EmailTemplateCode | string`, not only
+  `EmailTemplateCode`. Invitation codes are computed (`invitation-to-join-<userType>`), and the
+  startup-kit email has no template row, so it logs the pseudo-code `startup-kit`
+  (`STARTUP_KIT_TEMPLATE_CODE`).
+- `last_sent_at` on central rows is the send-completion time. The old helper used a timestamp taken
+  just before the send.
+- A failed central insert no longer makes the calling function throw after a successful send.
+  Before, a failing `addToSesEmailQueueAsSent()` insert did (same failure class as SAN-99).
+- Tests added: `src/core/services/ses-email.service.logging.spec.ts`,
+  `src/modules/cron/email-log-skip.spec.ts`, `src/modules/cron/sync-broadcast-email-stats.service.spec.ts`
+  (60 new tests). The existing `invitation-reminder.service.spec.ts` assertion was updated for the
+  new `{ skipLog: true }` argument. Four unrelated suites (`programs.repository`,
+  `application-programs.repository`, `partner-domain-access.service`, `global-onboarding-design`)
+  fail identically on a clean HEAD (22 failures, pre-existing).
+- F4's `console.log('attributesToMap', ...)` no longer exists in `sendAdminAccountCreatedEmail`
+  (checked 2026-09-30), so there is nothing to file. Two other `console.log('DEBUG TEMPLATE CONTEXT')`
+  calls remain in the payment-reminder functions.
+
+**Admin (sc-saas-admin).** New `modules/email_logs/list.php`, `themes/default/html/email_logs/list.php`
+and `modules/email_logs/module.spec.md`, plus Quick Links in both headers. The SES-parsing code is
+duplicated from `broadcast_messages/details.php` (plan step 2), and that page is untouched.
+Verified with a PHP built-in-server harness: the real module, template, Medoo and sparkAdminTpl over
+SQLite with stubbed session, permissions and SES. Checked: auth redirects (no permission, partner,
+jury, including POST); counters over the whole filtered set; pagination; each status filter;
+type/template filters; invalid input ignored; default and invalid dates; CSV filters, no bodies,
+formula guard, `can_export_data` gate; Request Stats with forged `email`/`messageId`/`sesRegion`
+(ignored, row's own values used, bounce side effect hits the row's recipient only); pending and
+notFound paths; no-message-id rows skip SES; a lagging tenant without `template_code` loads with the
+template filter and column hidden. The inline JS passes `node --check`. It was not run in a browser.
+
+**Open follow-ups (not in scope, not done).**
+- Pre-existing: `sendEmail()` writes `smtpServerSettings` (including the tenant SMTP password) onto the
+  caller's object. The three inline writers (instant invitation, startup kit, growth-metrics
+  invitation) then save that object into `ses_email_queue.email_data`, so on custom-SMTP tenants the
+  SMTP password lands in that JSON. FA-009's central rows store `email_data = NULL` and are not
+  affected. Worth a bug.
+- Pre-existing: `auditServiceUsage()` stores the unmasked subject, which includes the OTP, in
+  `service_usage.data`.
+- Admin Request Stats merges all `Insights[]` entries, as details.php does. The backend cron now
+  scopes to the row's `Destination`.
+- Rollout step 4 (per-tenant `COUNT(*)` and volume) could not be measured without DB access.
+

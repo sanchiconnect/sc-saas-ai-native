@@ -1,13 +1,13 @@
 ---
 type: index
 repo: admin
-updated: 2026-07-20
+updated: 2026-09-30
 ---
 
 # Admin Module Specs Index
 
-Master index of all `sc-saas-admin` module specs — **68 of 68** `modules/*/` directories now have a
-`module.spec.md` (verified 2026-07-19; zero gaps). The admin panel is PHP/Medoo/sparkAdminTpl with
+Master index of all `sc-saas-admin` module specs — **69 of 69** `modules/*/` directories now have a
+`module.spec.md` (verified 2026-07-19; zero gaps; `email_logs` added 2026-09-30 by FA-009). The admin panel is PHP/Medoo/sparkAdminTpl with
 **two DB connections per request**: `$mainDatabase` (tenants DB — reads feature flags, api_url,
 per-tenant DB creds) and `$database` (per-tenant client DB — all business data). Plus cURL calls to
 `$api_server_url` (sc-saas-backend REST API) and, for a few modules, direct calls to the
@@ -100,6 +100,7 @@ supplementary background. Bundled entries are marked **(legacy/combined)** below
 | Module | Spec | Description |
 |---|---|---|
 | broadcast_messages | [module.spec.md](../sc-saas-admin/modules/broadcast_messages/module.spec.md) | Compose + send audience-filtered broadcasts (email / in-app chat / community-wall post); every send logged for audit |
+| email_logs | [module.spec.md](../sc-saas-admin/modules/email_logs/module.spec.md) | FA-009 (SAN-1157). Tenant-wide Email Logs page over `ses_email_queue`: filters (type, template, IST date range, recipient, status), server-side counters, per-row SES status + Request Stats (row loaded by id; POSTed email/messageId ignored), CSV without bodies. Gated by `can_broadcast_messages`, partners/jury redirected, CSV also needs `can_export_data` |
 | canned_responses | [module.spec.md](../sc-saas-admin/modules/canned_responses/module.spec.md) | Reusable email templates for the applicant broadcast-email composer; also written to directly from other modules' "save as canned response" checkbox |
 | outreach_requests | [module.spec.md](../sc-saas-admin/modules/outreach_requests/module.spec.md) | Cross-tenant/cross-partner program-promotion request system (`program_promotions` lives in the shared tenants DB, not per-tenant) — approve/reject with email notification, optional program clone into the receiving tenant |
 | contacts | [module.spec.md](../sc-saas-admin/modules/contacts/module.spec.md) | Generic category-tagged personal/organizational rolodex (vCard/QR export) — distinct from `connections` and from `outreach_requests`' `program_promotions` |
