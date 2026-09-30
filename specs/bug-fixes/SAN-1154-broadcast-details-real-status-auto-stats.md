@@ -43,4 +43,4 @@ On the sanchiconnect tenant, broadcast 223 (Jul 21 2026, 3,983 recipients) showe
 - The "stats unavailable" state isn't persisted, so an old broadcast shows "Sent" until Request Stats is clicked.
 
 ## Commit
-_pending_
+sc-saas-admin `caf66553` (pushed to `ai_native_setup` 2026-09-30)

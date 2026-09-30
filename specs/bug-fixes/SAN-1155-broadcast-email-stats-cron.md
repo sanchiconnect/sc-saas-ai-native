@@ -53,4 +53,4 @@ were lost for good. Observed: a fetch at 12 days worked (sanchiconnect broadcast
   the largest tenants; add a composite index if needed.
 
 ## Commit
-_pending_
+sc-saas-backend `76b0a4e5` + `d506fa98` (seeded active) (pushed to `ai_native_setup` 2026-09-30)

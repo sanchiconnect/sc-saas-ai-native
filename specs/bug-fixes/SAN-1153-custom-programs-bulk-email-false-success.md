@@ -75,4 +75,4 @@ insert is commented out, so they show a false toast without leaving a phantom ro
   success path still queues rows.
 
 ## Commit
-_pending_
+sc-saas-admin `5528ce48` (pushed to `ai_native_setup` 2026-09-30)
