@@ -22,8 +22,8 @@ were lost for good. Observed: a fetch at 12 days worked (sanchiconnect broadcast
     `all_emails_enabled = 1`; that isn't mirrored because it looks unintended.
   - **Errors:** NotFound only marks the row as checked. Throttling or credential errors stop the run.
     Other errors are logged per row. An end-of-run summary logs `candidates/updated/notFound/noMessageId/errors/stoppedBy`.
-- Registered in `CronJobName`, the default seed (hourly at :20, **inactive**, like every default job except
-  the queue sender), `cron.module.ts` providers, and the `cron.service.ts` scheduler switch.
+- Registered in `CronJobName`, the default seed (hourly at :20, seeded **active**, the only default job
+  besides the queue sender that is, so stats are never lost waiting for a manual switch-on), `cron.module.ts` providers, and the `cron.service.ts` scheduler switch.
 - Config: optional `SES_STATS_ACCESS_KEY_ID` / `SES_STATS_SECRET_ACCESS_KEY` / `SES_STATS_REGION`
   (Joi optional), with getters falling back to `AMAZON_*`.
 - Dependency: `@aws-sdk/client-sesv2` **exactly 3.600.0**. Versions ≥ 3.723 require Node 18, and production runs Node 16.
@@ -40,10 +40,10 @@ were lost for good. Observed: a fetch at 12 days worked (sanchiconnect broadcast
 - Not run against live SES/MySQL. No committed Jest test yet (proposed, waiting for go-ahead).
 
 ## Rollout
-1. Deploy the backend. The job row is auto-inserted into `cron_jobs` as inactive on boot.
-2. Per tenant: `UPDATE cron_jobs SET active = 1 WHERE name = 'syncBroadcastEmailStats';`, then restart
-   the backend. Jobs are loaded at startup.
-3. Check the logs after the next :20 run. `updated > 0` means it works. A `stopped early -- AccessDeniedException`
+1. Deploy the backend. On boot, the job row is auto-inserted into `cron_jobs` as **active** and starts running,
+   with no manual step. To turn it off for a tenant: `UPDATE cron_jobs SET active = 0 WHERE name = 'syncBroadcastEmailStats';`,
+   then restart the backend.
+2. Check the logs after the next :20 run. `updated > 0` means it works. A `stopped early -- AccessDeniedException`
    log, or everything coming back `notFound` for rows only a few hours old, means the keys belong to another
    account or region. In that case set `SES_STATS_*` to the same platform keys the admin uses (`spa_amazon_*`).
 
