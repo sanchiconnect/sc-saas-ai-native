@@ -4,7 +4,7 @@ id: NOTIF-001                   # PLACEHOLDER — no Linear issue/project exists
                                  # with the user, per workspace assignee convention).
 title: Notifications and an Action-Driven Dashboard (Phase 1 — counters, bell, catch-up, admin command centre)
 type: feature
-status: draft                   # All OQs resolved 2026-10-01; awaiting BRD §18 sign-off (SAN-1390) to move to approved.
+status: approved                # Approved by the document owner (vishali.k) 2026-10-01; zero open questions. Formal BRD §18 signatures tracked separately in SAN-1390.
 linear: https://linear.app/sanchiconnect/issue/SAN-1381 (milestone "Notifications and an Action-Driven Dashboard", project Enhancement)
 owner: vishali.k@sanchiconnect.com
 source: "BRD — Notifications and an Action-Driven Dashboard for SanchiAPP, v1.1 (1 Oct 2026), business owner Dr. Sunil Shekhawat"
@@ -338,15 +338,11 @@ These are lifted from the BRD and made concrete. Wireframe references are in bra
 ## Per-repo plan
 
 ### tenants (`sanchiconnect-saas-tenants`)
-- Add the boolean column `notification_centre_enabled` (default `false`) to `src/modules/tenants/entities/tenant-users.entity.ts`, with a migration.
-  - Expose it in the `verify_tenant` / `tenant-settings` features payload in the same way as existing flags.
+- Add the boolean column `notification_centre_enabled` (default `false`) to `src/modules/tenants/entities/tenant-users.entity.ts`. There is no migration file: this repo uses TypeORM `synchronize: true` (`src/core/database/database.module.ts:27`). **[Done, SAN-1401]**
+  - Expose it in **three** places in `global.service.ts`: the `verifyTenant` select list, the `verifyTenant` `features` map, and the `getTenantSettings` select list. **[Done, SAN-1402]**
   - This is a shape change to the tenant-verification contract (invariant #3), but it is additive.
-- Seed the new `spa_settings` keys in `src/modules/global/admin/admin.repository.ts:55`:
-  - `notif_opportunity_counter_mode` = `B`
-  - `sla_outreach_decision_hours` = 48
-  - `sla_grievance_ack_hours` = 24
-  - `sla_grievance_resolve_days` = 7
-  - `notif_engagement_types` = `meeting,mentor_session`
+  - Test: `src/modules/global/global.service.notification-centre-flag.spec.ts`. **[Done, SAN-1400]**
+- ~~Seed the `spa_settings` keys here.~~ **Moved to admin (SAN-1491).** The tenants repo's `spa_settings` is the cockpit DB's own table. Per-tenant `spa_settings` lives in each tenant's DB; sc-saas-admin creates rows on demand with `getSetting()`/`addSetting()`, and the backend reads them through its own `AdminSettingsEntity`. Both readers fall back to the D1/D7/D8 defaults when a row is missing.
 - `sanchiconnect-saas-tenants-admin` needs nothing beyond the generic engine showing the new column. Run `/trace-flag` to confirm.
 
 ### backend (`sc-saas-backend`)
