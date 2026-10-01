@@ -566,6 +566,9 @@ spec then let's start this module"), taking the defaults below.
     maximum of 3 placed calls per submission and no cooldown.
   - Submitted or deleted applicants stay on the dashboard read-only (Refresh only).
   - The button shows when there are drafts or past calls.
+  - **Amended 2026-10-01 (SAN-1356, product owner):** an *answered* (`completed`) applicant can also be
+    re-called manually ("Re-call" button, follow-up call, credits charged again). Still capped at 3 placed
+    calls, drafts only, never while a call is in progress; bulk Sync still calls never-called drafts only.
 - **Q6 (permissions):** RESOLVED 2026-09-28. The default proposed "a new `can_use_zenxai`
   permission", but `spa_admin_users` has no schema owner in any repo (see Code findings), so it's
   revised to **reuse `can_broadcast_messages`**. That's the gate for "Send Bulk Email" on the same
