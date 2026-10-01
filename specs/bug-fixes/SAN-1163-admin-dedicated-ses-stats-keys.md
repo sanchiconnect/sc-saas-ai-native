@@ -26,3 +26,12 @@ Deployments without `SES_STATS_*` keep using `spa_amazon_*` exactly as before.
 
 ## Commit
 sc-saas-admin `4dcabdc5` (on `ai_native_setup`)
+
+## Reverted (2026-10-01)
+Removed at the user's request, together with the backend's `SES_STATS_*` support from SAN-1155:
+- **Admin:** SES clients (broadcast details, partner broadcast details, Email Logs) use `spa_amazon_*` again.
+- **Backend:** the `syncBroadcastEmailStats` job uses `AMAZON_*`; the `sesStats` config, Joi keys and
+  getters were deleted.
+
+The IAM user behind those keys must allow `ses:GetMessageInsights`. `SES_STATS_*` entries left in a `.env`
+are now ignored.
