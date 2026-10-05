@@ -404,6 +404,43 @@ Choices made where the spec was silent or slightly off (none change a contract):
   render partial has no label map, so SAN-1029's suggested label "ZenxAI Voice Calls" wasn't applied.
 - Earlier calls are rendered into a hidden, expandable row on page load instead of an extra AJAX call.
 
+## Follow-ups shipped after v1 (2026-09-29 → 2026-10-01)
+
+- **SAN-1136..1139 — billing via AI Credits.** Governing spec `SAN-1136-zenxai-voice-call-billing.spec.md`: one shared
+  wallet, the `ai_voice_call` Task Rate in credits/min, a hold per call, and charging per connected minute.
+- **SAN-1150 — finance-grade ledger trail.** New voice rows are append-only: HOLD → DEBIT → RELEASED. The AI Credits
+  overview and history labels became HOLD / RELEASED (no "+"/"−" on holds). View ledger is available on the dashboard,
+  in the History `task_type` filter and per call in the details modal. Page loads never wait on ZenxAI: the overview
+  makes 0 polls and the dashboard at most 3. Details are in the SAN-1136 spec, "SAN-1150 ledger trail" section.
+- **UI pass (SAN-1031 follow-ups):**
+  - A summary strip styled like the AI Credits page, with Buy credits / View ledger.
+  - Top-aligned table rows, a pinned Actions column, and a details modal with an audio player and expandable history.
+  - A progress modal with counter tiles.
+  - A dev-only "why is the button hidden" hint on Draft Applications. With `zenxai_crm_enabled` off there's no button
+    and no hint at all; the button uses the theme primary colour.
+  - CSS cache-busting (`?v=<mtime>`) for the shared stylesheets in `elements/header.php`.
+- **SAN-1164 — call-date filter.**
+  - GET `from`/`to` (validated `Y-m-d`, swapped if reversed), with presets Today / Last 7 / Last 30 / This month.
+  - Filters on `zenxai_calls.created_at`. When active, only applicants with a call in range are shown, and the
+    summary stats are scoped to the range.
+  - Search, pagination and per-page keep the filter. "Clear filters" is always visible and disabled when no filter is
+    set. Sync / Call applicants is never affected by the view filter.
+  - Template gotcha: `sparkAdminTpl` has no `__isset`, so read template vars with `??` or directly, never `isset()`.
+- **SAN-1356 — Re-call answered applicants.** `zenxaiRecallableStatuses()` gains `completed`, and the row button reads
+  "Re-call" with its own confirmation. **Call selected** now also re-calls selected applicants whose row allows it,
+  using the same `zenxaiCallState()` rule, re-checked server-side. The confirmation breaks down first calls, re-calls
+  and skip reasons. Bulk Call applicants still only calls never-called drafts. The 3-call cap and drafts-only rule are
+  unchanged (see the Q5 amendment).
+- **SAN-1492 — dynamic Call Data.** `zenxaiBuildCallInputs()` fills ZenxAI `inputs` with only the keys whitelisted in
+  `.env` `ZENXAI_INPUT_FIELDS`. Unset means `inputs: {}`, the pre-change behaviour.
+  - Known keys: applicant_name, company_name, organisation_name, program_name, program_summary, completion_percent,
+    missing_sections, deadline, application_link, support_email.
+  - Completion uses the Update Percentage mandatory-field rule on the raw draft data.
+  - **Pending on ZenxAI:** the owner adds the same Call Data keys and a Dynamic Flow to the assistant before
+    `ZENXAI_INPUT_FIELDS` is set.
+- **Parked by the product owner (2026-10-01):** client/program usage visibility, i.e. labels inside ZenxAI Call Logs
+  and our own cross-tenant "AI Voice usage" report. To be discussed later.
+
 ## Future phase: webhooks (NOT v1)
 
 Documented only so a later phase doesn't reinvent it.
@@ -532,10 +569,20 @@ Singh): https://linear.app/sanchiconnect/project/zenxai-voice-calls-for-draft-ap
 
 | Issue | Repo label | Priority | State | Assignee | Blocked by |
 |---|---|---|---|---|---|
-| SAN-1028 — Tenants flag `zenxai_crm_enabled` | `Repo: Tenants` | High | Todo | Nirmal Singh | — |
-| SAN-1029 — Tenants-Admin switch list | `Repo: Tenants-Admin` | Low | Todo | Nirmal Singh | SAN-1028 |
-| SAN-1030 — Backend entity `zenxai_calls` | `Repo: Backend` | High | Todo | Nirmal Singh | SAN-1028 |
-| SAN-1031 — Admin ZenxAI dashboard + calls (env config) | `Repo: Admin` | High | Todo | Nirmal Singh | SAN-1028, SAN-1030 |
+| SAN-1028 — Tenants flag `zenxai_crm_enabled` | `Repo: Tenants` | High | In Review | Nirmal Singh | — |
+| SAN-1029 — Tenants-Admin switch list | `Repo: Tenants-Admin` | Low | In Review | Nirmal Singh | SAN-1028 |
+| SAN-1030 — Backend entity `zenxai_calls` | `Repo: Backend` | High | In Review | Nirmal Singh | SAN-1028 |
+| SAN-1031 — Admin ZenxAI dashboard + calls (env config) | `Repo: Admin` | High | In Review | Nirmal Singh | SAN-1028, SAN-1030 |
+| SAN-1136..1139 — Billing via AI Credits (see `SAN-1136-zenxai-voice-call-billing.spec.md`) | Tenants / Tenants-Admin / Backend / Admin | High | In Review | Nirmal Singh | SAN-1028..1031 |
+| SAN-1150 — Credit ledger trail + View ledger (in SAN-1136 spec) | `Repo: Admin` | High | In Review | Nirmal Singh | SAN-1139 |
+| SAN-1164 — Call-date filter + Clear filters | `Repo: Admin` | Medium | In Review | Nirmal Singh | SAN-1031 |
+| SAN-1356 — Re-call answered applicants + Call selected re-calls | `Repo: Admin` | Medium | In Review | Nirmal Singh | SAN-1031 |
+| SAN-1492 — Dynamic Call Data (`ZENXAI_INPUT_FIELDS`) | `Repo: Admin` | High | In Review | Nirmal Singh | SAN-1031 |
+
+**Status (2026-10-01):** all code is pushed to `ai_native_setup` in every repo. Issues stay **In Review** until two
+things happen: (1) the tables are confirmed on a real deployed DB (deploy order tenants → tenants-admin → backend →
+admin), and (2) the go-live gates are met (`.env` keys, the `ai_voice_call` Task Rate, the AI/recording disclosure,
+one internal test call).
 
 ## Open questions
 
@@ -566,6 +613,9 @@ spec then let's start this module"), taking the defaults below.
     maximum of 3 placed calls per submission and no cooldown.
   - Submitted or deleted applicants stay on the dashboard read-only (Refresh only).
   - The button shows when there are drafts or past calls.
+  - **Amended 2026-10-01 (SAN-1356, product owner):** an *answered* (`completed`) applicant can also be
+    re-called manually ("Re-call" button, follow-up call, credits charged again). Still capped at 3 placed
+    calls, drafts only, never while a call is in progress; bulk Sync still calls never-called drafts only.
 - **Q6 (permissions):** RESOLVED 2026-09-28. The default proposed "a new `can_use_zenxai`
   permission", but `spa_admin_users` has no schema owner in any repo (see Code findings), so it's
   revised to **reuse `can_broadcast_messages`**. That's the gate for "Send Bulk Email" on the same

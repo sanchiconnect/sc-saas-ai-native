@@ -32,6 +32,7 @@ All 60 `sc-saas-backend` modules under `src/modules/` have a `module.spec.md` (u
 | `program-management` | [spec](../sc-saas-backend/src/modules/program-management/module.spec.md) | Incubator program CRUD + payment reminders. `payment-reminder/:adminMd5` has admin-check commented out — fully unauthenticated write. `updateRound()` now also triggers Startup Recognition ID generation (SAN-253) and drives `startup_reapplication_history`; a DI crash-loop from a missed provider registration (`CitiesRepository`/`DistrictsRepository`/`SubDistrictsRepository`) was fixed this pass. |
 | `program-office-members` | [spec](../sc-saas-backend/src/modules/program-office-members/module.spec.md) | POM stakeholder lifecycle + ecosystem sync. Circular dep with `EcoSystemModule` via `forwardRef`. |
 | `vs-programs-management` | [spec](../sc-saas-backend/src/modules/vs-programs-management/module.spec.md) | Venture Studio program rounds. Most `@Features(VENTURE_STUDIO)` annotations commented out. `getProgram` creates a DB row on every read. |
+| `jury-nda` | [spec](../sc-saas-backend/src/modules/jury-nda/module.spec.md) | Schema-only (FA-010): `jury_nda_versions` + `jury_nda_acceptances` for Jury NDA Signing. No routes yet; email endpoints + retry cron to follow. Jurors sign in sc-saas-admin; this module owns the tables only. |
 
 ---
 
