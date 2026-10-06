@@ -57,7 +57,15 @@ The product owner wants the module to work like the AI analyzer's provider abstr
 
 ### admin (SAN-1739)
 - **`includes/voice_agent/VoiceAgentProvider.php`:** the contract. It returns normalized result kinds (`ok | fatal | rate_limited | transient | rejected | not_cancellable | error`) plus mapped columns. Everything vendor-specific lives behind it: HTTP, auth, endpoints, status and error mapping. Its messages never name the vendor.
-- **`includes/voice_agent/providers/ZenxaiVoiceProvider.php`:** the ZenxAI behaviour, moved unchanged. Env: `ZENXAI_BASE_URL`, `ZENXAI_API_KEY`, `ZENXAI_ASSISTANT_ID` (default assistant), `ZENXAI_INPUT_FIELDS` (default Call Data).
+- **`includes/voice_agent/providers/ZenxaiVoiceProvider.php`:** the ZenxAI behaviour, moved unchanged.
+- **Env model (the same as the AI analyzer, added 2026-10-06 at the product owner's request):**
+  - `VOICE_AGENT_DEFAULT_PROVIDER`, plus one generic slot: `VOICE_AGENT_API_KEY`, `VOICE_AGENT_BASE_URL`,
+    `VOICE_AGENT_ASSISTANT_ID`, `VOICE_AGENT_INPUT_FIELDS` and `VOICE_AGENT_RESERVE_MINUTES`.
+  - `voiceAgentEnv($code, $name)` uses the generic slot only for the default provider. Any other
+    provider reads its own `<CODE>_<NAME>` keys, so the generic key is never sent to the wrong vendor.
+  - The legacy `ZENXAI_*` keys therefore keep working as fallbacks.
+  - Plain `DEFAULT_PROVIDER` / `CLOUD_API_KEY` are deliberately not reused, because they belong to video
+    transcription (Gemini).
 - **`includes/voice_agent_functions.php`** (formerly `zenxai_functions.php`): the generic core.
   - Registry `voiceAgentProviderClasses()`. `VOICE_AGENT_DEFAULT_PROVIDER` is optional and defaults to `zenxai`.
   - `voiceAgentProvider($tenantRow)` uses the tenant settings and falls back to the defaults.
@@ -111,7 +119,9 @@ The product owner wants the module to work like the AI analyzer's provider abstr
 
 Admin must not deploy before backend: until `voice_agent_calls` exists, the feature is hidden (developers see the reason) and no calls can be placed.
 
-The env vars need no change. Optional new ones: `VOICE_AGENT_DEFAULT_PROVIDER` and `VOICE_AGENT_RESERVE_MINUTES`.
+The env needs no change: the existing `ZENXAI_*` keys keep working. The recommended generic keys are
+`VOICE_AGENT_DEFAULT_PROVIDER`, `VOICE_AGENT_API_KEY`, `VOICE_AGENT_BASE_URL`, `VOICE_AGENT_ASSISTANT_ID`,
+`VOICE_AGENT_INPUT_FIELDS` and `VOICE_AGENT_RESERVE_MINUTES`.
 
 ## Out of scope
 - A second real provider; this work only adds the slot for one.
