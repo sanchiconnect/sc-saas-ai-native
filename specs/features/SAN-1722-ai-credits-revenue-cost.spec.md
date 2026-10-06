@@ -72,7 +72,7 @@ There's also no report putting revenue next to the full cost.
 - **Tests:** `api/tests/test_enrichment_usage.py` (stdlib unittest + `httpx.MockTransport`, no network).
 
 ### 3. sc-saas-admin (SAN-1724)
-- **`aiCreditEnrichmentCounts($cost, $domain, $runRef)`** returns `[]`, so nothing changes, unless the analyzer sent counts AND
+- **`aiCreditEnrichmentCounts($cost, $domain, $runRef)`** (since replaced by `aiCreditRunCostDelta()`, SAN-1735) returns `[]`, so nothing changes, unless the analyzer sent counts AND
   the ledger columns exist (cached `SHOW COLUMNS` guard).
   - For a run, the analyzer counts are cumulative, so it returns only the part **not already on that run's DEBIT rows**
     (`$runRef`, `$runRef_retry`, `$runRef_extra_*`). Extra/retry debits therefore never count the same calls twice.
@@ -129,14 +129,12 @@ There's also no report putting revenue next to the full cost.
 - **Not done:** no live end-to-end run against a real analyzer or real tenants DB. Automated coverage exists for the analyzer
   only; the PHP repos have no test suite.
 
-## Known gaps found while building (not changed here)
-- **LLM cost double-count (pre-existing):** `finalize-analysis` returns the run's cumulative LLM cost, and the admin copies it
-  onto the main settle row *and* onto any `_retry` / `_extra_*` debit row of the same run. The P&L's LLM line therefore
-  overstates runs that had a rescore retry or an extra batch. The fix is the same delta approach for `llm_*`; it needs its own
-  issue because it changes existing ledger values.
-- **Thesis LLM cost is not on the ledger (pre-existing):** the thesis debit passed `array()` before, and now passes only the
-  enrichment counts. The page's thesis LLM cost is therefore ₹0.
-- **ZenxAI voice-call cost** is not in the P&L (out of scope, labelled on the page).
+## Known gaps found while building: fixed by SAN-1734 / SAN-1735
+- **LLM cost double-count on `_retry` / `_extra_*` rows, and re-queued batch spend being lost:** fixed. The analyzer now
+  reports `cumulative_*` spend, and the admin stores a per-run delta (`aiCreditRunCostDelta`). See
+  `specs/bug-fixes/SAN-1734-1735-ai-credits-ledger-llm-cost-double-count.md`.
+- **Thesis LLM cost not on the ledger:** fixed (`aiCreditCallCostData`).
+- **ZenxAI voice-call cost** is still not in the P&L (out of scope, labelled on the page).
 
 ## Rollout
 1. Deploy tenants first: TypeORM `synchronize` adds the two ledger columns.
