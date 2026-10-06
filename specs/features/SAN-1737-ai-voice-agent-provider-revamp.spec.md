@@ -103,6 +103,18 @@ that share the provider account and hold the same tenant, program and submission
 
 **Verified on the mock:** old-call replay → rejected and refunded; retry → fresh key `-2`; fresh 200 → accepted; 202 → accepted; redirect → `/voice_agent/63/launch-program`.
 
+## Platform call log for operators (SAN-1744 / 1745 / 1746, 2026-10-06)
+This is "Option B" from the 1 Oct discussion: see which client, and which program, uses the AI Voice Agent, across every tenant.
+
+- **tenants:** `ai_voice_call_logs` (AiCreditsModule), unique on (domain, call_row_id).
+- **admin:** `voiceAgentSyncCallLogs()` copies changed calls incrementally (keyset cursor) after every voice-agent request and after the wallet reconcile. It is best-effort, and copies masked phones and no payloads.
+- **tenants-admin:** AI Credits → **AI Voice Calls**. It shows KPIs, usage by client → program, and the full call log, with filters and CSV exports.
+- **Verified (throwaway MySQL, real entity, real Medoo):**
+  - The first sync copied 5 rows; an unchanged second run copied 0; a finished call updated 1 row.
+  - 450 rows sharing timestamps paged as 200 + 200 + 50.
+  - The page rendered with no warnings, the filters and both CSVs work, and phones are masked.
+- **Known limit:** a tenant's calls reach the log only when its admins next open the AI Voice Agent page or the AI Credits wallet (there is no cron). Calls made before the deploy are back-filled on that first visit.
+
 ## Adding a provider later
 1. Add `includes/voice_agent/providers/<Vendor>VoiceProvider.php` implementing `VoiceAgentProvider`. Map its statuses onto the canonical set and read its keys from env.
 2. Add one line to `voiceAgentProviderClasses()` (admin) and to `voiceAgentProviderOptions()` (tenants-admin).
