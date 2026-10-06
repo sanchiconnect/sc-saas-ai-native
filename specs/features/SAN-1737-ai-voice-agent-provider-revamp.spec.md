@@ -8,7 +8,7 @@ owner: nirmal.s@sanchiconnect.com
 repos: [tenants, backend, admin, sanchiconnect-saas-tenants-admin]
 contracts:
   flags:
-    - "NEW ai_voice_agent_enabled (tenant_users, nullable boolean; NULL = inherit zenxai_crm_enabled). Consumer: sc-saas-admin config.php. zenxai_crm_enabled DEPRECATED (kept, never written)."
+    - "NEW ai_voice_agent_enabled (tenant_users, nullable boolean; NULL = off). Consumer: sc-saas-admin config.php. REMOVED zenxai_crm_enabled (column dropped 2026-10-06, after the one-time copy had run everywhere)."
   api: []
   events: []
   schema:
@@ -43,8 +43,8 @@ The product owner wants the module to work like the AI analyzer's provider abstr
   - `voice_agent_provider` (32)
   - `voice_agent_assistant_id` (128)
   - `voice_agent_input_fields` (500)
-- **Seed on boot:** `TenantsService.onApplicationBootstrap` copies `zenxai_crm_enabled` into `ai_voice_agent_enabled` where it is NULL. This is idempotent, never overrides an operator's value, and is fail-soft.
-- **Old flag:** `zenxai_crm_enabled` is marked deprecated and kept.
+- **Seed on boot (removed again 2026-10-06):** `TenantsService.onApplicationBootstrap` copied `zenxai_crm_enabled` into `ai_voice_agent_enabled` where it was NULL. It was removed together with the old column once it had run on every environment.
+- **Old flag:** `zenxai_crm_enabled` was dropped from the entity on 2026-10-06, at the product owner's request, after confirming the copy had run everywhere.
 - **Not in the public contract:** these fields are not added to verify_tenant / tenant-settings, because sc-saas-admin reads the row directly.
 
 ### backend (SAN-1738)
@@ -80,12 +80,28 @@ The product owner wants the module to work like the AI analyzer's provider abstr
   - The route is now `application_management/voice_agent/{id}/{slug}`. `zenxai_dashboard.php` is a stub: a 301 for GET, and a JSON "reload" message for POSTs from stale tabs.
   - AJAX actions are renamed `voiceAgent*`; JS and CSS identifiers `va*`.
   - The Draft Applications button reads "SanchiConnect AI Voice Agent".
-  - The flag constant `ai_voice_agent_enabled` falls back to `zenxai_crm_enabled` on NULL.
+  - The flag constant `ai_voice_agent_enabled` is NULL = off.
 
 ### tenants-admin (SAN-1740)
-- **Switch:** `ai_voice_agent_enabled` replaces `zenxai_crm_enabled` in the switch list. A NULL value displays the inherited value.
+- **Switch:** `ai_voice_agent_enabled` replaces `zenxai_crm_enabled` (now dropped) in the switch list.
+- **Create and Edit:** both pages carry the "SanchiConnect AI Voice Agent" card (shared partial `_voice_agent_card.php`). Clone Latest Tenant never copies these settings.
 - **Edit page:** a new "SanchiConnect AI Voice Agent" card for the provider, assistant ID and Call Data fields, validated by `_voice_agent_settings.php`. Detail shows the same fields read-only.
 - **Revenue & Cost:** the note now says "AI Voice Agent call cost".
+
+## Fix 2026-10-06: calls replayed instead of dialled (found in local testing)
+**Symptom.** "Call" reported success, but ZenxAI dialled nobody. The admin showed an old call (0m 37s) from 1.5 hours earlier.
+
+**Root cause.** The legacy `zenxai_calls` rows had been deleted (its auto-increment was at 21 with 0 rows), so the new table restarted the
+idempotency numbering at `-1`. ZenxAI replays an existing key: it answered **200** with the original call instead of **202** with a new one. Different environments
+that share the provider account and hold the same tenant, program and submission IDs (local copies, staging) collide the same way.
+
+**Fix.**
+- **Environment-scoped keys:** keys are now `sc-{env}-t{t}-p{p}-s{s}-{n}`, where `{env}` is the first 6 hex characters of md5(admin hostname). They stay deterministic per environment, so the double-click claim is preserved.
+- **Replay detection:** a *new* claim that comes back as a replay is released, its credits are refunded, and nothing is adopted. The provider sets `replayed` only for a 200 whose call was created more than 2 minutes ago, so a 200 for a genuinely new call can never block calling.
+- **Resume unaffected:** a deliberate "Retry sending" still re-sends the same key and accepts the replay.
+- **Redirect stub:** the old `zenxai_dashboard` URL redirected to `/voice_agent/0`. The stub now reads the route from `?action=`.
+
+**Verified on the mock:** old-call replay → rejected and refunded; retry → fresh key `-2`; fresh 200 → accepted; 202 → accepted; redirect → `/voice_agent/63/launch-program`.
 
 ## Adding a provider later
 1. Add `includes/voice_agent/providers/<Vendor>VoiceProvider.php` implementing `VoiceAgentProvider`. Map its statuses onto the canonical set and read its keys from env.
@@ -126,4 +142,4 @@ The env needs no change: the existing `ZENXAI_*` keys keep working. The recommen
 ## Out of scope
 - A second real provider; this work only adds the slot for one.
 - Per-tenant API keys.
-- Dropping `zenxai_calls` and `zenxai_crm_enabled`. That is a later cleanup, after every tenant's rows have been verified as migrated.
+- Dropping `zenxai_calls`. That is a later cleanup, after every tenant's rows have been verified as migrated. (`zenxai_crm_enabled` was already dropped on 2026-10-06.)
