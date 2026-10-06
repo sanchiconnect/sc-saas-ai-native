@@ -50,9 +50,9 @@ supplementary background. Bundled entries are marked **(legacy/combined)** below
 
 | Module | Spec | Description |
 |---|---|---|
-| application_management | [module.spec.md](../sc-saas-admin/modules/application_management/module.spec.md) | Full CFA lifecycle — program creation wizard, round management, submission review, jury evaluation, approve/reject; also covers legacy startup-programs + mentor application flows |
+| application_management | [module.spec.md](../sc-saas-admin/modules/application_management/module.spec.md) | Full CFA lifecycle — program creation wizard, round management, submission review, jury evaluation, approve/reject; also covers legacy startup-programs + mentor application flows; FA-011 Limit Jury Access adds the Limit Access pop-up (Round Settings → Jury allotment), round badges, activity + CSV and the admin-only "Preview as juror" page (`jury_visibility_preview`) |
 | program-management | [module.spec.md](../sc-saas-admin/modules/program-management/module.spec.md) | PM/corporate-PM dashboards + program creation wizard; mentor round-advance/reject/tentative backend calls |
-| jury | [module.spec.md](../sc-saas-admin/modules/jury/module.spec.md) | Jury assignment, per-round scoring dashboards, review of startup/application/mentor/individual submissions |
+| jury | [module.spec.md](../sc-saas-admin/modules/jury/module.spec.md) | Jury assignment, per-round scoring dashboards, review of startup/application/mentor/individual submissions; FA-011 server-side hiding of questions on `round-applications.php` (fail closed, 15-minute file links, reviewers get the programme-wide union) |
 | challenges | [module.spec.md](../sc-saas-admin/modules/challenges/module.spec.md) | Corporate challenge creation, participant management — details.php JSON comparison bug locks non-super-admin PMs |
 | venture-studio | [module.spec.md](../sc-saas-admin/modules/venture-studio/module.spec.md) | VS-specific program management where individuals (not startups) apply and admins form teams from accepted applicants |
 | startup-application-management-flow | [flow.spec.md](../sc-saas-admin/modules/startup-application-management-flow.spec.md) | Kanban/table/reports view for a program's applications — 13 AJAX handlers; bulk email; round moves via backend `:adminMd5` API |
@@ -240,4 +240,4 @@ supplementary background. Bundled entries are marked **(legacy/combined)** below
 | 🟢 Low | system_logs | `list_aditya.php` is an unrouted near-duplicate of `list.php` — dead code, not a security issue but a maintenance trap |
 | 🟢 Low | reporting_backup | Confirmed dead code — stale duplicate of `reporting/`, not a real backup/DR mechanism; safe to delete but out of scope here |
 
-Updated: 2026-07-20
+Updated: 2026-10-06 (FA-011 Limit Jury Access: application_management + jury rows). Earlier: 2026-07-20
