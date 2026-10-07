@@ -163,6 +163,10 @@ Build order: SAN-1748 -> SAN-1750 -> SAN-1749 and SAN-1751 -> SAN-1752. Each rep
 - Frontend (`sc-saas-frontend`) changes; 3rdparty-webservices; ai-startups-analyzer.
 - Backfilling or seeding the flag by querying tenant databases from the tenants service (the tenants service does not read tenant DBs; see Open question 2).
 
+## Amendment 2026-10-07 (Sandeep): column shape
+
+The column is a NON-NULL boolean with `default: false` (shape of `limit_jury_access_enabled`, `tinyint(1)` 0/1 like the other switches in phpMyAdmin), not nullable. Existing tenants therefore read 0 = off. Admin still treats a missing key / NULL / anything but "1" as off (fail closed), so nothing else changes. Deploy note: the dev DB already holds the column as nullable with NULL values (it was created by `synchronize` from the first version), and MySQL refuses `NOT NULL` while NULL rows exist, so run `UPDATE tenant_users SET jury_nda_enabled = 0 WHERE jury_nda_enabled IS NULL;` BEFORE deploying this entity change.
+
 ## Open questions
 
 **All eight items were confirmed by Sandeep on 2026-10-07 by approving each proposal as written (asked and answered: "Sab proposals approve"). Product-owner / legal items (Q3, Q6) carry Sandeep's sign-off as the gate holder; if the product owner or legal later disagrees, reopen them. No open question remains, so the spec is approvable.**
