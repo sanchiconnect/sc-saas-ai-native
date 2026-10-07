@@ -56,3 +56,24 @@ Sentry showed 73 unresolved because (a) a 90-day view surfaced groups last seen 
 
 ## Part 4 — last group (FRONTEND-14 / SAN-1759) — real fix, not noise
 Listed as "library noise" in the project description, but the event proved a real, still-live defect on a release that already had SAN-151's fix: `formatMeetingData()` (`modules/calender/helpers.ts`) overwrites `timeFrom/timeTo` with `'hh:mm a'`, so a second pass re-parsed `"2026-10-22 11:00 am"` with no format (`_f: undefined`) and moment fell back to native `Date()`. Fix: explicit format list `['YYYY-MM-DD HH:mm:ss','YYYY-MM-DD HH:mm','YYYY-MM-DD hh:mm a']` for the from/to parses. Verified with a node script on the repo's `moment-timezone` (9 cases, 0 warnings; the old parse reproduces the warning) + `tsc`; no browser run, no Karma (SAN-1653). Committed to `ai_native_setup_aman`. **Sentry unresolved: 0 after this resolve** (any new event reopens its group).
+
+## Index — per-ticket records and module specs (added after the sweep; step 9 of the loop)
+| Ticket | Record | Module spec(s) updated | Commit |
+|---|---|---|---|
+| SAN-1753 | `SAN-1753-tenants-ecosystem-patch-global-exception-filter-stale-build.md` (no code change) | tenants `src/core/module.spec.md` (validateCustomDecorators removed; CORS 418) | tenants `5879939` (docs) |
+| SAN-557 / 1672 | `SAN-557-frontend-26-tenant-verification-cors-registry-and-504.md` (+ old `SAN-557-tenant-verification-resolve-domain-failing.md` closed) | tenants `src/core/` + `src/modules/global/` specs | tenants `5879939` |
+| SAN-1754 | `SAN-1754-backend-profile-completeness-nan-guard.md` | backend corporate, individual, investor, mentors, partner, program-office-members, service-providers, startup | backend `6b3f8945` + `c0a45ad3` (specs) |
+| SAN-454 | `SAN-454-s3-signature-does-not-match-ascii-content-disposition.md` | backend `core/upload-module` | backend `6b3f8945` + `c0a45ad3` |
+| SAN-1755 | `SAN-1755-admin-undefined-function-local-env-no-change.md` (no code change) | — | — |
+| SAN-1756 | `SAN-1756-financials-details-count-invalid-fields-guard.md` | frontend startups | frontend `49ee4426f` + specs commit |
+| SAN-1757 | `SAN-1757-tenants-admin-bootstrap-retry-and-select-reconnect.md` | tenants-admin root `module.spec.md`, sc-saas-admin `module.spec.md` | tenants-admin `0ccd8af`; admin `46361187` |
+| SAN-1758 | `SAN-1758-pitch-deck-sales-hiring-backend-removed-canceled.md` (Canceled, not fixed) | — | — |
+| SAN-1759 | `SAN-1759-calender-format-meeting-data-explicit-time-formats.md` | frontend calender | frontend `306c9bd5b` + specs commit |
+| SAN-1760 | `SAN-1760-fetch-dynamic-form-data-error-handlers.md` | frontend corporate, individual-profile, investors, mentors, partners-details, program-office, service-provider, startups | frontend `49ee4426f` + specs commit |
+| SAN-1761 | `SAN-1761-program-public-apply-localstorage-try-catch.md` | frontend programs | frontend `49ee4426f` |
+| SAN-1762 | `SAN-1762-growth-metrics-swal-show-loader-without-preconfirm.md` | frontend growth-matrics | frontend `49ee4426f` |
+| SAN-1763 | `SAN-1763-handle-verify-payment-null-response.md` | frontend dynamic-forms, programs | frontend `d18c43e4c` |
+| SAN-1764 | `SAN-1764-profile-viewers-null-company-name.md` | frontend account | frontend `d18c43e4c` |
+| SAN-920 | `SAN-920-hire-page-duplicate-master-loader.md` | frontend hire, calender | frontend `49ee4426f` |
+
+Gap Register: not opened — `/bug-fix` work is exempt from the Gap Register ceremony (CLAUDE.md step 9). The one real gap worth tracking is SAN-433 (systemic ngx-ui-loader fix: CI guard / auto-id wrapper — ~95 bare loaders remain) and the SAN-1758 product decision.
