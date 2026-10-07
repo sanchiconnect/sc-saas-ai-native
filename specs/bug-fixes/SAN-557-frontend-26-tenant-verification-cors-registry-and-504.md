@@ -30,3 +30,6 @@ Live probes only (above); no code changed this pass. The cache and retry fixes w
 
 ## Sentry
 Resolved under policy with a reopen note: status 0 on a registered host or a 504 after `f74d37d` points to tenants API capacity or client network; a new unregistered host means an ops registration.
+
+## Owner decision 2026-10-07
+The hosts in cause (a) are not current customers, so they are intentionally NOT registered; the "register in tenants-admin" action is cancelled. Sentry FRONTEND-26 is ignored-until-escalating rather than resolved.
