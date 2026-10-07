@@ -61,6 +61,10 @@ The BRD asks for three counter types, kept strictly apart:
 | New since last visit | orange | Clears after a qualifying visit | yes |
 | Live | outlined | Running count of what is open now | no |
 
+> **Admin bell amendment (2026-10-06, product decision by Mahima):** clicking a queue in the *admin* bell marks it read for that admin. Each red queue gets a per-admin `admin_section_last_seen` row (`bell_outreach`, `bell_ecosystem`, `bell_tasks`, `bell_support`); from then on the bell counts only that queue's pending items created after the click. Orange sections (`engagements`) clear immediately instead of after the 3-second visit. Sidebar badges, list pages and the command centre are unchanged and still show the full pending totals, so red items there still stay until acted on. An admin who has never clicked a queue sees its full count. Implemented in `sc-saas-admin/includes/notification_centre_functions.php` (`bell_count`) and `themes/default/html/elements/header.php`.
+
+> **Engagements amendment (2026-10-06, product decision by Mahima):** Engagements is no longer an orange "new since your last visit" counter. It is a red action queue: meetings waiting on admin moderation (`moderation_exists = 1`, `moderation_status = 'pending'`). A meeting stays in the count until an admin accepts or rejects it; visiting the meetings page no longer clears it, and the 3-second visit timer no longer runs there. Mentorship requests are left out, because the mentor approves them, not an admin. The bell follows the other red queues: clicking it writes a `bell_engagements` row, and from then on the bell counts only pending meetings created after the click. Implemented in `sc-saas-admin/includes/notification_centre_functions.php` and `themes/default/html/elements/footer.php`.
+
 It also asks for a bell with a notification centre, a catch-up card, and an admin command centre.
 
 ## Current state (what already exists — reuse, don't reinvent)
@@ -254,7 +258,7 @@ Each counter is visible only when the admin has the permission shown (NFR-06).
 |---|---|---|---|
 | `outreach` (FR-A1) | red | `partner_broadcast_requests status='pending' AND target_scope='hub'` + `program_promotions approval_status='pending'` for this tenant's domain. Oldest age shown; overdue when older than `sla_outreach_decision_hours`. Subject to OQ-2 | `can_broadcast_messages` / promotions |
 | `ecosystem.{persona}` (FR-A2) | red | `approval_status='pending'` per enabled persona table. Sum = menu total. Personas whose tenant flag is off are hidden | `can_accept_reject_profiles` + `profiles_access` |
-| `engagements` (FR-A3) | orange, per admin | `meetings` + `mentorship` rows with `created_at > admin_last_seen(engagements)`, limited to `notif_engagement_types` | engagement/meetings menu role |
+| `engagements` (FR-A3) | red, shared (amended 2026-10-06) | `meetings` rows with `moderation_exists = 1` and `moderation_status = 'pending'` (not soft-deleted), when `meeting` is in `notif_engagement_types` | engagement/meetings menu role |
 | `tasks` (FR-A4) | red | `tasks` with `task_status IN ('open','assigned')`, `status=1`, and (`assigned_to_ids` contains me OR team-queue rule per OQ-5). Overdue = `due_date < today` | `task_management` flag + tasks menu role |
 | `support.{feedback,grievance}` (FR-A5) | red | `tickets` with `ticket_status='open'`, split per OQ-4. "Awaiting user" is a grey sub-count, excluded from red | `ticket_management` flag + tickets menu role |
 | `bell` | — | Sum of the above | — |
@@ -323,7 +327,7 @@ These are lifted from the BRD and made concrete. Wireframe references are in bra
 - [ ] Personas disabled for the tenant do not appear.
 - [ ] The outreach list sorts oldest first and shows waiting time. Items past SLA are marked Overdue.
 - [ ] Rejecting an outreach request requires a reason, which reuses the SAN-392 `rejection_message` flow.
-- [ ] Engagements is orange and per admin. It clears after a 3-second visit to the engagements view.
+- [ ] Engagements is red and shared. A meeting leaves the count only when an admin accepts or rejects its moderation request (amended 2026-10-06).
 - [ ] Tasks lists overdue items first. The count drops on complete or cancel.
 - [ ] Support shows separate Feedback and Grievance counts, plus a grey "awaiting user" sub-count, per OQ-4.
 - [ ] The command centre lists every queue the admin may see, with its count and oldest-item age, and SLA breaches in a strip at the top.
