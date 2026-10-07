@@ -281,3 +281,12 @@ Three of the original four are now answered (see D-Footer, D-DPDP, D-Signoff). W
 2. **Legal confirmation of D-DPDP** (retain signed NDAs through the retention period even when a juror requests erasure). Blocks SAN-1379's delete action only; the build proceeds on the confirmed 'retain' decision.
 
 Business sign-off was relayed by Sandeep, not attached; attach or reference the signed BRD §20 page when available.
+
+## Changes after approval (2026-10-07, Sandeep) — signed-copy email
+
+- **Download link instead of attachment.** The signed-copy email (`jury-nda-signed-copy`) no longer attaches the PDF. It shows a "Signed Copy" row with a green Download button in the details table (shortcode `download_url`). The link is a private-bucket presigned GET valid for 7 days (S3 maximum) with `Content-Disposition: attachment; filename="Signed_NDA_...pdf"`; a retry signs a fresh link. This supersedes the Endpoint 1 wording above ("`attachments:[{path,filename}]`", presigned TTL of at least 15 minutes) and the 30-minute gateway link. Trade-off accepted: the link works without login until it expires (the juror can always download from My NDA).
+- **Unsubscribe footer on all four emails.** The signed copy used to opt out of the standard unsubscribe footer (`skipUnsubscribeFooter`, decision of 2026-10-01 / SAN-1360). Since 2026-10-07 none of the four Jury NDA emails opts out.
+- **Decline alert recipients** now always include every Super Admin of the tenant (SAN-1770), see `specs/bug-fixes/SAN-1770-jury-nda-decline-email-super-admin.md`.
+- **Tenant switch** `jury_nda_enabled` gates the whole feature (FA-012).
+- Verification of the email change: backend `npx tsc --noEmit` clean and the related jest suites pass (ses-email service, signed-copy service, admin-actions signed-copy, upload service); no real e-mail was sent yet. No automated test coverage was added to sc-saas-admin.
+
