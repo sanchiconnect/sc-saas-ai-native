@@ -2,7 +2,7 @@
 id: SAN-1472
 title: "Notifications Phase 2 — EX-05 Event reminders (24 h and 1 h before a registered event)"
 type: feature
-status: approved                # approved by Mahima 2026-10-08: all 14 OQs resolved with the recommended defaults
+status: done                    # approved 2026-10-08; implemented 2026-10-08; SAN-1829/1830 + SAN-1472 Done; manual dev-tenant run + EXPLAIN still pending
 linear: https://linear.app/sanchiconnect/issue/SAN-1472/notifications-p2-ex-05-event-reminders-24-h-and-1-h   # parent issue (project "Enhancement"); sub-issues SAN-1829 (backend), SAN-1830 (frontend)
 owner: Mahima Sharma
 source: "BRD — Notifications and an Action-Driven Dashboard for SanchiAPP, v1.1, EX-05, Phase 2 (not wireframed)"
@@ -308,6 +308,31 @@ None. All 14 were resolved by Mahima on 2026-10-08 by accepting every recommende
 | OQ-12 Manual trigger (dev lead) | None |
 | OQ-13 Copy | §Copy table approved as written |
 | OQ-14 Cadence (dev lead) | `*/5 * * * *` |
+
+## Implementation notes (2026-10-08)
+
+Built on branch `ai_native_setup_mahima` in `sc-saas-backend` and `sc-saas-frontend`, on top of the uncommitted SAN-1471 work. Nothing is committed. Every OQ decision above was implemented as written. Deviations and additions:
+
+- **Registration-time check (P-3).** The 24 h rule compares `UNIX_TIMESTAMP(ea.created_at)` with `S − 24h` turned into IST epoch seconds (`TIMESTAMPDIFF(SECOND, '1970-01-01 05:30:00', S − 24h)`). The spec's form was `created_at + 330 min`. Both give the same answer when the MySQL session time zone is UTC. No connection `timezone` is configured, and `created_at` is a TIMESTAMP, so this form also works under any other session time zone.
+- **Deleted users skipped.** The selection also joins `users` with `deleted_at IS NULL`, so soft-deleted accounts get no reminders.
+- **Claim keeps `modified_at`.** The claim UPDATE sets `modified_at = modified_at`, so a reminder does not count as an edit of the attendee row.
+- **Writer surface (P-6).** `EventReminderNotificationsService.notifyEventReminder(window, reminder)` writes one row and returns `true`/`false` (it never throws). `emitFetchCount(userIds)` emits once per distinct recipient. `EventReminderService` calls `emitFetchCount` once per run, after both windows. The writer module does not provide `UserRepository` (the recipient is the attendee's own `user_id`). A new `EventReminderWindow` enum (`'24h' | '1h'`) is in `core/constants/enum.ts`.
+- **Copy details.** `{time}` uses lowercase `am`/`pm` (moment's `a`). It is formatted directly from the IST wall-clock string, without a Date or moment, so the server time zone cannot shift it. Other fallbacks:
+  - a NULL `delivery_mode` is treated as online;
+  - a 1:1 in-person event shows the venue;
+  - an empty event title becomes "Your event".
+- **Frontend.** The bell reuses `statusIcon()` (it now also returns the event icon). `/notifications` gets a `TYPE_META` entry with no fixed route, so a click opens the row's `url`. The karma specs are in new `*.event-reminder.spec.ts` files next to the SAN-1471 specs.
+- **Module specs updated.** Backend: `modules/notifications`, `modules/cron`, `modules/events`. Frontend: `modules/notifications`. The cron job-name list also gained the missing `NOTIFICATIONS_PURGE` / `RETRY_JURY_NDA_EMAILS`, and the list of jobs seeded active now includes `RETRY_JURY_NDA_EMAILS`.
+- **Not yet verified.** The due-rows SQL has not been run against MySQL; no local DB was available. The jest tests check the SQL's clauses and boundary operators, and emulate the conditional UPDATE's semantics for the claim tests. Still pending:
+  - the manual dev-tenant run from the Test plan (rows appear once; re-arm on admin date edit; silence on cancel);
+  - `EXPLAIN` of the due-rows query.
+
+  No index was added.
+- **Gates.** `/check-isolation`, `/audit-contract` and `/trace-flag` were checked inline against their agent checklists.
+  - Isolation: no hardcoded host and no cross-tenant state; every query runs on this deployment's DB.
+  - Contract: no route or DTO change. `GET notifications` gains one `type` value, and the frontend handles it.
+  - Flags: `notification_centre_enabled`, `events` and `cron_enabled` are consumed unchanged and exist in tenants, backend `Feature` and frontend `IFeatures`.
+- **Auth model.** No route was added or changed. The cron job runs in-process, with no HTTP surface.
 
 ## Linear tracking
 
