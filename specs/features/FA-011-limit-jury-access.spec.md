@@ -251,6 +251,17 @@ Dependency order: tenants → backend → frontend → admin. (The D-Block issue
 4. **Admin**: tolerant of an undeployed backend (D-Fail probe) and of a missing flag column (`?? "0"`). Nothing hidden anywhere at deploy (BR-07).
 5. **Pilot**: switch the flag on for one tenant, use it on one live programme round (BRD §15 step 4), then enable for all tenants. Help article / security collateral are business tasks, not code.
 
+## Decisions taken during the build (2026-10-06 to 2026-10-08)
+
+| Decision | What was decided | Where it lives |
+|---|---|---|
+| D-Flag (confirmed) | Flag off = nothing for everyone. A developer-admin bypass was added on 2026-10-06 and **removed on 2026-10-08**, so AC-30 holds for developers too. The grey developer note ("why is the button hidden") is shown only when the flag is ON. | `limitJuryAccessEnabled()` in `sc-saas-admin/includes/jury_visibility_functions.php` |
+| D-Attach | The pop-up lists form questions from the programme form and the round form (inactive forms marked "(not active yet)"). The attachments group "Pitch deck and video" lists the pitch deck only when the programme toggle "Enable Pitch Deck field" is on, and the Power Pitch video only when "Enable Video Pitch" is on. Jurors follow the same toggles. | `juryVisibilityListQuestions()`, `juryBuildFormsForSubmission()` |
+| D-SamePage | The Limit Access button always opens the pop-up on the same page, also inside the Edit Round modal (a new-tab variant was tried and reverted). The Kanban / tableview badge still opens Round Settings in a new tab with `?open=limit_access`. | theme `application_management/edit_program_round.php` |
+| D-Modal-UX | Static backdrop; the project's standard loader (`#loaderOverlay`) on load, copy and save; while saving the pop-up cannot be closed; inside the Edit Round modal the parent header and the strip under the frame are dimmed. Activity shows a table with Hidden / Unhidden / No change badges. | same theme file; see the module spec |
+
+UAT: Linear SAN-1813 with 11 end-to-end scenarios (SAN-1814 to SAN-1824).
+
 ## Linear breakdown (created 2026-10-06)
 
 Project **Enhancement** (P-SAN-48), milestone **Limit Jury Access**. Every task is assigned to **Sandeep**, status Todo. Each task covers exactly one repo, shown by its `Repo:` label. 8 parent tasks, 36 subtasks. (A standalone project P-SAN-77 was created first, then moved to Canceled when the user asked for a milestone inside Enhancement instead.)
