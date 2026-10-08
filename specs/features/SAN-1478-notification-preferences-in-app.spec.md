@@ -20,7 +20,7 @@ contracts:
     - "socket per-type toast events (EXISTING `connection_requested`, `connection_accepted`) — backend skips emitNotification() to a recipient who muted the category; `fetch-count` is still emitted (A-7)"
     - "users.notification_settings JSON — additive key `inApp` (missing key or missing sub-key = enabled)"
 tenant_scoped: true
-depends_on: [NOTIF-001]           # Mahima 2026-10-06: needs NOTIF-001 Phase 1 CODE merged (bell, counters, centre — present in all repos), not NOTIF-001 status=done; proceed while Phase 1 Linear items close out
+depends_on: [SAN-1381]           # Mahima 2026-10-06: needs SAN-1381 Phase 1 CODE merged (bell, counters, centre — present in all repos), not SAN-1381 status=done; proceed while Phase 1 Linear items close out
 created: 2026-10-06
 updated: 2026-10-06               # D-1..D-8 recorded from Mahima; all OQs resolved; approved
 ---
@@ -38,7 +38,7 @@ updated: 2026-10-06               # D-1..D-8 recorded from Mahima; all OQs resol
 
 ## Problem
 
-Users cannot turn off in-app notifications by topic. The Phase 1 bell, sidebar badges, toasts and dashboard catch-up card (NOTIF-001) show everything. The only preference page today controls email and WhatsApp for three hard-coded topics. EX-19 asks for per-category control; this phase delivers the In-app channel, with account and security notices always on.
+Users cannot turn off in-app notifications by topic. The Phase 1 bell, sidebar badges, toasts and dashboard catch-up card (SAN-1381) show everything. The only preference page today controls email and WhatsApp for three hard-coded topics. EX-19 asks for per-category control; this phase delivers the In-app channel, with account and security notices always on.
 
 ## Owner decisions (Mahima, 2026-10-06)
 
@@ -126,7 +126,7 @@ Mahima was shown the full proposed behaviour (D-4 to D-8) and replied: "we have 
   - Both use `ProfileService.updateNotification()` [EV `src/app/core/service/profile.service.ts:359–360`].
   - Model: `profile.model.ts:19–23, 56`.
 
-### In-app surfaces (Phase 1, NOTIF-001)
+### In-app surfaces (Phase 1, SAN-1381)
 
 - **Notification rows:** `NotificationType` has 5 values [EV `sc-saas-backend/src/core/constants/enum.ts:347–353`]. Writers [EV `notifications/repositories/notifications.repository.ts:72–213`]:
   - `connection_request` / `connection_action` are per user;

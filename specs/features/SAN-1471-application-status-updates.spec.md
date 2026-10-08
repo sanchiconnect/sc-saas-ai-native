@@ -33,7 +33,7 @@ contracts:
     - "notifications rows written directly by sc-saas-admin (Medoo) for admin's direct-DB status writes — row shape in §Notification row contract (D-2)"
     - "socket 'fetch-count' (EXISTING, reused, payload-free) — the backend emits it to each recipient after its own writes; admin-written rows are picked up by the 30 s poll"
 tenant_scoped: true
-depends_on: [NOTIF-001]           # Mahima 2026-10-06: needs NOTIF-001 Phase 1 CODE merged (bell, counters, centre — present in all repos), not NOTIF-001 status=done; proceed while Phase 1 Linear items close out
+depends_on: [SAN-1381]           # Mahima 2026-10-06: needs SAN-1381 Phase 1 CODE merged (bell, counters, centre — present in all repos), not SAN-1381 status=done; proceed while Phase 1 Linear items close out
 created: 2026-10-06
 updated: 2026-10-06              # all OQs resolved by Mahima 2026-10-06; OQ-3 revised (CTA → ACTION_REQUIRED). Awaiting her explicit approval
 ---
@@ -45,7 +45,7 @@ updated: 2026-10-06              # all OQs resolved by Mahima 2026-10-06; OQ-3 r
 - **BRD:** "Notifications and an Action-Driven Dashboard for SanchiAPP" v1.1, item EX-04 (wireframe W-02, the "Shortlisted" bell item), Phase 2.
   - The BRD document itself is not in the workspace.
   - The only source text is Linear issue SAN-1471 (a placeholder, no comments).
-- **Extends:** `specs/features/NOTIF-001-notifications-action-driven-dashboard.spec.md` (Phase 1, approved). NOTIF-001 lists EX-04 under *Out of scope* (line 518).
+- **Extends:** `specs/features/SAN-1381-notifications-action-driven-dashboard.spec.md` (Phase 1, approved). SAN-1381 lists EX-04 under *Out of scope* (line 518).
 - **Evidence tags** follow `specs/spec-authoring-practices.md`:
   - **[EV]** = evidenced, with a `file:line` reference.
   - **[INFERRED]** = a conclusion drawn from the code, not stated in it.
@@ -101,7 +101,7 @@ EX-04 adds that signal, in-app only, in two places:
 
 **Counters** [EV `notification-counters.service.ts:43–68, 228–232`]
 - `bell = connections + communityWall + jobs.total + (mode B ? opportunities.total : 0)`.
-- Every term is derived from source data (NOTIF-001 Decision #3).
+- Every term is derived from source data (SAN-1381 Decision #3).
 
 **Socket:** `emitFetchCountToRoom(userId)` carries no payload. Precedent for using it: `JobService.refreshJobTeamCounters()` [EV `job.service.ts:778–790`].
 
@@ -260,7 +260,7 @@ EX-04 adds that signal, in-app only, in two places:
 **D-4 (was OQ-4; confirmed twice, 2026-10-06) — Status updates count in the bell.**
 - Add `statusUpdates` to `NotificationCounters`, in the backend service and the frontend model.
 - Add `bell += statusUpdates`.
-- **This is an explicit, approved exception to NOTIF-001 Decision #3.**
+- **This is an explicit, approved exception to SAN-1381 Decision #3.**
 - `statusUpdates` counts this user's rows (`to_user_id = me`, `send_to = 'user'`, `deleted_at IS NULL`) of the five D-12 types that are either:
   - (a) `category = 'new'` and `has_read = 0`; or
   - (b) `category = 'action_required'` and not yet actioned (A-12).
@@ -576,7 +576,7 @@ The two "moved forward" lines with a requirement add one sentence to Mahima's co
 |---|---|---|
 | Flag `notification_centre_enabled` (#1) | None; reused | `/trace-flag notification_centre_enabled` |
 | Backend API (#2) | No new routes. 14 routes gain a side effect only. Additive changes: 5 `type` values and `cta` on `GET notifications`; `statusUpdates` on `GET notifications/counters`; `bell` now includes it | `/audit-contract` against frontend `core/service/notifications.service.ts`, `NotificationCounters`, and the admin cURL callers |
-| NOTIF-001 Decision #3 | Explicit, approved exception (D-4) | Recorded here |
+| SAN-1381 Decision #3 | Explicit, approved exception (D-4) | Recorded here |
 | `notifications` row shape, now written by two repos | Backend and admin both write rows. The row contract is the single reference. Admin deploys after the backend | Rollout ordering; review |
 | Read-only cross-module reads | The backend notifications module now reads `payment_orders`, `application_program_document_*` and `forms_submissions` (same tenant DB) to resolve "actioned". No writes | `/check-isolation` |
 | Tenant scoping (#5) | Backend: own deployment's DB only. Admin: per-tenant `$database` only | `/check-isolation` |

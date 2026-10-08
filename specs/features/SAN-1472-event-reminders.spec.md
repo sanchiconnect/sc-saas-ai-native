@@ -22,7 +22,7 @@ contracts:
     - "cron_jobs — ONE new CronJobName `EVENT_REMINDER` (seeded INACTIVE, like every non-core job)"
     - "socket 'fetch-count' (EXISTING, payload-free) — emitted to each reminded user"
 tenant_scoped: true
-depends_on: [NOTIF-001, SAN-1478]   # Phase 1 bell/centre code merged; SAN-1478 in-app preference key `eventReminders` merged
+depends_on: [SAN-1381, SAN-1478]   # Phase 1 bell/centre code merged; SAN-1478 in-app preference key `eventReminders` merged
 created: 2026-10-08
 ---
 
@@ -33,7 +33,7 @@ created: 2026-10-08
 - **BRD:** EX-05, Phase 2, not wireframed. The BRD itself is not in the workspace. The only source text is Linear SAN-1472 (no comments):
   > Reminders 24 hours and 1 hour before a registered event, with the joining link or venue.
   > Note: check the existing backend `modules/cron/meeting-reminder.service.ts` and the `events_notifications` tenant flag before designing anything new.
-- **Builds on:** `specs/features/NOTIF-001-notifications-action-driven-dashboard.spec.md` (Phase 1), `specs/features/SAN-1471-application-status-updates.spec.md` (EX-04, writer pattern), `specs/features/SAN-1478-notification-preferences-in-app.spec.md` (EX-19, `eventReminders` key).
+- **Builds on:** `specs/features/SAN-1381-notifications-action-driven-dashboard.spec.md` (Phase 1), `specs/features/SAN-1471-application-status-updates.spec.md` (EX-04, writer pattern), `specs/features/SAN-1478-notification-preferences-in-app.spec.md` (EX-19, `eventReminders` key).
 - **Tags** (per `specs/spec-authoring-practices.md`): **[EV]** evidenced with `file:line`; **[INFERRED]** drawn from code, not stated; **[NOT SPECIFIED]** the code/BRD says nothing; **[DESIGN DECISION PENDING]** needs a human decision (see Open questions).
 - Paths without a repo prefix are in `sc-saas-backend/src/`.
 
@@ -114,7 +114,7 @@ So today `events_notifications` means "allow the admin to broadcast an event inv
 - In-app preference: `InAppCategory.EVENT_REMINDERS = 'eventReminders'` [EV `enum.ts:377–385`, value at :384 — the enum is named `InAppCategory`, not `InAppNotificationCategory`]. The type→category map `NOTIFICATION_TYPE_IN_APP_CATEGORY` has **no** event entry yet [EV `enum.ts:398–416`]. Muting is applied at read time; rows are always written [EV `modules/notifications/module.spec.md:59–66`].
 - Frontend already shows the "Event reminders" toggle, gated on `features.events` [EV `sc-saas-frontend/src/app/modules/account/pages/notification-settings/notification-settings.component.ts:46`; `core/domain/profile.model.ts:28`].
 - Writer precedent: `ApplicationStatusNotificationsService.notifyApplicationStatus()` — flag check, de-dup, one row per recipient, `fetch-count` per recipient, never throws [EV `modules/notifications/application-status-notifications.service.ts:56–92`]. It lives in its own `ApplicationStatusNotificationsModule` [EV `application-status-notifications.module.ts:12–21`] because of import cycles. **`NotificationsModule` imports `CronModule`** [EV `notifications.module.ts:27`], so a cron service cannot import `NotificationsModule` back — the same "small module" trick is needed.
-- Counters: `bell` = connections + communityWall + jobs + (mode B opportunities) + meetings + `statusUpdates` [EV `modules/notifications/notification-counters.service.ts:417–423`]. NEW `notifications` rows of other types are **not** counted in `bell` (NOTIF-001 Decision #3; SAN-1471 D-4 was an approved exception).
+- Counters: `bell` = connections + communityWall + jobs + (mode B opportunities) + meetings + `statusUpdates` [EV `modules/notifications/notification-counters.service.ts:417–423`]. NEW `notifications` rows of other types are **not** counted in `bell` (SAN-1381 Decision #3; SAN-1471 D-4 was an approved exception).
 - Frontend: `NotificationTypes` [EV `sc-saas-frontend/src/app/modules/notifications/notifications.enum.ts:1–21`]; per-type icon/CTA map on `/notifications` [EV `modules/notifications/pages/notifications/notifications.component.ts:17–28`]; bell component [EV `shared/common-components/notification-bell/notification-bell.component.ts`]. Logged-in event landing: `/calender/events?eventId={uuid}` (opens the matching event) [EV `modules/calender/events-calender/events-calender.component.ts:261–262`; redirect precedent `modules/public-events/public-events.component.ts:149`].
 
 ### 6. Off-platform channels
@@ -178,7 +178,7 @@ So today `events_notifications` means "allow the admin to broadcast an event inv
 | `category` | `new` [DDP → OQ-4] |
 | `source_type` / `source_id` | `events_attendees` / attendee id |
 
-**P-8 — Bell:** under the recommended default, reminder rows appear in the bell **panel** list and on `/notifications`, but do **not** add to the `bell` number (keeps NOTIF-001 Decision #3) [DDP → OQ-4].
+**P-8 — Bell:** under the recommended default, reminder rows appear in the bell **panel** list and on `/notifications`, but do **not** add to the `bell` number (keeps SAN-1381 Decision #3) [DDP → OQ-4].
 
 ### Copy (default — product may edit, see OQ-13)
 
@@ -297,7 +297,7 @@ None. All 14 were resolved by Mahima on 2026-10-08 by accepting every recommende
 | OQ-1 Channels | In-app only |
 | OQ-2 Registrations | `attending` and not `rejected` (incl. `pending_moderation`); unpaid registrations on paid events count |
 | OQ-3 Types / multi-day | Approved 1:1 bookings included in-app; multi-day events reminded before the first day only |
-| OQ-4 Category / bell | Both reminders `new`, shown in the panel, not counted in `bell` (NOTIF-001 Decision #3 kept) |
+| OQ-4 Category / bell | Both reminders `new`, shown in the panel, not counted in `bell` (SAN-1381 Decision #3 kept) |
 | OQ-5 Gate | `notification_centre_enabled` AND `events`; no new flag, `events_notifications` unchanged |
 | OQ-6 Windows | Fixed 24 h and 1 h |
 | OQ-7 Late registrants / runs | Registered inside the last 24 h → 1 h reminder only; a missed reminder is sent late inside its window, not dropped |

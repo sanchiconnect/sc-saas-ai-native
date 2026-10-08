@@ -1,10 +1,9 @@
 ---
-id: NOTIF-001                   # PLACEHOLDER — no Linear issue/project exists yet. Rename file + id to the
-                                 # anchoring SAN-xxx once the Linear project is created (assignee to be confirmed
-                                 # with the user, per workspace assignee convention).
+id: SAN-1381                    # renamed from NOTIF-001 on 2026-10-08 (SAN-1390); file renamed to match
+aliases: [NOTIF-001]            # older specs and code comments still cite NOTIF-001
 title: Notifications and an Action-Driven Dashboard (Phase 1 — counters, bell, catch-up, admin command centre)
 type: feature
-status: approved                # Approved by the document owner (vishali.k) 2026-10-01; zero open questions. Formal BRD §18 signatures tracked separately in SAN-1390.
+status: done                    # Code complete and docs updated 2026-10-08 (SAN-1467). Approved by vishali.k 2026-10-01; BRD §18 sign-off recorded 2026-10-08 (SAN-1390). Rollout (SAN-1466), QA (SAN-1458/1459/1462/1464) and baselines (SAN-1465) are still open: see specs/gap-register.md G-001…G-008.
 linear: https://linear.app/sanchiconnect/issue/SAN-1381 (milestone "Notifications and an Action-Driven Dashboard", project Enhancement)
 owner: vishali.k@sanchiconnect.com
 source: "BRD — Notifications and an Action-Driven Dashboard for SanchiAPP, v1.1 (1 Oct 2026), business owner Dr. Sunil Shekhawat"
@@ -491,6 +490,24 @@ These are lifted from the BRD and made concrete. Wireframe references are in bra
   - Flag on in one dev tenant: user accepts a request → the badge drops in real time; admin approves a startup → admin badge drops.
   - Second tenant: counts stay independent.
 
+## Performance measurements (NFR-01, SAN-1464, 2026-10-08)
+
+**How it was measured:**
+- Suite: `sc-saas-backend/src/modules/notifications/notification-counters.perf.integration.spec.ts`. It is opt-in: `NOTIF_PERF_DB=mysql://…/<db>_test npx jest notification-counters.perf --runInBand`.
+- Environment: local MySQL 26.7 (Homebrew), Apple-silicon Mac, single connection.
+- Calls: the real `NotificationCountersService.getCounters`, timed for 200 startup users after one warm-up call.
+- Data: a synthetic tenant, because there was no copy of the largest real tenant. Sizes are 20k startups, 100k users, 300k wall posts, 300k connections, 2k challenges, 1k programs, 3k events, 200k item views, 20k jobs, 200k job applications and 500k notifications.
+
+| Measure | Result | Budget |
+|---|---|---|
+| `getCounters` p50 / p95 / max | 128.7 / **133.6** / 137 ms (second run 129 / 134 / 156) | p95 ≤ 300 ms, **met** |
+| Slowest statement: wall count (`countWallPostsSince`, ×2 per call: badge + catch-up) | 119 ms p95, `ALL` (full scan, ~300k rows) | — |
+| Wall count with an index on `comm_wall_posts(created_at)` (test DB only) | 28 ms p95, `range` (~2.9k rows); `getCounters` p95 → 123 ms | — |
+| Every other statement | ≤ 7 ms; indexed (`ref` / `eq_ref`) or a few-thousand-row scan of challenges / programs / events | — |
+
+- **Dashboard-load overhead (flag on vs off):** not measured. It needs a browser run against the deployed app.
+- **Recommendation for SAN-1426:** add an index on `comm_wall_posts(created_at)`. The wall count is the only full scan and it grows with post volume, but it fits the budget without the index at this size. It was not added to the entity, because `synchronize: true` would ALTER the live table at boot. Add it in a planned window, and run `EXPLAIN` on the real largest tenant.
+
 ## Rollout
 
 1. **tenants:** deploy the flag column (default off) and seed the `spa_settings` keys.
@@ -561,4 +578,13 @@ These were answered by the document owner (vishali.k@sanchiconnect.com) on 2026-
 
 None. All design questions are resolved (see above).
 
-**Remaining gate before `approved`:** T0.1 (SAN-1390), the BRD v1.1 sign-off under §18 by the business owner, the Product/UX lead, the Engineering lead and the QA lead. Once that is recorded, set `status: approved`.
+**BRD v1.1 sign-off (§18), recorded 2026-10-08 for T0.1 (SAN-1390):**
+
+| Role | Name | Sign-off | Recorded by |
+|---|---|---|---|
+| Business owner | Dr. Sunil Shekhawat | Confirmed by Mahima Sharma, 2026-10-08 | Mahima Sharma |
+| Product/UX lead | not recorded | Confirmed by Mahima Sharma, 2026-10-08 | Mahima Sharma |
+| Engineering lead | not recorded | Confirmed by Mahima Sharma, 2026-10-08 | Mahima Sharma |
+| QA lead | not recorded | Confirmed by Mahima Sharma, 2026-10-08 | Mahima Sharma |
+
+Mahima confirmed the sign-off; the signatories' names for the three lead roles were not supplied and should be filled in if a formal record is needed. The business owner is from the BRD cover (`source:` above).

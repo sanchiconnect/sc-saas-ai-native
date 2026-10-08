@@ -17,7 +17,7 @@ All issues are assigned to Vishali. Parent dependency chain: T0 → T1 → T2 �
 | Project | **Enhancement** (P-SAN-48, team Sanchiconnect / SAN) |
 | Milestone | **Notifications and an Action-Driven Dashboard** — new; to be created |
 | Source BRD | *Notifications and an Action-Driven Dashboard for SanchiAPP* v1.1, 1 Oct 2026 |
-| Governing spec | `specs/features/NOTIF-001-notifications-action-driven-dashboard.spec.md` — renamed to the anchoring SAN-xxx on creation |
+| Governing spec | `specs/features/SAN-1381-notifications-action-driven-dashboard.spec.md` — renamed to the anchoring SAN-xxx on creation |
 | Assignee | **To be confirmed** — one developer for the whole milestone, per the workspace assignee convention |
 
 ## Conventions

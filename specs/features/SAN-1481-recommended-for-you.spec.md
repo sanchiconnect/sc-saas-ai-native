@@ -22,7 +22,7 @@ contracts:
   events:
     - "None under the recommended default: no notifications row type, no InAppCategory, no cron job, no socket emit (OQ-1)"
 tenant_scoped: true
-depends_on: [NOTIF-001]          # flag + dashboard-v2 Phase 1 code present. Not dependent on SAN-1471/1472/1478 code under the default (no new notification type).
+depends_on: [SAN-1381]          # flag + dashboard-v2 Phase 1 code present. Not dependent on SAN-1471/1472/1478 code under the default (no new notification type).
 created: 2026-10-08
 ---
 
@@ -33,8 +33,8 @@ created: 2026-10-08
 - **Source:** Linear SAN-1481 (no comments), verbatim:
   > Placeholder (BRD Phase 3). Needs its own spec. Not wireframed.
   > BRD ref: EX-07. Matches based on sector, stage, persona and activity: challenges to apply to, mentors to request, investors aligned with the startup's thesis.
-- **The BRD text is not in the workspace.** Searched `specs/`, repo docs and `*.md` for `EX-07`, "Recommended for you", "recommendation" — only the NOTIF-001 backlog lists mention EX-07 (`specs/features/NOTIF-001-notifications-action-driven-dashboard.spec.md:533`, `specs/features/NOTIF-001-linear-breakdown.md:253`). NFR-10 wording is also not in the workspace; NOTIF-001's trace only says "NFR-10: No Phase 1 work — no new off-platform channel" (`NOTIF-001-linear-breakdown.md:292`).
-- **Builds on:** NOTIF-001 (flag, counters, dashboard-v2 catch-up card), SAN-1478 (in-app categories), SAN-1471 / SAN-1472 (writer + cron patterns, only relevant if OQ-1 picks bell rows).
+- **The BRD text is not in the workspace.** Searched `specs/`, repo docs and `*.md` for `EX-07`, "Recommended for you", "recommendation" — only the SAN-1381 backlog lists mention EX-07 (`specs/features/SAN-1381-notifications-action-driven-dashboard.spec.md:533`, `specs/features/SAN-1381-linear-breakdown.md:253`). NFR-10 wording is also not in the workspace; SAN-1381's trace only says "NFR-10: No Phase 1 work — no new off-platform channel" (`SAN-1381-linear-breakdown.md:292`).
+- **Builds on:** SAN-1381 (flag, counters, dashboard-v2 catch-up card), SAN-1478 (in-app categories), SAN-1471 / SAN-1472 (writer + cron patterns, only relevant if OQ-1 picks bell rows).
 - **`ai-startups-analyzer` is not checked out in this workspace** (no `ai-startups-analyzer/` directory). Its capabilities are taken from `specs/features/FAI-001-*.spec.md` / `FAI-002-enrichment-thesis.spec.md`.
 - **Tags** (per `specs/spec-authoring-practices.md`): **[EV]** evidenced with `file:line`; **[INFERRED]** drawn from code, not stated; **[NOT SPECIFIED]** nothing in source says either way; **[DDP]** = `[DESIGN DECISION PENDING]`, see Open questions.
 - Paths without a repo prefix are in `sc-saas-backend/src/`.
@@ -95,14 +95,14 @@ All sector/technology/area fields are **JSON arrays of master-table ids** (not F
 | **Stage** | Four unrelated stage fields: `startups.incubation_stage` → `incubation_stages` [EV `startup.entity.ts:444–448, 631–634`]; `startup_financials.funding_stage_id` → `funding_stages` [EV `startup-financials.entity.ts:16–20, 84–88`]; `startup_financials.revenue_stage` enum `pre_revenue/post_revenue` [EV :35–40; `enum.ts:668–671`]; `startup_product.product_stage_id` → `product_stages` [EV `startup-product.entity.ts:22–23, 65–68`]; `startups.trl_level` 1–9 [EV `startup.entity.ts:155–170`] | `investment_details.investment_stage_ids` JSON → **`investment_stages`** master (`id, name, is_active`) [EV `investor-investment-details.entity.ts:35–36`; `global/investment_stages/investment_stages.entity.ts:3–13`]. Import sample value "Pre Revenue" [EV `modules/import/dto/import-investor.dto.ts:184`] | none | none | none (participants record `maturity_stage_id` at apply time [EV `challenge-participants.entity.ts:42–43`]) | none |
 | **Ticket size** | `startup_financials.target_fundraise` **varchar free text** [EV `startup-financials.entity.ts:22–23`] | `ticket_size_min/max` int [EV `investor-investment-details.entity.ts:10–24`] | — | — | — | — |
 | **Instruments** | `startup_financials.instrument_ids` JSON [EV :32–33] | `investment_mechanism_ids` JSON [EV :29–30] (matching commented out [EV `startup.service.ts:176–180`]) | — | — | — | — |
-| **Persona / intent** | `users.account_type`; `startups.services_looking_for` SET (`fundraising, tech_hiring, customer_access, business_services, mentorship`) [EV `startup.entity.ts:457–468`; `enum.ts:236–242`] | — | — | — | startups only (NOTIF-001 OQ-6) | `membership_stakeholder_type` [EV `notification-counters.repository.ts:288`] |
+| **Persona / intent** | `users.account_type`; `startups.services_looking_for` SET (`fundraising, tech_hiring, customer_access, business_services, mentorship`) [EV `startup.entity.ts:457–468`; `enum.ts:236–242`] | — | — | — | startups only (SAN-1381 OQ-6) | `membership_stakeholder_type` [EV `notification-counters.repository.ts:288`] |
 | **Discoverability / approval** | `is_approved`, `is_search_results` | `is_approved` [EV `investor.entity.ts:138`], `is_search_results` (default false) [:110–115], `approved_on` [:144] | `is_approved` [EV `mentor.entity.ts:137`], `is_search_results` (default **true**) [:144–149] | `is_approved`, `is_search_results` (default true) [EV `corporate.entity.ts:129, 150–156`] | `approval_status`, `privacy_type` | `status`, `test_mode_enabled`, … |
 
 **Conclusions on matching quality:**
 - **Sector is matchable across every pair** that EX-07 names (startup ↔ challenge, mentor, investor), on one shared master (`industry_domains`). [EV, and INFERRED that `startup_industries` and challenge/investor/mentor sector ids reference the same master — same `IndustryDomainsEntity` resolver is used for all: `startup.service.ts:309, 463`; `challenges.repository.ts:86`]
 - **Stage is NOT matchable today without a decision.** The investor's stage preference uses the `investment_stages` master; the startup has no column pointing at that master. A mapping (or a new startup field) is needed. Challenges, mentors and programs have no stage preference at all. → OQ-3.
 - **Ticket size is NOT matchable**: the startup side is free text. → Out of scope.
-- **Programs have no sector**, so "recommended programs" could only be "eligible + open", which the NOTIF-001 opportunities counter already covers. → Out of scope (EX-07 names challenges, not programs).
+- **Programs have no sector**, so "recommended programs" could only be "eligible + open", which the SAN-1381 opportunities counter already covers. → Out of scope (EX-07 names challenges, not programs).
 
 ### 3. Activity signals available
 
@@ -112,7 +112,7 @@ All sector/technology/area fields are **JSON arrays of master-table ids** (not F
 | Connections | `connections` (status, `other_user_id`) | Already used as an **exclusion** (no rec for existing connections) |
 | Challenge applications | `challenge_participants` (`startup_id`) | Already used by `getLiveChallenges` as `applied` [EV `notification-counters.repository.ts:210–212`] |
 | Mentorship requests | `mentorship` (`mentor_id`, `startup_id`, `approval_status`) [EV `modules/mentorship/entities/mentorship.entity.ts:12–62`] | **Not** used today; existing mentor recs exclude connected mentors only |
-| Opportunity views | `notification_item_views` (challenge/program/event) [EV `notification-counters.repository.ts:208–209`] | Written by NOTIF-001 mode-B |
+| Opportunity views | `notification_item_views` (challenge/program/event) [EV `notification-counters.repository.ts:208–209`] | Written by SAN-1381 mode-B |
 | Hides | `investors/corporates.hide_recommended_startup`, `startups.hide_recommended_investor/corporate` JSON user-id lists | Dismiss mechanism exists for investor/corporate only |
 
 ### 4. "Opportunities" eligibility to reuse for "challenges to apply to"
@@ -129,8 +129,8 @@ All sector/technology/area fields are **JSON arrays of master-table ids** (not F
 
 - `InAppCategory` has 7 keys; **none fits recommendations** (`connectionRequests, jobApplications, applicationUpdates, deadlines, communityActivity, communityPosts, eventReminders`) [EV `core/constants/enum.ts:388–396`]. A bell-delivered recommendation would need a new key (e.g. `recommendations`) in the backend enum + `NOTIFICATION_TYPE_IN_APP_CATEGORY` [EV :409–429] and a new row in the frontend In-app table (SAN-1478 D-6).
 - Writer + cron precedents: SAN-1471 `ApplicationStatusNotificationsService`, SAN-1472 `EventReminderService` (`specs/features/SAN-1472-event-reminders.spec.md` §P-4–P-6).
-- NOTIF-001 Decision #3: the `bell` number never counts generic `notifications` rows.
-- dashboard-v2 catch-up card / "You're all caught up" + one suggested action picked from enabled modules [EV `sc-saas-frontend/src/app/modules/dashboard-v2/components/dashboard-catch-up/dashboard-catch-up.component.ts:102–110`]; dashboard-v2 only (NOTIF-001 OQ-8).
+- SAN-1381 Decision #3: the `bell` number never counts generic `notifications` rows.
+- dashboard-v2 catch-up card / "You're all caught up" + one suggested action picked from enabled modules [EV `sc-saas-frontend/src/app/modules/dashboard-v2/components/dashboard-catch-up/dashboard-catch-up.component.ts:102–110`]; dashboard-v2 only (SAN-1381 OQ-8).
 
 ### 6. Other capabilities checked
 
@@ -143,8 +143,8 @@ All sector/technology/area fields are **JSON arrays of master-table ids** (not F
 | Item | Overlap | Recommended handling |
 |---|---|---|
 | EX-02 "Your next actions" (SAN-1469, Backlog, not specced) | Lists "deadlines within 72 h not yet applied to" — the same challenges can appear in both | EX-07 = *fit* (why this suits you); EX-02 = *urgency* (act now). No de-duplication in the MVP; a closing-soon chip on a recommended challenge is allowed [DDP → OQ-14] |
-| EX-01 catch-up / EX-08 empty state (NOTIF-001) | The empty state's single suggested action is module-based, not personal | Unchanged in the MVP [DDP → OQ-14] |
-| FR-U3 opportunities counter (NOTIF-001) | Same live/eligible challenge set | Reuse the same eligibility SQL; do not change the counter |
+| EX-01 catch-up / EX-08 empty state (SAN-1381) | The empty state's single suggested action is module-based, not personal | Unchanged in the MVP [DDP → OQ-14] |
+| FR-U3 opportunities counter (SAN-1381) | Same live/eligible challenge set | Reuse the same eligibility SQL; do not change the counter |
 | EX-09 Profile views (Phase 3) | Same `profile_views` table | Activity signals deferred (OQ-4); no conflict |
 | EX-19 / SAN-1478 preferences | Only if recommendations become bell rows | No new InAppCategory under the default (OQ-1) |
 | EX-20 / SAN-1479 DPDP consent | Concerns off-platform channels (email/WhatsApp opt-in) | No off-platform channel in the MVP (OQ-9) |
@@ -267,7 +267,7 @@ All sector/technology/area fields are **JSON arrays of master-table ids** (not F
 | API (#2) — NEW `GET api/v1/startups/recommended/challenges` | New route, startup-only | `/audit-contract` vs `core/service/recommended.service.ts` + `api-endpoint.service.ts` |
 | API (#2) — `GET startups/recommended/investors`, `/mentors` | Additive `matchReasons[]` always; ordering, matching breadth, mentor cap and `investmentDetails` shape change **only with `notification_centre_enabled` on** | `/audit-contract` (frontend `recommended-*` components are the only consumers; no admin caller [EV grep]) |
 | Flags (#1) | None new under the default; consumes `notification_centre_enabled`, `business_challenges`, `startups`, `new_dashboard_layout` | `/trace-flag notification_centre_enabled`, `/trace-flag business_challenges` |
-| Shared eligibility with NOTIF-001 counters | Refactor of `getLiveChallenges` WHERE into a shared fragment; output must stay identical | Jest parity test |
+| Shared eligibility with SAN-1381 counters | Refactor of `getLiveChallenges` WHERE into a shared fragment; output must stay identical | Jest parity test |
 | Tenant scoping (#5) | Per-deployment DB; session-derived ids only; hub/spoke unchanged (OQ-8) | `/check-isolation` |
 | Auth (#4) | New route uses existing `JwtAuthGuard` + `RolesGuard`; no change to the JWT model | — |
 | Verification shape (#3), PowerPitch (#6) | Not touched | — |

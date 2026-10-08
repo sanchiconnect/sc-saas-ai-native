@@ -1,7 +1,7 @@
 ---
 type: index
 repo: admin
-updated: 2026-09-30
+updated: 2026-10-08 # SAN-1467
 ---
 
 # Admin Module Specs Index
@@ -99,7 +99,8 @@ supplementary background. Bundled entries are marked **(legacy/combined)** below
 
 | Module | Spec | Description |
 |---|---|---|
-| broadcast_messages | [module.spec.md](../sc-saas-admin/modules/broadcast_messages/module.spec.md) | Compose + send audience-filtered broadcasts (email / in-app chat / community-wall post); every send logged for audit |
+| broadcast_messages | [module.spec.md](../sc-saas-admin/modules/broadcast_messages/module.spec.md) | Compose + send audience-filtered broadcasts (email / in-app chat / community-wall post); every send logged for audit. `approvals.php`: spoke broadcast approvals, pending-first with an Overdue flag (SAN-1445) |
+| command_centre | [command_centre.module.spec.md](../sc-saas-admin/modules/command_centre.module.spec.md) | SAN-1381 admin notification centre: `command_centre.php` queue cards and SLA strip, header bell and sidebar badges, `includes/notification_centre_functions.php` counters (per-permission, NFR-06) and `spa_settings` SLA / escalation keys. Gated by `notification_centre_enabled` |
 | email_logs | [module.spec.md](../sc-saas-admin/modules/email_logs/module.spec.md) | FA-009 (SAN-1157). Tenant-wide Email Logs page over `ses_email_queue`: filters (type, template, IST date range, recipient, status), server-side counters, per-row SES status + Request Stats (row loaded by id; POSTed email/messageId ignored), CSV without bodies. Gated by `can_broadcast_messages`, partners/jury redirected, CSV also needs `can_export_data` |
 | canned_responses | [module.spec.md](../sc-saas-admin/modules/canned_responses/module.spec.md) | Reusable email templates for the applicant broadcast-email composer; also written to directly from other modules' "save as canned response" checkbox |
 | outreach_requests | [module.spec.md](../sc-saas-admin/modules/outreach_requests/module.spec.md) | Cross-tenant/cross-partner program-promotion request system (`program_promotions` lives in the shared tenants DB, not per-tenant) — approve/reject with email notification, optional program clone into the receiving tenant |
@@ -241,3 +242,20 @@ supplementary background. Bundled entries are marked **(legacy/combined)** below
 | 🟢 Low | reporting_backup | Confirmed dead code — stale duplicate of `reporting/`, not a real backup/DR mechanism; safe to delete but out of scope here |
 
 Updated: 2026-10-06 (FA-011 Limit Jury Access: application_management + jury rows). Earlier: 2026-07-20
+
+---
+
+## Feature specs and Gap Register
+
+Cross-repo features are specified in `specs/features/` (the workspace layer), not in module specs. The notification-centre family:
+
+- [SAN-1381 Notifications and an Action-Driven Dashboard](features/SAN-1381-notifications-action-driven-dashboard.spec.md) (formerly NOTIF-001). Phase 1; includes the performance measurements and BRD sign-off.
+- Phase 2 specs:
+  - [SAN-1471 application status updates](features/SAN-1471-application-status-updates.spec.md)
+  - [SAN-1472 event reminders](features/SAN-1472-event-reminders.spec.md)
+  - [SAN-1475 escalation rules](features/SAN-1475-escalation-rules.spec.md)
+  - [SAN-1478 in-app preferences](features/SAN-1478-notification-preferences-in-app.spec.md)
+  - [SAN-1481 recommended for you](features/SAN-1481-recommended-for-you.spec.md)
+- [BRD §4 baseline queries](features/SAN-1381-baseline-queries.md)
+
+Known gaps (deferred, unverified or risky items) are tracked in the **[Gap Register](gap-register.md)**.

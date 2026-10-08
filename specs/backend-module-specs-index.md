@@ -1,7 +1,7 @@
 ---
 type: index
 repo: backend
-updated: 2026-08-13
+updated: 2026-10-08 # SAN-1467
 ---
 
 # Backend Module Specs — Index
@@ -72,7 +72,7 @@ All 60 `sc-saas-backend` modules under `src/modules/` have a `module.spec.md` (u
 | `community-wall` | [spec](../sc-saas-backend/src/modules/community-wall/module.spec.md) | Social feed / wall posts. |
 | `challenges` | [spec](../sc-saas-backend/src/modules/challenges/module.spec.md) | Innovation challenge lifecycle. |
 | `news` | [spec](../sc-saas-backend/src/modules/news/module.spec.md) | External news proxy + per-user category prefs. **All 4 routes have `JwtAuthGuard` commented out.** Preference write has no ownership check. |
-| `notifications` | [spec](../sc-saas-backend/src/modules/notifications/module.spec.md) | Inbox + badge-count aggregator. 6 cron-trigger POSTs are completely open. `getNotifications` has likely `andWhere/orWhere` precedence bug. |
+| `notifications` | [spec](../sc-saas-backend/src/modules/notifications/module.spec.md) | Inbox + the SAN-1381 notification centre: `GET notifications/counters` (bell + badges, catch-up, `communityWallSince`, `opportunities.unseen`), section visits, item views, narrowed mark-all-read, live-feed items, 90-day purge, application-status and event-reminder writers. Gated by `notification_centre_enabled` (strict `true`). Badge = list on real MySQL: `badge-equals-list.integration.spec.ts` (opt-in). 6 cron-trigger POSTs are still open. The old `getNotifications` precedence bug was fixed in SAN-1409. |
 
 ---
 
@@ -164,7 +164,7 @@ All 60 `sc-saas-backend` modules under `src/modules/` have a `module.spec.md` (u
 | `global` | [spec](../sc-saas-backend/src/modules/global/module.spec.md) | Platform backbone: reference data, tenant settings, admin actions (85+ routes). `backdoor-login` issues real JWTs with only an md5 token. `forgot-password` has no token at all. Exports `GlobalService` + `AdminActionsService`. |
 | `audit-log` | [spec](../sc-saas-backend/src/modules/audit-log/module.spec.md) | `@Global()` write-only auditing. Exports `AuditedUpdateService`. Raw `repo.update()` calls bypass the audit trail. |
 | `cron` | [spec](../sc-saas-backend/src/modules/cron/module.spec.md) | Scheduled job orchestration. `COMMUNITY_WALL_POSTS_WEEKLY_REMINDER` callback is missing `()` — no-op. Timezone hardcoded to `Asia/Kolkata`. |
-| `notifications` | [spec](../sc-saas-backend/src/modules/notifications/module.spec.md) | *(also listed under Events & Community)* Exports `NotificationsRepository` write methods for sibling modules. |
+| `notifications` | [spec](../sc-saas-backend/src/modules/notifications/module.spec.md) | *(also listed under Events & Community)* Exports `NotificationsRepository` write methods for sibling modules (job applications, application status, event reminders, connection-request actioned). |
 | `migrations` | [spec](../sc-saas-backend/src/modules/migrations/module.spec.md) | Data migration scripts behind `:adminMd5` token. **No JWT, no feature gate** — only the md5 token protects bulk mutations. |
 | `import` | [spec](../sc-saas-backend/src/modules/import/module.spec.md) | Bulk profile seeding. **5 routes with zero auth or feature gate** — open to anyone with network access. |
 
@@ -229,3 +229,20 @@ These findings were captured in module `Watch out for` sections. They are **not 
 | 🟡 Medium | `meetings` | `feedback-reminder/trigger` and `/:code/complete` are unauthenticated |
 | 🟡 Medium | `vs-programs-management` | `getProgram` creates a DB row on every read call |
 | 🟡 Medium | `program-management` | `payment-reminder/:adminMd5` admin-check commented out |
+
+---
+
+## Feature specs and Gap Register
+
+Cross-repo features are specified in `specs/features/` (the workspace layer), not in module specs. The notification-centre family:
+
+- [SAN-1381 Notifications and an Action-Driven Dashboard](features/SAN-1381-notifications-action-driven-dashboard.spec.md) (formerly NOTIF-001). Phase 1; includes the performance measurements and BRD sign-off.
+- Phase 2 specs:
+  - [SAN-1471 application status updates](features/SAN-1471-application-status-updates.spec.md)
+  - [SAN-1472 event reminders](features/SAN-1472-event-reminders.spec.md)
+  - [SAN-1475 escalation rules](features/SAN-1475-escalation-rules.spec.md)
+  - [SAN-1478 in-app preferences](features/SAN-1478-notification-preferences-in-app.spec.md)
+  - [SAN-1481 recommended for you](features/SAN-1481-recommended-for-you.spec.md)
+- [BRD §4 baseline queries](features/SAN-1381-baseline-queries.md)
+
+Known gaps (deferred, unverified or risky items) are tracked in the **[Gap Register](gap-register.md)**.

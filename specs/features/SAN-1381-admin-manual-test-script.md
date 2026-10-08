@@ -1,4 +1,4 @@
-# NOTIF-001 — Admin manual test script (T5.0 / SAN-1441)
+# SAN-1381 — Admin manual test script (T5.0 / SAN-1441)
 
 `sc-saas-admin` has no automated test suite, so the admin side of the Notifications BRD v1.1 (FR-A1 to FR-A5, EX-10 basic) is verified by hand with this script. Every touched PHP file must also pass `php -l`.
 
