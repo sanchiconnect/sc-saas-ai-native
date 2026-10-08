@@ -2,7 +2,7 @@
 id: SAN-1471
 title: "Notifications Phase 2 — EX-04 Application status updates (in-app notifications when an application moves)"
 type: feature
-status: approved                # approved by Mahima 2026-10-06
+status: done                    # approved by Mahima 2026-10-06; implemented 2026-10-08; SAN-1726/1727/1728 + SAN-1471 Done; manual dev-tenant run still pending
 linear: https://linear.app/sanchiconnect/issue/SAN-1471/notifications-p2-ex-04-application-status-updates   # parent issue (project "Enhancement"); sub-issues SAN-1726 (backend), SAN-1727 (frontend), SAN-1728 (admin)
 owner: Mahima Sharma
 source: "BRD — Notifications and an Action-Driven Dashboard for SanchiAPP, v1.1 (1 Oct 2026), EX-04 (W-02 'Shortlisted'), Phase 2"
@@ -637,6 +637,18 @@ There is no "guardian" skill in this workspace. Say so in the PR wherever covera
 ## Open questions
 
 None. All were resolved by Mahima on 2026-10-06; see Decisions. The spec stays `status: draft` until Mahima approves it herself.
+
+## Implementation notes (2026-10-08)
+
+Built on branch `ai_native_setup_mahima` in all three repos; not committed.
+
+- **Writer location (A-1).** It is `ApplicationStatusNotificationsService.notifyApplicationStatus()` in `sc-saas-backend/src/modules/notifications/application-status-notifications.service.ts`, inside its own `ApplicationStatusNotificationsModule`. It is not on `NotificationsService`: NotificationsModule already imports ProgramsManagementModule, so the program modules cannot import it back. The behaviour is the same as A-1.
+- **Resolver name.** The resolver is `NotificationCentreRepository.getOpenStatusActions(rows)`, not `getActionedStatusNotificationIds`. It returns open row id → the requirement still due, which also drives the `cta` label (A-13). A row whose source is gone or unknown counts as actioned.
+- **In-app preferences (SAN-1478).** The four program types map to `applicationUpdates` and the job type maps to `jobApplications`, in `NOTIFICATION_TYPE_IN_APP_CATEGORY`. `statusUpdates` leaves muted types out, including ACTION_REQUIRED ones.
+- **Interview un-scheduled.** It notifies only when an interview was actually scheduled before.
+- **Admin re-notify guard.** Admin updates notify only when Medoo reports success and at least one row changed. So a repeated approve or move does not notify twice.
+- **Frontend type.** `NotificationCounters.statusUpdates` is optional (`statusUpdates?: number`), so an older backend that omits it still type-checks.
+- **Index review.** Both counter queries lead with `to_user_id`, which has an FK index. No new index was added.
 
 ## Linear tracking
 
