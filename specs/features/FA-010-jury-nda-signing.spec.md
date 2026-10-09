@@ -290,3 +290,9 @@ Business sign-off was relayed by Sandeep, not attached; attach or reference the 
 - **Tenant switch** `jury_nda_enabled` gates the whole feature (FA-012).
 - Verification of the email change: backend `npx tsc --noEmit` clean and the related jest suites pass (ses-email service, signed-copy service, admin-actions signed-copy, upload service); no real e-mail was sent yet. No automated test coverage was added to sc-saas-admin.
 
+
+## Changes after approval, 2026-10-09 (Sandeep) — tracker and Replace follow-ups
+
+- **Program Managers see the tracker (SAN-1836).** The tracker (status column, tiles, drawer, copies, exports, reminders) is open to Super Admin, Developer, roles with `can_view_jury_ndas` AND every Program Manager / Corporate Program Manager login, limited by `juryNdaManageScope` to their own programmes (PM must be in `program_managers`, corporate PM to their business challenges, partner to its partner). Record: `specs/bug-fixes/SAN-1836-program-manager-jury-nda-tracker.md`.
+- **Tracker UI (SAN-1837, SAN-1838).** Action bar on one row with the status message below; the evidence drawer has View / Download once, at the top; only the newest signed copy is reachable from it.
+- **Replace with re-sign (SAN-1839).** The admin is told how many jurors were e-mailed or why none were; the admin retries 502 / 503 / refused connections up to 3 times; the backend notification route sends recipients in parallel groups of 5. Not confirmed yet: the cause of the reported `http_502`. Record: `specs/bug-fixes/SAN-1839-replace-nda-resign-email.md`.
